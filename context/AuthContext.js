@@ -64,7 +64,7 @@ const clearErrorMessage = (dispatch) => () => {
 
 const tryLocalLogin = (dispatch) => async () => {
   // const accessToken = await AsyncStorage.getItem("accessToken");
-  const accessToken = "dummy";
+  const accessToken = null;
   if (accessToken) {
     dispatch({ type: "login", payload: accessToken });
   }
