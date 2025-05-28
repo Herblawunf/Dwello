@@ -54,7 +54,10 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Build on EAS
-        run: eas build --platform ios --profile development --non-interactive --output=./out
+        run: |
+          eas build --platform ios --profile development --non-interactive
+          BUILD_ID=$(eas build:list --platform ios --status finished --limit 1 --json --non-interactive | jq -r '.[0].id')
+          eas build:download --platform ios --id "$BUILD_ID" --output ./out
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
