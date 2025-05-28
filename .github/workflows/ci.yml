@@ -2,7 +2,7 @@ name: Continuous Integration
 run-name: CI for ${{ github.repository }}
 on: [push, pull_request]
 jobs:
-  Test&Deploy:
+  TestAndDeploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
