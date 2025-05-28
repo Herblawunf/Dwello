@@ -37,6 +37,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a80b1941-6dfc-4d09-ba79-10396c7a4798"
+      }
+    },
+    "owner": "cornermercury18"
   }
 }
