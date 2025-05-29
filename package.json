@@ -58,5 +58,12 @@
   "jest": {
     "preset": "jest-expo"
   },
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "exclude": ["jwt-decode"]
+      }
+    }
+  },
   "private": true
 }
