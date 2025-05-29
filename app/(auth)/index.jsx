@@ -1,22 +1,27 @@
-import React, { useState, useContext, useEffect } from "react";
-import { Text, StyleSheet, TouchableOpacity, SafeAreaView } from "react-native";
-import { Context as AuthContext } from "../../context/AuthContext";
-import AuthInput from "../../components/AuthInput";
+import React, { useState, useContext } from "react";
+import { Text, StyleSheet, TouchableOpacity } from "react-native";
+import { Context as AuthContext } from "@/context/AuthContext";
+import AuthInput from "@/components/AuthInput";
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
+import { ThemedTouchableOpacity } from "@/components/ThemedTouchableOpacity";
+import { responsiveFontSize } from "@/tools/fontscaling";
 
 const LoginScreen = () => {
-  const {
-    state: authState,
-    login,
-    clearErrorMessage,
-  } = useContext(AuthContext);
+  const { state: authState, login } = useContext(AuthContext);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.titleText}>Welcome!</Text>
-      <Text style={styles.infoText}>Enter details to login</Text>
+    <ThemedView style={styles.container}>
+      <ThemedText style={styles.titleText} type="subtitle">
+        Login
+      </ThemedText>
+      <ThemedText style={styles.infoText} type="subsubtitle">
+        Enter your details to login
+      </ThemedText>
       <AuthInput
+        style={styles.authInput}
         username={username}
         password={password}
         setUsername={setUsername}
@@ -25,14 +30,15 @@ const LoginScreen = () => {
       {authState.errorMessage ? (
         <Text style={styles.errorMessage}>{authState.errorMessage}</Text>
       ) : null}
-      <TouchableOpacity
+      <ThemedTouchableOpacity
         style={styles.button}
         onPress={() => login({ username, password })}
-        inverse
       >
-        <Text style={styles.buttonText}>Login</Text>
-      </TouchableOpacity>
-    </SafeAreaView>
+        <ThemedText style={styles.buttonText} inverse>
+          Login
+        </ThemedText>
+      </ThemedTouchableOpacity>
+    </ThemedView>
   );
 };
 
@@ -43,25 +49,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   titleText: {
-    fontWeight: "600",
-    fontSize: 40,
     marginTop: 20,
   },
   button: {
     padding: "3%",
     borderRadius: 5,
-    width: 200,
     alignItems: "center",
-    marginTop: 40,
     marginBottom: "15%",
-    backgroundColor: "white",
+    width: "85%",
   },
   input: {
     borderWidth: 1,
     padding: 10,
     width: "80%",
     fontSize: 20,
-    borderRadius: 10,
+    borderRadius: responsiveFontSize(10),
     margin: 10,
     fontWeight: "bold",
   },
@@ -74,8 +76,10 @@ const styles = StyleSheet.create({
     color: "red",
   },
   infoText: {
-    fontSize: 16,
     marginBottom: 40,
+  },
+  authInput: {
+    borderRadius: responsiveFontSize(10),
   },
 });
 
