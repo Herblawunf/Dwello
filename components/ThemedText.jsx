@@ -1,4 +1,4 @@
-import { StyleSheet, Text, useColorScheme } from "react-native";
+import { StyleSheet, Text } from "react-native";
 
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { responsiveFontSize } from "@/tools/fontscaling.js";
@@ -11,18 +11,11 @@ export function ThemedText({
   inverse = false,
   ...rest
 }) {
-  const colorScheme = useColorScheme();
-  const defaultColor = useThemeColor(
+  const color = useThemeColor(
     { light: lightColor, dark: darkColor },
-    "text"
+    "text",
+    inverse
   );
-
-  // Manually fetch inverse colour scheme
-  const color = inverse
-    ? colorScheme === "light"
-      ? darkColor
-      : lightColor
-    : defaultColor;
 
   return (
     <Text

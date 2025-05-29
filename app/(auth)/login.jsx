@@ -4,6 +4,8 @@ import { Context as AuthContext } from "@/context/AuthContext";
 import AuthInput from "@/components/AuthInput";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
+import { ThemedTouchableOpacity } from "@/components/ThemedTouchableOpacity";
+import { responsiveFontSize } from "@/tools/fontscaling";
 
 const LoginScreen = () => {
   const { state: authState, login } = useContext(AuthContext);
@@ -19,6 +21,7 @@ const LoginScreen = () => {
         Enter your details to login
       </ThemedText>
       <AuthInput
+        style={styles.authInput}
         username={username}
         password={password}
         setUsername={setUsername}
@@ -27,14 +30,14 @@ const LoginScreen = () => {
       {authState.errorMessage ? (
         <Text style={styles.errorMessage}>{authState.errorMessage}</Text>
       ) : null}
-      <TouchableOpacity
+      <ThemedTouchableOpacity
         style={styles.button}
         onPress={() => login({ username, password })}
       >
         <ThemedText style={styles.buttonText} inverse>
           Login
         </ThemedText>
-      </TouchableOpacity>
+      </ThemedTouchableOpacity>
     </ThemedView>
   );
 };
@@ -53,16 +56,15 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     width: 200,
     alignItems: "center",
-    marginTop: 40,
     marginBottom: "15%",
-    backgroundColor: "white",
+    width: "80%",
   },
   input: {
     borderWidth: 1,
     padding: 10,
     width: "80%",
     fontSize: 20,
-    borderRadius: 10,
+    borderRadius: responsiveFontSize(10),
     margin: 10,
     fontWeight: "bold",
   },
@@ -76,6 +78,9 @@ const styles = StyleSheet.create({
   },
   infoText: {
     marginBottom: 40,
+  },
+  authInput: {
+    borderRadius: responsiveFontSize(10),
   },
 });
 
