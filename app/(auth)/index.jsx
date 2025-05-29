@@ -32,7 +32,7 @@ const LoginScreen = () => {
       ) : null}
       <ThemedTouchableOpacity
         style={styles.button}
-        onPress={() => login({ username, password })}
+        onPress={() => login({ email: username, password })}
       >
         <ThemedText style={styles.buttonText} inverse>
           Login
