@@ -40,6 +40,8 @@ jobs:
 
       - name: Build JavaScript bundle (test)
         run: npx expo export --platform all --output-dir dist --clear
+        env:
+          EXPO_PUBLIC_SUPABASE_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_KEY }}
 
       - name: Upload test coverage
         uses: codecov/codecov-action@v3
