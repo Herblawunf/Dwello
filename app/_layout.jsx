@@ -61,11 +61,13 @@ function RootLayoutNav() {
 
   // redirect the very moment we know we're signed in
   useEffect(() => {
+    console.log(authState.isSignedIn);
     if (authState.isSignedIn) {
       router.replace("/(tabs)");
     }
   }, [authState.isSignedIn]);
 
+  console.log(authState.isSignedIn);
   if (!authState.hasAttemptedLocalLogin) {
     return (
       <View style={{ flex: 1, justifyContent: "center" }}>
@@ -75,5 +77,6 @@ function RootLayoutNav() {
   }
 
   // while NOT signed-in just keep the auth stack mounted
+  console.log(authState.isSignedIn);
   return <AuthStack />;
 }

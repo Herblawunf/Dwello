@@ -54,10 +54,9 @@ const styles = StyleSheet.create({
   button: {
     padding: "3%",
     borderRadius: 5,
-    width: 200,
     alignItems: "center",
     marginBottom: "15%",
-    width: "80%",
+    width: "85%",
   },
   input: {
     borderWidth: 1,

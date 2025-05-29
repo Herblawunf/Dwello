@@ -61,6 +61,7 @@ const AuthInput = ({
         <ThemedTouchableOpacity
           style={styles.eyeIcon}
           onPress={handleShowPassword}
+          inverse={false}
         >
           <Ionicons name={passwordIcon} size={25} color={iconColour} />
         </ThemedTouchableOpacity>
@@ -89,6 +90,7 @@ const styles = StyleSheet.create({
   },
   eyeIcon: {
     position: "absolute",
+    borderWidth: 0,
     right: 10,
   },
 });
