@@ -31,7 +31,9 @@ const LoginScreen = () => {
         style={styles.button}
         onPress={() => login({ username, password })}
       >
-        <ThemedText style={styles.buttonText}>Login</ThemedText>
+        <ThemedText style={styles.buttonText} inverse>
+          Login
+        </ThemedText>
       </TouchableOpacity>
     </ThemedView>
   );
