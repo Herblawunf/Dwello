@@ -27,7 +27,7 @@ const LoginScreen = () => {
       ) : null}
       <TouchableOpacity
         style={styles.button}
-        onPress={() => login({ username, password })}
+        onPress={() => login({ email: username, password })}
       >
         <Text style={styles.buttonText}>Login</Text>
       </TouchableOpacity>

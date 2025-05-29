@@ -3,9 +3,21 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import jwtDecode from "jwt-decode";
 import { supabase } from "../lib/supabase";
 
+// const getUserId = (accessToken) => {
+//   return accessToken != null ? jwtDecode(accessToken).id : null;
+// };
 const getUserId = (accessToken) => {
-  return accessToken != null ? jwtDecode(accessToken).id : null;
+  if (!accessToken || typeof accessToken !== 'string') {
+    return null;
+  }
+  try {
+    return jwtDecode(accessToken).sub; // Supabase uses 'sub' not 'id'
+  } catch (error) {
+    console.log('Error decoding token:', error);
+    return null;
+  }
 };
+
 
 const authReducer = (state, action) => {
   switch (action.type) {
