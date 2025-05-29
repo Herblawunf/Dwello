@@ -28,6 +28,7 @@ const LoginScreen = () => {
       <TouchableOpacity
         style={styles.button}
         onPress={() => login({ username, password })}
+        inverse
       >
         <Text style={styles.buttonText}>Login</Text>
       </TouchableOpacity>
