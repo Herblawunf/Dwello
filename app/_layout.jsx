@@ -55,6 +55,8 @@ export default function RootLayout() {
 function RootLayoutNav() {
   const { state: authState, tryLocalLogin } = useContext(AuthContext);
 
+  console.log('AuthState:', authState);
+
   useEffect(() => {
     tryLocalLogin();
   }, []);
@@ -62,11 +64,13 @@ function RootLayoutNav() {
   // redirect the very moment we know we're signed in
   useEffect(() => {
     if (authState.isSignedIn) {
+      console.log('User is signed in, redirecting to tabs');
       router.replace("/(tabs)");
     }
   }, [authState.isSignedIn]);
 
   if (!authState.hasAttemptedLocalLogin) {
+    console.log('Showing loading screen');
     return (
       <View style={{ flex: 1, justifyContent: "center" }}>
         <ActivityIndicator size="large" />
@@ -74,6 +78,12 @@ function RootLayoutNav() {
     );
   }
 
-  // while NOT signed-in just keep the auth stack mounted
-  return <AuthStack />;
+  // Render AppStack if signed in, AuthStack if not signed in
+  if (authState.isSignedIn) {
+    console.log('Rendering AppStack');
+    return <AppStack />;
+  } else {
+    console.log('Rendering AuthStack');
+    return <AuthStack />;
+  }
 }
