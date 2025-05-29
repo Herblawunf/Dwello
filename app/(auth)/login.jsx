@@ -1,21 +1,23 @@
-import React, { useState, useContext, useEffect } from "react";
-import { Text, StyleSheet, TouchableOpacity, SafeAreaView } from "react-native";
-import { Context as AuthContext } from "../../context/AuthContext";
-import AuthInput from "../../components/AuthInput";
+import React, { useState, useContext } from "react";
+import { Text, StyleSheet, TouchableOpacity } from "react-native";
+import { Context as AuthContext } from "@/context/AuthContext";
+import AuthInput from "@/components/AuthInput";
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
 
 const LoginScreen = () => {
-  const {
-    state: authState,
-    login,
-    clearErrorMessage,
-  } = useContext(AuthContext);
+  const { state: authState, login } = useContext(AuthContext);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.titleText}>Welcome!</Text>
-      <Text style={styles.infoText}>Enter details to login</Text>
+    <ThemedView style={styles.container}>
+      <ThemedText style={styles.titleText} type="subtitle">
+        Login
+      </ThemedText>
+      <ThemedText style={styles.infoText} type="subsubtitle">
+        Enter your details to login
+      </ThemedText>
       <AuthInput
         username={username}
         password={password}
@@ -29,9 +31,9 @@ const LoginScreen = () => {
         style={styles.button}
         onPress={() => login({ username, password })}
       >
-        <Text style={styles.buttonText}>Login</Text>
+        <ThemedText style={styles.buttonText}>Login</ThemedText>
       </TouchableOpacity>
-    </SafeAreaView>
+    </ThemedView>
   );
 };
 
@@ -42,8 +44,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   titleText: {
-    fontWeight: "600",
-    fontSize: 40,
     marginTop: 20,
   },
   button: {
@@ -73,7 +73,6 @@ const styles = StyleSheet.create({
     color: "red",
   },
   infoText: {
-    fontSize: 16,
     marginBottom: 40,
   },
 });

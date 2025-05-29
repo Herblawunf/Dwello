@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { TextInput, View, TouchableOpacity, StyleSheet } from "react-native";
+import { View, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { ThemedTextInput } from "@/components/ThemedTextInput";
 
 const AuthInput = ({ username, setUsername, password, setPassword }) => {
   const [isSecurePassword, setIsSecurePassword] = useState(true);
@@ -16,27 +17,25 @@ const AuthInput = ({ username, setUsername, password, setPassword }) => {
   return (
     <View>
       <View style={styles.inputContainer}>
-        <TextInput
+        <ThemedTextInput
           style={styles.inputField}
           autoCapitalize="none"
           autoCorrect={false}
           textContentType="username"
           placeholder="Username"
-          placeholderTextColor="white"
           value={username}
           onChangeText={setUsername}
           maxLength={25}
         />
       </View>
       <View style={styles.inputContainer}>
-        <TextInput
+        <ThemedTextInput
           secureTextEntry={isSecurePassword}
           style={styles.inputField}
           autoCapitalize="none"
           autoCorrect={false}
           textContentType="password"
           placeholder="Password"
-          placeholderTextColor="white"
           value={password}
           onChangeText={setPassword}
           maxLength={25}
@@ -62,7 +61,6 @@ const styles = StyleSheet.create({
   inputField: {
     paddingVertical: 15,
     paddingHorizontal: 10,
-    color: "white",
     fontSize: 20,
     fontWeight: "600",
     width: "90%",
