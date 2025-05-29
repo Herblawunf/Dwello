@@ -1,9 +1,7 @@
 import createDataContext from "./createDataContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
-const jwtDecode = (accessToken) => {
-  return { id: 12345 };
-};
+import jwtDecode from "jwt-decode";
+import { supabase } from "../lib/supabase";
 
 const getUserId = (accessToken) => {
   return accessToken != null ? jwtDecode(accessToken).id : null;
@@ -38,23 +36,31 @@ const authReducer = (state, action) => {
 
 const login =
   (dispatch) =>
-  async ({ username, password }) => {
+  async ({ email, password }) => {
     try {
-      tokenResponse = { access_token: "dummy" };
-      if (tokenResponse.hasOwnProperty("access_token")) {
-        AsyncStorage.setItem("accessToken", tokenResponse.access_token);
-        dispatch({ type: "login", payload: tokenResponse.access_token });
-      } else {
-        // Error sent back as response
-        throw tokenResponse;
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        dispatch({ type: "set_error_message", payload: error.message });
+        return;
       }
+
+      const accessToken = data.session.access_token;
+      await AsyncStorage.setItem("accessToken", accessToken);
+
+      dispatch({ type: "login", payload: accessToken });
     } catch (err) {
       console.log(err);
     }
   };
 
 const signout = (dispatch) => async () => {
+  await supabase.auth.signOut();
   await AsyncStorage.removeItem("accessToken");
+
   dispatch({ type: "signout" });
 };
 
@@ -63,8 +69,7 @@ const clearErrorMessage = (dispatch) => () => {
 };
 
 const tryLocalLogin = (dispatch) => async () => {
-  // const accessToken = await AsyncStorage.getItem("accessToken");
-  const accessToken = null;
+  const accessToken = await AsyncStorage.getItem("accessToken");
   if (accessToken) {
     dispatch({ type: "login", payload: accessToken });
   }
