@@ -77,6 +77,7 @@ jobs:
 
   deploy:
     needs: TestAndBuild
+    if: github.ref == 'refs/heads/main'
 
     # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
     permissions:
@@ -92,6 +93,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to GitHub Pages
-        if: github.ref == 'refs/heads/main'
         id: deployment
         uses: actions/deploy-pages@v4
