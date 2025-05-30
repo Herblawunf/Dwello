@@ -16,6 +16,8 @@ const authReducer = (state, action) => {
         userId: getUserId(action.payload),
         errorMessage: "",
         isSignedIn: true,
+        tenant: action.userInfo?.tenant || false,
+        landlord: action.userInfo?.landlord || false,
       };
     case "set_error_message":
       return { ...state, errorMessage: action.payload };
@@ -26,6 +28,8 @@ const authReducer = (state, action) => {
         userId: null,
         errorMessage: "",
         isSignedIn: false,
+        tenant: false,
+        landlord: false,
       };
     case "attempted_local":
       return { ...state, hasAttemptedLocalLogin: true };
@@ -48,10 +52,16 @@ const login =
         return;
       }
 
+      const { data: userInfo, error: userInfoError } = await supabase
+        .from("users")
+        .select("landlord, tenant")
+        .eq("email", email)
+        .single();
+
       const accessToken = data.session.access_token;
       await AsyncStorage.setItem("accessToken", accessToken);
 
-      dispatch({ type: "login", payload: accessToken });
+      dispatch({ type: "login", payload: accessToken, userInfo });
     } catch (err) {
       console.log(err);
     }
@@ -78,6 +88,7 @@ const tryLocalLogin = (dispatch) => async () => {
   dispatch({ type: "attempted_local" });
 };
 
+
 export const { Provider, Context } = createDataContext(
   authReducer,
   { login, signout, clearErrorMessage, tryLocalLogin },
@@ -87,5 +98,7 @@ export const { Provider, Context } = createDataContext(
     errorMessage: "",
     hasAttemptedLocalLogin: false,
     isSignedIn: false,
+    landlord: false,
+    tenant: false,
   }
 );

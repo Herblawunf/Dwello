@@ -27,7 +27,16 @@ function AuthStack() {
 function AppStack() {
   return (
     <Stack>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="(tenant_tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="+not-found" />
+    </Stack>
+  );
+}
+
+function LandlordStack() {
+  return (
+    <Stack>
+      <Stack.Screen name="(landlord_tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="+not-found" />
     </Stack>
   );
@@ -65,7 +74,14 @@ function RootLayoutNav() {
   useEffect(() => {
     if (authState.isSignedIn) {
       console.log('User is signed in, redirecting to tabs');
-      router.replace("/(tabs)");
+      if (authState.landlord) {
+        console.log('User is a landlord, redirecting to landlord tabs');
+        router.replace("/(landlord_tabs)");
+      }
+      else {
+        console.log('User is a tenant, redirecting to tenant tabs');
+        router.replace("/(tenant_tabs)");
+      }
     }
   }, [authState.isSignedIn]);
 
@@ -83,7 +99,9 @@ function RootLayoutNav() {
     console.log('Rendering AppStack');
     return <AppStack />;
   } else {
+
     console.log('Rendering AuthStack');
     return <AuthStack />;
+    
   }
 }
