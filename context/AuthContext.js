@@ -52,11 +52,18 @@ const login =
         return;
       }
 
+      const { data: allUsers, derror } = await supabase.from("users").select("*");
+      console.log("All users in table:", allUsers);
+
+      const { data: { user } } = await supabase.auth.getUser()
+
       const { data: userInfo, error: userInfoError } = await supabase
         .from("users")
         .select("landlord, tenant")
-        .eq("email", email)
+        .eq("id", user.id)
         .single();
+      console.log(user.id);
+      console.log("User Info:", userInfo);
 
       const accessToken = data.session.access_token;
       await AsyncStorage.setItem("accessToken", accessToken);
