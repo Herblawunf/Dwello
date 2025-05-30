@@ -1,6 +1,6 @@
 import createDataContext from "./createDataContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import jwtDecode from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 import { supabase } from "../lib/supabase";
 
 const getUserId = (accessToken) => {
