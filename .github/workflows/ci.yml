@@ -74,19 +74,3 @@ jobs:
         with:
           name: ios-build
           path: "ios-build.tar.gz"
-
-      - name: Build Android on EAS
-        if: github.ref == 'refs/heads/main'
-        run: |
-          eas build --platform android --profile development --non-interactive
-          BUILD_URL=$(eas build:list --platform android --status finished --limit 1 --json --non-interactive | jq -r '.[0].artifacts.buildUrl')
-          curl -L -o "android-build.tar.gz" "$BUILD_URL"
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-
-      - name: Upload Android Build Artifact
-        if: github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-build
-          path: "android-build.tar.gz"
