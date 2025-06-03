@@ -4,7 +4,7 @@ import { jwtDecode } from "jwt-decode";
 import { supabase } from "../lib/supabase";
 
 const getUserId = (accessToken) => {
-  return accessToken != null ? jwtDecode(accessToken).id : null;
+  return accessToken != null ? jwtDecode(accessToken).sub : null;
 };
 
 const authReducer = (state, action) => {
@@ -52,10 +52,14 @@ const login =
         return;
       }
 
-      const { data: allUsers, derror } = await supabase.from("users").select("*");
+      const { data: allUsers, derror } = await supabase
+        .from("users")
+        .select("*");
       console.log("All users in table:", allUsers);
 
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
       const { data: userInfo, error: userInfoError } = await supabase
         .from("users")
@@ -94,7 +98,6 @@ const tryLocalLogin = (dispatch) => async () => {
 
   dispatch({ type: "attempted_local" });
 };
-
 
 export const { Provider, Context } = createDataContext(
   authReducer,
