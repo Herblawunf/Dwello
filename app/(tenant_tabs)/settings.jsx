@@ -1,6 +1,6 @@
 import { useContext } from "react";
 import { supabase } from "../../lib/supabase";
-import { TouchableOpacity, Text } from "react-native";
+import { TouchableOpacity, Text, SafeAreaView } from "react-native";
 import { Context as AuthContext } from "@/context/AuthContext";
 
 export default function SettingsScreen() {
@@ -11,8 +11,10 @@ export default function SettingsScreen() {
     console.log(authState.isSignedIn);
   };
   return (
-    <TouchableOpacity onPress={handleSignout}>
-      <Text>Signout</Text>
-    </TouchableOpacity>
+    <SafeAreaView style={{ flex: 1 }}>
+      <TouchableOpacity onPress={handleSignout}>
+        <Text>Signout</Text>
+      </TouchableOpacity>
+    </SafeAreaView>
   );
 }
