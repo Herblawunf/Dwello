@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     splitText: {
-        fontSize: 14,
+        fontSize: 10,
         color: '#666',
         marginHorizontal: 4,
         fontWeight: '500',
@@ -207,15 +207,17 @@ const styles = StyleSheet.create({
         }),
     },
     picker: {
-        width: 100,
+        width: 75,
         height: Platform.OS === 'ios' ? 32 : 36,
         backgroundColor: Platform.OS === 'android' ? '#fff' : 'transparent',
         borderRadius: Platform.OS === 'android' ? 6 : 0,
     },
     pickerItem: {
-        fontSize: 14,
+        fontSize: 11,
         height: 32,
         color: '#333',
+        paddingHorizontal: 0,   // remove iOS row padding
+        paddingVertical: 0,
     },
     addButton: {
         width: 50,
