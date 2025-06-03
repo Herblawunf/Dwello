@@ -4,104 +4,97 @@ import {
   ThemeProvider,
 } from "@react-navigation/native";
 import { useFonts } from "expo-font";
-import { Stack, router } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import "react-native-reanimated";
 import { useContext, useEffect } from "react";
 import { View, ActivityIndicator } from "react-native";
-
 import { useColorScheme } from "@/hooks/useColorScheme";
 import {
   Provider as AuthProvider,
   Context as AuthContext,
 } from "../context/AuthContext";
 
-function AuthStack() {
-  return (
+// Stacks Configuration
+const Stacks = {
+  Auth: () => (
     <Stack>
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="+not-found" />
     </Stack>
-  );
-}
-
-function AppStack() {
-  return (
+  ),
+  Tenant: () => (
     <Stack>
       <Stack.Screen name="(tenant_tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="+not-found" />
     </Stack>
-  );
-}
-
-function LandlordStack() {
-  return (
+  ),
+  Landlord: () => (
     <Stack>
       <Stack.Screen name="(landlord_tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="+not-found" />
     </Stack>
-  );
-}
+  ),
+};
+
+const LoadingScreen = () => (
+  <View style={{ flex: 1, justifyContent: "center" }}>
+    <ActivityIndicator size="large" />
+  </View>
+);
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
+  const [fontsLoaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
 
-  if (!loaded) {
-    return null;
-  }
+  if (!fontsLoaded) return null;
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <AuthProvider>
-        <RootLayoutNav />
+        <AuthRouter />
       </AuthProvider>
     </ThemeProvider>
   );
 }
 
-function RootLayoutNav() {
-  const { state: authState, tryLocalLogin } = useContext(AuthContext);
+function AuthRouter() {
+  const router = useRouter();
+  const { state, tryLocalLogin } = useContext(AuthContext);
+  const { isSignedIn, landlord, hasAttemptedLocalLogin } = state;
 
-  console.log('AuthState:', authState);
-
+  // Attempt silent login on mount
   useEffect(() => {
     tryLocalLogin();
   }, []);
 
-  // redirect the very moment we know we're signed in
+  // Handle navigation based on auth state
   useEffect(() => {
-    if (authState.isSignedIn) {
-      console.log('User is signed in, redirecting to tabs');
-      if (authState.landlord) {
-        console.log('User is a landlord, redirecting to landlord tabs');
-        router.replace("/(landlord_tabs)");
-      }
-      else {
-        console.log('User is a tenant, redirecting to tenant tabs');
-        router.replace("/(tenant_tabs)");
-      }
-    }
-  }, [authState.isSignedIn]);
+    if (!hasAttemptedLocalLogin) return;
 
-  if (!authState.hasAttemptedLocalLogin) {
-    console.log('Showing loading screen');
-    return (
-      <View style={{ flex: 1, justifyContent: "center" }}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  }
+    const route = isSignedIn
+      ? landlord
+        ? "/(landlord_tabs)"
+        : "/(tenant_tabs)"
+      : "/(auth)";
 
-  // Render AppStack if signed in, AuthStack if not signed in
-  if (authState.isSignedIn) {
-    console.log('Rendering AppStack');
-    return <AppStack />;
-  } else {
+    router.replace(route);
+  }, [isSignedIn, landlord, hasAttemptedLocalLogin]);
 
-    console.log('Rendering AuthStack');
-    return <AuthStack />;
-    
-  }
+  if (!hasAttemptedLocalLogin) return <LoadingScreen />;
+
+  return (
+    <>
+      {isSignedIn ? (
+        landlord ? (
+          <Stacks.Landlord />
+        ) : (
+          <Stacks.Tenant />
+        )
+      ) : (
+        <Stacks.Auth />
+      )}
+    </>
+  );
 }
