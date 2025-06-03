@@ -1,8 +1,8 @@
 name: Continuous Integration
 run-name: CI for ${{ github.repository }}
-on: [push, pull_request]
+on: [push]
 jobs:
-  TestAndDeploy:
+  TestAndBuild:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -52,25 +52,25 @@ jobs:
       # ----------------------------------------------------------
       # Only run below if on main to not use up build quota limits
       # ----------------------------------------------------------
-      - name: Setup EAS
-        if: github.ref == 'refs/heads/main'
-        uses: expo/expo-github-action@v8
-        with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
+      # - name: Setup EAS
+      #   if: github.ref == 'refs/heads/main'
+      #   uses: expo/expo-github-action@v8
+      #   with:
+      #     eas-version: latest
+      #     token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Build on EAS
-        if: github.ref == 'refs/heads/main'
-        run: |
-          eas build --platform ios --profile development --non-interactive
-          BUILD_URL=$(eas build:list --platform ios --status finished --limit 1 --json --non-interactive | jq -r '.[0].artifacts.buildUrl')
-          curl -L -o "app.tar.gz" "$BUILD_URL"
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      # - name: Build iOS on EAS
+      #   if: github.ref == 'refs/heads/main'
+      #   run: |
+      #     eas build --platform ios --profile development --non-interactive
+      #     BUILD_URL=$(eas build:list --platform ios --status finished --limit 1 --json --non-interactive | jq -r '.[0].artifacts.buildUrl')
+      #     curl -L -o "ios-build.tar.gz" "$BUILD_URL"
+      #   env:
+      #     EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Upload iOS Simulator IPA
-        if: github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ios-simulator-ipa
-          path: "**/app.tar.gz"
+      # - name: Upload iOS Build Artifact
+      #   if: github.ref == 'refs/heads/main'
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: ios-build
+      #     path: "ios-build.tar.gz"
