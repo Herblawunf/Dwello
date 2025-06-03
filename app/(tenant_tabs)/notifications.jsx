@@ -1,15 +1,32 @@
-import React, { useState, useContext, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { View, Text, StyleSheet, FlatList, SafeAreaView } from "react-native";
 import { supabase } from "../../lib/supabase";
-import { Context as AuthContext } from "@/context/AuthContext";
 import { useFocusEffect } from "@react-navigation/native";
 
-const getNotifications = async (userId) => {
-  try {
-    const { data, error } = await supabase
-      .from("expenses")
-      .select(
-        `
+const NotificationItem = ({ item }) => (
+  <View style={styles.notificationItem}>
+    <Text style={styles.notificationTitle}>{item.amount}</Text>
+    <Text style={styles.notificationMessage}>{item.payee.name}</Text>
+    <Text style={styles.notificationTime}>{item.date}</Text>
+  </View>
+);
+
+const NotificationsScreen = () => {
+  const [notifications, setNotifications] = useState([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      getNotifications();
+    }, [])
+  );
+
+  const getNotifications = async () => {
+    // Policy ensures only userId payers are selected
+    try {
+      const { data, error } = await supabase
+        .from("expenses")
+        .select(
+          `
         expense_id,
         created_at,
         expense,
@@ -18,47 +35,28 @@ const getNotifications = async (userId) => {
         payer_id,
         users:payee_id (first_name)
       `
-      )
-      .eq("payer_id", userId)
-      .eq("is_paid", false)
-      .order("created_at", { ascending: false });
+        )
+        .eq("is_paid", false)
+        .order("created_at", { ascending: false });
 
-    if (error) throw error;
+      if (error) throw error;
 
-    return data.map((expense) => ({
-      id: expense.expense_id,
-      amount: expense.expense,
-      date: expense.created_at,
-      isPaid: expense.status,
-      payee: {
-        id: expense.payee_id,
-        name: expense.users?.first_name,
-      },
-    }));
-  } catch (error) {
-    console.error("Error fetching notifications:", error.message);
-    return [];
-  }
-};
-
-const NotificationItem = ({ item }) => (
-  <View style={styles.notificationItem}>
-    <Text style={styles.notificationTitle}>{item.expense}</Text>
-    <Text style={styles.notificationMessage}>{item.payee.name}</Text>
-    <Text style={styles.notificationTime}>{item.date}</Text>
-  </View>
-);
-
-const NotificationsScreen = () => {
-  const { state: authState } = useContext(AuthContext);
-  const [notifications, setNotifications] = useState([]);
-
-  useFocusEffect(
-    useCallback(() => {
-      console.log(authState);
-      setNotifications(getNotifications(authState.userId));
-    }, [])
-  );
+      const items = data.map((expense) => ({
+        id: expense.expense_id,
+        amount: expense.expense,
+        date: expense.created_at,
+        isPaid: expense.status,
+        payee: {
+          id: expense.payee_id,
+          name: expense.users?.first_name,
+        },
+      }));
+      setNotifications(items);
+    } catch (error) {
+      console.error("Error fetching notifications:", error.message);
+      return [];
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
