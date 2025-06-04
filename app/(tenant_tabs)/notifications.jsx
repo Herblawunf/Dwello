@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useContext } from "react";
 import {
   View,
   Text,
@@ -7,22 +7,28 @@ import {
   SafeAreaView,
   RefreshControl,
 } from "react-native";
-import { supabase } from "../../lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { useFocusEffect } from "@react-navigation/native";
+import { Context as AuthContext } from "@/context/AuthContext";
+import { formatDate } from "@/tools/formatDate";
 
 const NotificationItem = ({ item }) => (
   <View style={styles.notificationItem}>
     <Text style={styles.notificationTitle}>
       {item.payee.name} added {item.description}
     </Text>
-    <Text style={styles.notificationMessage}>You owe £{item.amount}</Text>
-    <Text style={styles.notificationTime}>{item.date}</Text>
+    <Text style={styles.notificationMessage}>
+      You {item.type == "receive" ? "will receive" : "owe"} £{item.amount}
+    </Text>
+    <Text style={styles.notificationTime}>{formatDate(item.date)}</Text>
   </View>
 );
 
 const NotificationsScreen = () => {
   const [notifications, setNotifications] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  const { state: authState } = useContext(AuthContext);
+  const userId = authState.userId;
 
   useFocusEffect(
     useCallback(() => {
@@ -32,7 +38,7 @@ const NotificationsScreen = () => {
 
   const getNotifications = async () => {
     setRefreshing(true);
-    // Policy ensures only userId payers are selected
+    // Policy ensures only userId related expenses are selected
     try {
       const { data, error } = await supabase
         .from("expenses")
@@ -52,19 +58,43 @@ const NotificationsScreen = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-
+      console.log(userId);
       const items = data.map((expense) => ({
         id: expense.expense_id,
         amount: expense.amount,
         date: expense.created_at,
         isPaid: expense.status,
         description: expense.description,
+        type: userId == expense.payer_id ? "receive" : "send",
         payee: {
           id: expense.housemate_id,
-          name: expense.users?.first_name,
+          name: userId == expense.payer_id ? "You" : expense.users?.first_name,
         },
       }));
-      setNotifications(items);
+
+      const combinedItems = items.reduce((acc, item) => {
+        if (item.type === "receive") {
+          const existingItem = acc.find(
+            (i) => i.type === "receive" && i.id === item.id
+          );
+
+          if (existingItem) {
+            // Combine amounts and keep the most recent date
+            existingItem.amount += item.amount;
+            existingItem.date =
+              new Date(existingItem.date) > new Date(item.date)
+                ? existingItem.date
+                : item.date;
+          } else {
+            acc.push({ ...item });
+          }
+        } else {
+          acc.push({ ...item });
+        }
+        return acc;
+      }, []);
+
+      setNotifications(combinedItems);
     } catch (error) {
       console.error("Error fetching notifications:", error.message);
       return [];
