@@ -12,6 +12,7 @@ import {
     Keyboard,
     ScrollView
 } from 'react-native';
+import { supabase } from '@/lib/supabase';
 
 export default function Contact() {
     const [reason, setReason] = useState('');
@@ -25,9 +26,26 @@ export default function Contact() {
         { label: 'Other', value: 'other' },
     ];
 
-    const handleSend = () => {
+    const handleSend = async () => {
         // Dismiss keyboard before showing alert
         Keyboard.dismiss();
+
+        const { data: { user } } = await supabase.auth.getUser();
+
+        const requestData = {
+            user_id: user.id,
+            reason: reason,
+            description: message,
+        }
+
+        const { error } = await supabase
+                        .from('requests')
+                        .insert(requestData);
+        
+        if (error) {
+            console.error('Error adding request:', error);
+        }
+
         // Clear form
         setReason('');
         setMessage('');
