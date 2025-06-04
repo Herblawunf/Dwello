@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
+import { getHousemates } from '../../context/utils';
 
 const rentDue = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -25,12 +26,42 @@ const rentDue = async () => {
     const today = new Date();
     const paymentDate = new Date(next_payment);
 
-    return paymentDate <= today ? rent_per_period : 0;
+    const housemates = await getHousemates();
+    const numHousemates = housemates.length + 1;
+    const split = 1.0 / numHousemates;
 
+    return paymentDate <= today ? rent_per_period * split : 0;
+
+}
+
+const daysToRent = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: house_id } = await supabase
+            .from("tenants")
+            .select("house_id")
+            .eq("tenant_id", user.id)
+            .single();
+
+    const { data: house_info } = await supabase
+            .from("houses")
+            .select("*")
+            .eq("house_id", house_id.house_id)
+            .single();
+
+    const next_payment = house_info.next_payment;
+
+    const today = new Date();
+    const paymentDate = new Date(next_payment);
+    
+    const timeDiff = paymentDate.getTime() - today.getTime();
+    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    
+    return daysDiff;
 }
 
 export default function HomeScreen() {
     const [due, setDue] = useState(0);
+    const [dueIn, setDueIn] = useState(-1);
     
     useEffect(() => {
         const fetchRentDue = async () => {
@@ -38,6 +69,14 @@ export default function HomeScreen() {
             setDue(amount);
         };
         fetchRentDue();
+    }, []);
+
+    useEffect(() => {
+        const fetchDaysToRent = async () => {
+            const days = await daysToRent();
+            setDueIn(days);
+        }
+        fetchDaysToRent();
     }, []);
 
     return (
@@ -48,7 +87,7 @@ export default function HomeScreen() {
             {/* Balance Section */}
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Balance due</Text>
-                <Text style={styles.balanceAmount}>${due}</Text>
+                <Text style={styles.balanceAmount}>£{due.toFixed(2)}</Text>
             </View>
             
             {/* Splits Section */}
@@ -60,7 +99,7 @@ export default function HomeScreen() {
             {/* Notifications Section */}
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Notifications</Text>
-                <Text style={styles.notificationText}>Rent payment due in 3 days</Text>
+                <Text style={styles.notificationText}>Rent payment due {dueIn > 0 ? `in ${dueIn} days` : "now"}</Text>
             </View>
             
             {/* Quick Actions Section */}
