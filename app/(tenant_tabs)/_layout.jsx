@@ -73,6 +73,18 @@ export default function TabLayout() {
         />
       }
       ,
+      {
+        <Tabs.Screen
+          name="expenses"
+          options={{
+            title: "Expenses",
+            tabBarIcon: ({ color }) => (
+              <IconSymbol size={28} name="chat.bubble.fill" color={color} />
+            ),
+          }}
+        />
+      }
+      ,
       <Tabs.Screen
         name="settings"
         options={{
