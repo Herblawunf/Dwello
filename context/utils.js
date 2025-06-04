@@ -1,17 +1,23 @@
 import { supabase } from "../lib/supabase";
 
-const getHousemates = async () => {
+export const getHousemates = async () => {
+
+    const { data: { user } } = await supabase.auth.getUser()
+
     const { data: house_id, error } = await supabase
-        .from("house_to_tenant")
+        .from("tenants")
         .select("house_id")
-        .eq("tenant_id", supabase.auth.user().id)
+        .eq("tenant_id", user.id)
         .single();
 
+    console.log("Getting housemates");
+    console.log("House ID:", house_id);
+
     const { data: tenants, error: tenantsError } = await supabase
-      .from("house_to_tenant")
+      .from("tenants")
       .select("tenant_id")
-      .eq("house_id", house_id)
-      .neq("tenant_id", supabase.auth.user().id);
+      .eq("house_id", house_id.house_id)
+      .neq("tenant_id", user.id);
 
     if (tenantsError) {
       throw tenantsError
@@ -20,7 +26,7 @@ const getHousemates = async () => {
     return tenants.map(row => row.tenant_id)
 }
 
-const getHousematesNames = async () => {
+export const getHousematesNames = async () => {
     const housemates = await getHousemates();
 
     const { data: housematesData, error } = await supabase

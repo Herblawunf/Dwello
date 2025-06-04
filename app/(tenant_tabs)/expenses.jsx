@@ -10,6 +10,8 @@ import {
     ScrollView
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import { getHousemates } from '@/context/utils';
+import { supabase } from "../../lib/supabase";
 
 const ExpensesScreen = () => {
     const [amount, setAmount] = useState('');
@@ -24,21 +26,41 @@ const ExpensesScreen = () => {
         }
     };
 
-    const addExpense = () => {
-        // Function to be implemented
+    const addExpense = async () => {
+        console.log("Adding expense");
+        let housemates = await getHousemates();
+        console.log(housemates);
+
+        const { data: { user } } = await supabase.auth.getUser();
+        let payer = paidBy === 'you' ? user.id : housemates.find(h => h === paidBy);
+
+        for (const housemate of housemates) {
+            const splitAmount = splitMethod === 'equally' ? parseFloat(amount) / (housemates.length + 1) : parseFloat(amount);
+            const expenseData = {
+                created_at: new Date().toISOString(),
+                payer_id: payer,
+                housemate_id: housemate,
+                is_paid: false,
+                amount: splitAmount,
+                description: description || 'No description',
+            };
+
+            const { error } = await supabase
+                .from('expenses')
+                .insert(expenseData);
+
+            if (error) {
+                console.error('Error adding expense:', error);
+            }
+        }
     };
 
     const userOptions = [
         { label: 'You', value: 'you' },
-        { label: 'Friend A', value: 'friend_a' },
-        { label: 'Friend B', value: 'friend_b' },
     ];
 
     const splitOptions = [
         { label: 'Equally', value: 'equally' },
-        { label: 'Unequally', value: 'unequally' },
-        { label: 'By %', value: 'percentage' },
-        { label: 'By Shares', value: 'shares' },
     ];
 
     return (
