@@ -1,5 +1,12 @@
 import { useState, useCallback } from "react";
-import { View, Text, StyleSheet, FlatList, SafeAreaView } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  SafeAreaView,
+  RefreshControl,
+} from "react-native";
 import { supabase } from "../../lib/supabase";
 import { useFocusEffect } from "@react-navigation/native";
 
@@ -13,6 +20,7 @@ const NotificationItem = ({ item }) => (
 
 const NotificationsScreen = () => {
   const [notifications, setNotifications] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -21,6 +29,7 @@ const NotificationsScreen = () => {
   );
 
   const getNotifications = async () => {
+    setRefreshing(true);
     // Policy ensures only userId payers are selected
     try {
       const { data, error } = await supabase
@@ -29,11 +38,11 @@ const NotificationsScreen = () => {
           `
         expense_id,
         created_at,
-        expense,
+        amount,
         is_paid,
-        payee_id,
+        housemate_id,
         payer_id,
-        users:payee_id (first_name)
+        users:housemate_id (first_name)
       `
         )
         .eq("is_paid", false)
@@ -43,11 +52,11 @@ const NotificationsScreen = () => {
 
       const items = data.map((expense) => ({
         id: expense.expense_id,
-        amount: expense.expense,
+        amount: expense.amount,
         date: expense.created_at,
         isPaid: expense.status,
         payee: {
-          id: expense.payee_id,
+          id: expense.housemate_id,
           name: expense.users?.first_name,
         },
       }));
@@ -55,6 +64,8 @@ const NotificationsScreen = () => {
     } catch (error) {
       console.error("Error fetching notifications:", error.message);
       return [];
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -69,6 +80,12 @@ const NotificationsScreen = () => {
         keyExtractor={(item) => item.id}
         style={styles.list}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={getNotifications}
+          />
+        }
       />
     </SafeAreaView>
   );
