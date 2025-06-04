@@ -12,8 +12,10 @@ import { useFocusEffect } from "@react-navigation/native";
 
 const NotificationItem = ({ item }) => (
   <View style={styles.notificationItem}>
-    <Text style={styles.notificationTitle}>{item.amount}</Text>
-    <Text style={styles.notificationMessage}>{item.payee.name}</Text>
+    <Text style={styles.notificationTitle}>
+      {item.payee.name} added {item.description}
+    </Text>
+    <Text style={styles.notificationMessage}>You owe £{item.amount}</Text>
     <Text style={styles.notificationTime}>{item.date}</Text>
   </View>
 );
@@ -40,6 +42,7 @@ const NotificationsScreen = () => {
         created_at,
         amount,
         is_paid,
+        description,
         housemate_id,
         payer_id,
         users:housemate_id (first_name)
@@ -55,6 +58,7 @@ const NotificationsScreen = () => {
         amount: expense.amount,
         date: expense.created_at,
         isPaid: expense.status,
+        description: expense.description,
         payee: {
           id: expense.housemate_id,
           name: expense.users?.first_name,
