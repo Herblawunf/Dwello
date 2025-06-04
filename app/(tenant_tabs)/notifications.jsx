@@ -18,7 +18,8 @@ const NotificationItem = ({ item }) => (
       {item.payee.name} added {item.description}
     </Text>
     <Text style={styles.notificationMessage}>
-      You {item.type == "receive" ? "will receive" : "owe"} £{item.amount}
+      You {item.type == "receive" ? "will receive" : "owe"} £
+      {item.amount.toFixed(2)}
     </Text>
     <Text style={styles.notificationTime}>{formatDate(item.date)}</Text>
   </View>
