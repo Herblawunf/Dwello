@@ -49,9 +49,8 @@ const NotificationsScreen = () => {
         amount,
         is_paid,
         description,
-        housemate_id,
         payer_id,
-        users:housemate_id (first_name)
+        users:payer_id (first_name)
       `
         )
         .eq("is_paid", false)
@@ -67,7 +66,7 @@ const NotificationsScreen = () => {
         description: expense.description,
         type: userId == expense.payer_id ? "receive" : "send",
         payee: {
-          id: expense.housemate_id,
+          id: expense.payer_id,
           name: userId == expense.payer_id ? "You" : expense.users?.first_name,
         },
       }));
