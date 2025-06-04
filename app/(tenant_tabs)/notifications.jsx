@@ -7,9 +7,10 @@ import {
   SafeAreaView,
   RefreshControl,
 } from "react-native";
-import { supabase } from "../../lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { useFocusEffect } from "@react-navigation/native";
 import { Context as AuthContext } from "@/context/AuthContext";
+import { formatDate } from "@/tools/formatDate";
 
 const NotificationItem = ({ item }) => (
   <View style={styles.notificationItem}>
@@ -19,7 +20,7 @@ const NotificationItem = ({ item }) => (
     <Text style={styles.notificationMessage}>
       You {item.type == "receive" ? "will receive" : "owe"} £{item.amount}
     </Text>
-    <Text style={styles.notificationTime}>{item.date}</Text>
+    <Text style={styles.notificationTime}>{formatDate(item.date)}</Text>
   </View>
 );
 
@@ -64,13 +65,36 @@ const NotificationsScreen = () => {
         date: expense.created_at,
         isPaid: expense.status,
         description: expense.description,
-        type: userId == expense.payer_id ? "send" : "receive",
+        type: userId == expense.payer_id ? "receive" : "send",
         payee: {
           id: expense.housemate_id,
-          name: userId == expense.payer_id ? expense.users?.first_name : "You",
+          name: userId == expense.payer_id ? "You" : expense.users?.first_name,
         },
       }));
-      setNotifications(items);
+
+      const combinedItems = items.reduce((acc, item) => {
+        if (item.type === "receive") {
+          const existingItem = acc.find(
+            (i) => i.type === "receive" && i.id === item.id
+          );
+
+          if (existingItem) {
+            // Combine amounts and keep the most recent date
+            existingItem.amount += item.amount;
+            existingItem.date =
+              new Date(existingItem.date) > new Date(item.date)
+                ? existingItem.date
+                : item.date;
+          } else {
+            acc.push({ ...item });
+          }
+        } else {
+          acc.push({ ...item });
+        }
+        return acc;
+      }, []);
+
+      setNotifications(combinedItems);
     } catch (error) {
       console.error("Error fetching notifications:", error.message);
       return [];
