@@ -11,7 +11,7 @@ export default function SettingsScreen() {
     console.log(authState.isSignedIn);
   };
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1, paddingTop: "10%" }}>
       <TouchableOpacity onPress={handleSignout}>
         <Text>Signout</Text>
       </TouchableOpacity>
