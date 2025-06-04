@@ -9,6 +9,8 @@ import {
   Keyboard,
   ScrollView,
   Animated,
+  TouchableOpacity,
+  Modal,
 } from "react-native";
 import { Context as AuthContext } from "@/context/AuthContext";
 import { Picker } from "@react-native-picker/picker";
@@ -27,6 +29,8 @@ const ExpensesScreen = () => {
   const { state: authState } = useContext(AuthContext);
   const userId = authState.userId;
   const [housemateBalances, setHousemateBalances] = useState([]);
+  const [selectedHousemate, setSelectedHousemate] = useState(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -34,9 +38,17 @@ const ExpensesScreen = () => {
     }, [])
   );
 
+  const handlePaymentConfirmation = (confirmed, id) => {
+    setShowPaymentModal(false);
+    if (confirmed) {
+      markExpenses(id);
+      getBalances();
+    }
+    setSelectedHousemate(null);
+  };
+
   const getBalances = async () => {
     try {
-      console.log(userId);
       const { data, error } = await supabase.rpc("get_housemate_balances", {
         p_user_id: userId,
       });
@@ -45,6 +57,21 @@ const ExpensesScreen = () => {
         return;
       }
       console.log(error);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const markExpenses = async (otherId) => {
+    try {
+      const { data, error } = await supabase.rpc("mark_expenses_paid", {
+        p_user1: userId,
+        p_user2: otherId,
+      });
+      console.log(data);
+      if (error) {
+        console.log(error);
+      }
     } catch (error) {
       console.log(error);
     }
@@ -223,7 +250,17 @@ const ExpensesScreen = () => {
           >
             {housemateBalances.length > 0 ? (
               housemateBalances.map((hm) => (
-                <View key={hm.id} style={styles.balanceItem}>
+                <TouchableOpacity
+                  key={hm.id}
+                  style={styles.balanceItem}
+                  onPress={() => {
+                    if (hm.balance < 0) {
+                      setSelectedHousemate(hm);
+                      setShowPaymentModal(true);
+                    }
+                  }}
+                  disabled={hm.balance >= 0}
+                >
                   <Text style={styles.housemateName}>{hm.first_name}</Text>
                   <Text
                     style={[
@@ -233,11 +270,12 @@ const ExpensesScreen = () => {
                         : hm.balance < 0
                         ? styles.negativeBalance
                         : styles.neutralBalance,
+                      hm.balance < 0 && styles.clickableBalance,
                     ]}
                   >
                     {formatBalanceText(hm.balance)}
                   </Text>
-                </View>
+                </TouchableOpacity>
               ))
             ) : (
               <Text style={styles.noBalancesText}>
@@ -245,6 +283,49 @@ const ExpensesScreen = () => {
               </Text>
             )}
           </ScrollView>
+
+          {/* Payment Confirmation Modal */}
+          <Modal
+            visible={showPaymentModal}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setShowPaymentModal(false)}
+          >
+            <TouchableOpacity
+              style={styles.modalOverlay}
+              onPress={() => setShowPaymentModal(false)}
+              activeOpacity={1}
+            >
+              <View style={styles.dropdownModal}>
+                {/* Text at the top */}
+                <Text style={styles.modalText}>
+                  Have you paid £
+                  {Math.abs(selectedHousemate?.balance).toFixed(2)} to{" "}
+                  {selectedHousemate?.first_name}?
+                </Text>
+
+                {/* Two button options */}
+                <View style={styles.modalButtonContainer}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.confirmButton]}
+                    onPress={() =>
+                      handlePaymentConfirmation(true, selectedHousemate?.id)
+                    }
+                  >
+                    <Text style={styles.modalButtonText}>Yes</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.cancelButton]}
+                    onPress={() =>
+                      handlePaymentConfirmation(false, selectedHousemate?.id)
+                    }
+                  >
+                    <Text style={styles.modalButtonText}>No</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </Modal>
         </View>
       </ScrollView>
     </View>
@@ -430,6 +511,39 @@ const styles = StyleSheet.create({
     color: "#6c757d",
     textAlign: "center",
     marginTop: 10,
+  },
+  dropdownButton: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    backgroundColor: "#fff",
+    padding: 15,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    height: 50,
+  },
+  modalButtonText: {
+    fontSize: 16,
+    color: "#333",
+  },
+  dropdownArrow: {
+    fontSize: 12,
+    color: "#666",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  dropdownModal: {
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    width: "80%",
+    maxHeight: 300,
+    borderWidth: 1,
+    borderColor: "#ddd",
   },
 });
 
