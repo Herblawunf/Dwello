@@ -15,6 +15,7 @@ import { Picker } from "@react-native-picker/picker";
 import { getHousemates } from "@/context/utils";
 import { supabase } from "../../lib/supabase";
 import { useFocusEffect } from "@react-navigation/native";
+import { responsiveFontSize } from "@/tools/fontscaling";
 import uuid from "react-native-uuid";
 
 const ExpensesScreen = () => {
@@ -216,29 +217,34 @@ const ExpensesScreen = () => {
         {/* Housemate Balances Section */}
         <View style={styles.balancesSection}>
           <Text style={styles.balancesTitle}>Housemate Balances</Text>
-          {housemateBalances.length > 0 ? (
-            housemateBalances.map((hm) => (
-              <View key={hm.id} style={styles.balanceItem}>
-                <Text style={styles.housemateName}>{hm.first_name}</Text>
-                <Text
-                  style={[
-                    styles.balanceAmount,
-                    hm.balance > 0
-                      ? styles.positiveBalance
-                      : hm.balance < 0
-                      ? styles.negativeBalance
-                      : styles.neutralBalance,
-                  ]}
-                >
-                  {formatBalanceText(hm.balance)}
-                </Text>
-              </View>
-            ))
-          ) : (
-            <Text style={styles.noBalancesText}>
-              No housemate balances to show yet.
-            </Text>
-          )}
+          <ScrollView
+            style={styles.balancesScrollView}
+            contentContainerStyle={styles.balancesScrollContent}
+          >
+            {housemateBalances.length > 0 ? (
+              housemateBalances.map((hm) => (
+                <View key={hm.id} style={styles.balanceItem}>
+                  <Text style={styles.housemateName}>{hm.first_name}</Text>
+                  <Text
+                    style={[
+                      styles.balanceAmount,
+                      hm.balance > 0
+                        ? styles.positiveBalance
+                        : hm.balance < 0
+                        ? styles.negativeBalance
+                        : styles.neutralBalance,
+                    ]}
+                  >
+                    {formatBalanceText(hm.balance)}
+                  </Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.noBalancesText}>
+                No housemate balances to show yet.
+              </Text>
+            )}
+          </ScrollView>
         </View>
       </ScrollView>
     </View>
@@ -375,7 +381,12 @@ const styles = StyleSheet.create({
     color: "#fff",
     lineHeight: 24,
   },
-  // Styles for Balances Section
+  balancesScrollView: {
+    maxHeight: responsiveFontSize(50) * 4,
+  },
+  balancesScrollContent: {
+    paddingHorizontal: 10, // optional padding
+  },
   balancesSection: {
     width: "100%", // Takes full width available from scrollContent's padding
     marginTop: 30, // Space above the balances section
@@ -389,6 +400,7 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start", // Align to the left
   },
   balanceItem: {
+    height: responsiveFontSize(50),
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
