@@ -34,9 +34,12 @@ const ExpensesScreen = () => {
         const { data: { user } } = await supabase.auth.getUser();
         let payer = paidBy === 'you' ? user.id : housemates.find(h => h === paidBy);
 
+        const uid = crypto.randomUUID();
+
         for (const housemate of housemates) {
             const splitAmount = splitMethod === 'equally' ? parseFloat(amount) / (housemates.length + 1) : parseFloat(amount);
             const expenseData = {
+                expense_id: uid,
                 created_at: new Date().toISOString(),
                 payer_id: payer,
                 housemate_id: housemate,
@@ -56,7 +59,7 @@ const ExpensesScreen = () => {
     };
 
     const userOptions = [
-        { label: 'You', value: 'you' },
+        { label: 'You', value: 'you'},
     ];
 
     const splitOptions = [

@@ -43,3 +43,13 @@ export const getHousematesNames = async () => {
         name: `${user.first_name} ${user.last_name}`
     }));
 }
+
+export const getName = async (uid) => {
+  const { data: user, error } = await supabase
+    .from("users")
+    .select("first_name, last_name")
+    .eq("id", uid)
+    .single();
+
+  return `${user.first_name} ${user.last_name}`;
+}
