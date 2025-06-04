@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
     View,
     Pressable,
@@ -7,17 +7,20 @@ import {
     StyleSheet,
     Platform,
     Keyboard,
-    ScrollView
+    ScrollView,
+    Animated
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { getHousemates } from '@/context/utils';
 import { supabase } from "../../lib/supabase";
+import uuid from 'react-native-uuid'
 
 const ExpensesScreen = () => {
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
     const [paidBy, setPaidBy] = useState('you');
     const [splitMethod, setSplitMethod] = useState('equally');
+    const scaleAnim = useRef(new Animated.Value(1)).current;
 
     const handleAmountChange = (text) => {
         const regex = /^\d*(\.\d{0,2})?$/;
@@ -26,7 +29,26 @@ const ExpensesScreen = () => {
         }
     };
 
+    const animateButton = () => {
+        Animated.sequence([
+            Animated.timing(scaleAnim, {
+                toValue: 0.9,
+                duration: 100,
+                useNativeDriver: true,
+            }),
+            Animated.timing(scaleAnim, {
+                toValue: 1,
+                duration: 100,
+                useNativeDriver: true,
+            }),
+        ]).start();
+    };
+
     const addExpense = async () => {
+        if (!amount || parseFloat(amount) <= 0) return;
+        
+        animateButton();
+        
         console.log("Adding expense");
         let housemates = await getHousemates();
         console.log(housemates);
@@ -34,7 +56,7 @@ const ExpensesScreen = () => {
         const { data: { user } } = await supabase.auth.getUser();
         let payer = paidBy === 'you' ? user.id : housemates.find(h => h === paidBy);
 
-        const uid = crypto.randomUUID();
+        const uid = uuid.v4();
 
         for (const housemate of housemates) {
             const splitAmount = splitMethod === 'equally' ? parseFloat(amount) / (housemates.length + 1) : parseFloat(amount);
@@ -56,6 +78,10 @@ const ExpensesScreen = () => {
                 console.error('Error adding expense:', error);
             }
         }
+
+        // Clear inputs after successful submission
+        setAmount('');
+        setDescription('');
     };
 
     const userOptions = [
@@ -137,9 +163,11 @@ const ExpensesScreen = () => {
                             </View>
                         </View>
 
-                        <Pressable style={styles.addButton} onPress={addExpense}>
-                            <Text style={styles.addButtonText}>＋</Text>
-                        </Pressable>
+                        <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+                            <Pressable style={styles.addButton} onPress={addExpense}>
+                                <Text style={styles.addButtonText}>＋</Text>
+                            </Pressable>
+                        </Animated.View>
                     </View>
                 </Pressable>
             </ScrollView>
@@ -241,7 +269,7 @@ const styles = StyleSheet.create({
         fontSize: 11,
         height: 32,
         color: '#333',
-        paddingHorizontal: 0,   // remove iOS row padding
+        paddingHorizontal: 0,
         paddingVertical: 0,
     },
     addButton: {
