@@ -37,60 +37,48 @@ export default function TabLayout() {
           ),
         }}
       />
-      {
-        <Tabs.Screen
-          name="notifications"
-          options={{
-            title: "Notifications",
-            tabBarIcon: ({ color }) => (
-              <IconSymbol size={28} name="paperplane.fill" color={color} />
-            ),
-          }}
-        />
-      }
-      ,
-      {
-        <Tabs.Screen
-          name="contact"
-          options={{
-            title: "Contact",
-            tabBarIcon: ({ color }) => (
-              <IconSymbol size={28} name="envelope.fill" color={color} />
-            ),
-          }}
-        />
-      }
-      ,
-      {
-        <Tabs.Screen
-          name="chat"
-          options={{
-            title: "Chat",
-            tabBarIcon: ({ color }) => (
-              <IconSymbol size={28} name="chat.bubble.fill" color={color} />
-            ),
-          }}
-        />
-      }
-      ,
-      {
-        <Tabs.Screen
-          name="expenses"
-          options={{
-            title: "Expenses",
-            tabBarIcon: ({ color }) => (
-              <IconSymbol size={28} name="chat.bubble.fill" color={color} />
-            ),
-          }}
-        />
-      }
-      ,
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          title: "Notifications",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="bell.fill" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="contact"
+        options={{
+          title: "Contact",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="envelope.fill" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="chat"
+        options={{
+          title: "Chat",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="message.fill" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="expenses"
+        options={{
+          title: "Expenses",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="creditcard.fill" color={color} />
+          ),
+        }}
+      />
       <Tabs.Screen
         name="settings"
         options={{
           title: "Settings",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="envelope.fill" color={color} />
+            <IconSymbol size={28} name="gearshape.fill" color={color} />
           ),
         }}
       />
