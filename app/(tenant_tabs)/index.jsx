@@ -1,8 +1,117 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { supabase } from '@/lib/supabase';
+import { getHousemates } from '../../context/utils';
+import { useRouter } from 'expo-router'; // Import useRouter
+
+const rentDue = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: house_id } = await supabase
+            .from("tenants")
+            .select("house_id")
+            .eq("tenant_id", user.id)
+            .single();
+
+    if (!house_id) {
+        console.warn("No house_id found for user.");
+        return 0;
+    }
+
+    const { data: house_info } = await supabase
+            .from("houses")
+            .select("*")
+            .eq("house_id", house_id.house_id)
+            .single();
+
+    if (!house_info) {
+        console.warn("No house_info found for house_id:", house_id.house_id);
+        return 0;
+    }
+
+    const next_payment = house_info.next_payment;
+    const rent_per_period = house_info.monthly_rent * house_info.months_per_payment;
+
+    const today = new Date();
+    const paymentDate = new Date(next_payment);
+
+    const housemates = await getHousemates();
+    const numHousemates = housemates.length + 1;
+    const split = 1.0 / numHousemates;
+
+    return paymentDate <= today ? rent_per_period * split : 0;
+
+}
+
+const daysToRent = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: house_id } = await supabase
+            .from("tenants")
+            .select("house_id")
+            .eq("tenant_id", user.id)
+            .single();
+    
+    if (!house_id) {
+        console.warn("No house_id found for user.");
+        return -1; // Or some other default/error value
+    }
+
+    const { data: house_info } = await supabase
+            .from("houses")
+            .select("*")
+            .eq("house_id", house_id.house_id)
+            .single();
+
+    if (!house_info) {
+        console.warn("No house_info found for house_id:", house_id.house_id);
+        return -1; // Or some other default/error value
+    }
+
+    const next_payment = house_info.next_payment;
+
+    const today = new Date();
+    const paymentDate = new Date(next_payment);
+    
+    const timeDiff = paymentDate.getTime() - today.getTime();
+    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    
+    return daysDiff;
+}
 
 export default function HomeScreen() {
+    const [due, setDue] = useState(0);
+    const [dueIn, setDueIn] = useState(-1);
+    const router = useRouter(); // Initialize router
+    
+    useEffect(() => {
+        const fetchRentDue = async () => {
+            const amount = await rentDue();
+            setDue(amount);
+        };
+        fetchRentDue();
+    }, []);
+
+    useEffect(() => {
+        const fetchDaysToRent = async () => {
+            const days = await daysToRent();
+            setDueIn(days);
+        }
+        fetchDaysToRent();
+    }, []);
+
+    const handleReportRepair = () => {
+        // Assuming your contact screen is routed as '/contact'
+        // If contact.jsx is in (tenant_tabs), the path might be '/(tenant_tabs)/contact'
+        // or simply 'contact' if it's a sibling route.
+        // Adjust the path as per your file structure and routing setup.
+        router.push('/contact'); 
+    };
+
+    const handleAddExpenses = () => {
+        // Adjust the path as per your file structure and routing setup for expenses.jsx
+        router.push('/expenses'); 
+    };
+
     return (
         <View style={styles.container}>
             {/* Header */}
@@ -11,7 +120,7 @@ export default function HomeScreen() {
             {/* Balance Section */}
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Balance due</Text>
-                <Text style={styles.balanceAmount}>£1,247.50</Text>
+                <Text style={styles.balanceAmount}>£{due.toFixed(2)}</Text>
             </View>
             
             {/* Splits Section */}
@@ -23,19 +132,19 @@ export default function HomeScreen() {
             {/* Notifications Section */}
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Notifications</Text>
-                <Text style={styles.notificationText}>Rent payment due in 3 days</Text>
+                <Text style={styles.notificationText}>Rent payment due {dueIn > 0 ? `in ${dueIn} days` : dueIn === 0 ? "today" : "now"}</Text>
             </View>
             
             {/* Quick Actions Section */}
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Quick actions</Text>
                 <View style={styles.quickActionsContainer}>
-                    <TouchableOpacity style={styles.actionButton}>
+                    <TouchableOpacity style={styles.actionButton} onPress={handleReportRepair}>
                         <Ionicons name="build-outline" size={24} color="#666" />
                         <Text style={styles.actionText}>Report repair</Text>
                     </TouchableOpacity>
                     
-                    <TouchableOpacity style={styles.actionButton}>
+                    <TouchableOpacity style={styles.actionButton} onPress={handleAddExpenses}>
                         <Ionicons name="add-circle-outline" size={24} color="#666" />
                         <Text style={styles.actionText}>Add expenses</Text>
                     </TouchableOpacity>
