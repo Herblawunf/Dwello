@@ -12,12 +12,15 @@ import {
     Keyboard,
     ScrollView
 } from 'react-native';
+import { supabase } from '@/lib/supabase';
 
 export default function Contact() {
     const [reason, setReason] = useState('');
+    const [priority, setPriority] = useState(-1);
     const [message, setMessage] = useState('');
     const [attachments, setAttachments] = useState([]);
-    const [showDropdown, setShowDropdown] = useState(false);
+    const [showReasonDropdown, setShowReasonDropdown] = useState(false);
+    const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
 
     const reasons = [
         { label: 'General Inquiry', value: 'general' },
@@ -25,11 +28,36 @@ export default function Contact() {
         { label: 'Other', value: 'other' },
     ];
 
-    const handleSend = () => {
+    const priorities = [
+        { label: 'Low', value: 0, color: '#4CAF50' },
+        { label: 'Medium', value: 1, color: '#FF9800' },
+        { label: 'High', value: 2, color: '#F44336' },
+    ];
+
+    const handleSend = async () => {
         // Dismiss keyboard before showing alert
         Keyboard.dismiss();
+
+        const { data: { user } } = await supabase.auth.getUser();
+
+        const requestData = {
+            user_id: user.id,
+            reason: reason,
+            priority: priority,
+            description: message,
+        }
+
+        const { error } = await supabase
+                        .from('requests')
+                        .insert(requestData);
+        
+        if (error) {
+            console.error('Error adding request:', error);
+        }
+
         // Clear form
         setReason('');
+        setPriority(-1);
         setMessage('');
         setAttachments([]);
         Alert.alert('Success', 'Message sent successfully!');
@@ -42,6 +70,11 @@ export default function Contact() {
 
     const dismissKeyboard = () => {
         Keyboard.dismiss();
+    };
+
+    const getPriorityColor = () => {
+        const selectedPriority = priorities.find(p => p.value === priority);
+        return selectedPriority ? selectedPriority.color : '#666';
     };
 
     return (
@@ -60,7 +93,7 @@ export default function Contact() {
                             style={styles.dropdownButton} 
                             onPress={() => {
                                 Keyboard.dismiss();
-                                setShowDropdown(true);
+                                setShowReasonDropdown(true);
                             }}
                         >
                             <Text style={styles.dropdownText}>
@@ -70,15 +103,37 @@ export default function Contact() {
                         </TouchableOpacity>
                     </View>
 
+                    <View style={styles.section}>
+                        <Text style={styles.label}>Priority Level</Text>
+                        <TouchableOpacity 
+                            style={styles.dropdownButton} 
+                            onPress={() => {
+                                Keyboard.dismiss();
+                                setShowPriorityDropdown(true);
+                            }}
+                        >
+                            <View style={styles.priorityContainer}>
+                                {priority && (
+                                    <View style={[styles.priorityDot, { backgroundColor: getPriorityColor() }]} />
+                                )}
+                                <Text style={styles.dropdownText}>
+                                    {priority ? priorities.find(p => p.value === priority)?.label : 'Select priority...'}
+                                </Text>
+                            </View>
+                            <Text style={styles.dropdownArrow}>▼</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Reason Dropdown Modal */}
                     <Modal
-                        visible={showDropdown}
+                        visible={showReasonDropdown}
                         transparent={true}
                         animationType="fade"
-                        onRequestClose={() => setShowDropdown(false)}
+                        onRequestClose={() => setShowReasonDropdown(false)}
                     >
                         <TouchableOpacity 
                             style={styles.modalOverlay} 
-                            onPress={() => setShowDropdown(false)}
+                            onPress={() => setShowReasonDropdown(false)}
                         >
                             <View style={styles.dropdownModal}>
                                 <FlatList
@@ -89,10 +144,44 @@ export default function Contact() {
                                             style={styles.dropdownItem}
                                             onPress={() => {
                                                 setReason(item.value);
-                                                setShowDropdown(false);
+                                                setShowReasonDropdown(false);
                                             }}
                                         >
                                             <Text style={styles.dropdownItemText}>{item.label}</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                />
+                            </View>
+                        </TouchableOpacity>
+                    </Modal>
+
+                    {/* Priority Dropdown Modal */}
+                    <Modal
+                        visible={showPriorityDropdown}
+                        transparent={true}
+                        animationType="fade"
+                        onRequestClose={() => setShowPriorityDropdown(false)}
+                    >
+                        <TouchableOpacity 
+                            style={styles.modalOverlay} 
+                            onPress={() => setShowPriorityDropdown(false)}
+                        >
+                            <View style={styles.dropdownModal}>
+                                <FlatList
+                                    data={priorities}
+                                    keyExtractor={(item) => item.value}
+                                    renderItem={({ item }) => (
+                                        <TouchableOpacity
+                                            style={styles.dropdownItem}
+                                            onPress={() => {
+                                                setPriority(item.value);
+                                                setShowPriorityDropdown(false);
+                                            }}
+                                        >
+                                            <View style={styles.priorityItemContainer}>
+                                                <View style={[styles.priorityDot, { backgroundColor: item.color }]} />
+                                                <Text style={styles.dropdownItemText}>{item.label}</Text>
+                                            </View>
                                         </TouchableOpacity>
                                     )}
                                 />
@@ -175,6 +264,20 @@ const styles = StyleSheet.create({
     dropdownArrow: {
         fontSize: 12,
         color: '#666',
+    },
+    priorityContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    priorityDot: {
+        width: 12,
+        height: 12,
+        borderRadius: 6,
+        marginRight: 8,
+    },
+    priorityItemContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     modalOverlay: {
         flex: 1,
