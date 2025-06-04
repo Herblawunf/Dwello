@@ -107,6 +107,11 @@ export default function HomeScreen() {
         router.push('/contact'); 
     };
 
+    const handleAddExpenses = () => {
+        // Adjust the path as per your file structure and routing setup for expenses.jsx
+        router.push('/expenses'); 
+    };
+
     return (
         <View style={styles.container}>
             {/* Header */}
@@ -139,7 +144,7 @@ export default function HomeScreen() {
                         <Text style={styles.actionText}>Report repair</Text>
                     </TouchableOpacity>
                     
-                    <TouchableOpacity style={styles.actionButton}>
+                    <TouchableOpacity style={styles.actionButton} onPress={handleAddExpenses}>
                         <Ionicons name="add-circle-outline" size={24} color="#666" />
                         <Text style={styles.actionText}>Add expenses</Text>
                     </TouchableOpacity>
