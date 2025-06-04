@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
 import { getHousemates } from '../../context/utils';
+import { useRouter } from 'expo-router'; // Import useRouter
 
 const rentDue = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -12,14 +13,22 @@ const rentDue = async () => {
             .eq("tenant_id", user.id)
             .single();
 
+    if (!house_id) {
+        console.warn("No house_id found for user.");
+        return 0;
+    }
+
     const { data: house_info } = await supabase
             .from("houses")
             .select("*")
             .eq("house_id", house_id.house_id)
             .single();
 
-    console.log("HOUSE INFO");
-    console.log(house_info);
+    if (!house_info) {
+        console.warn("No house_info found for house_id:", house_id.house_id);
+        return 0;
+    }
+
     const next_payment = house_info.next_payment;
     const rent_per_period = house_info.monthly_rent * house_info.months_per_payment;
 
@@ -41,12 +50,22 @@ const daysToRent = async () => {
             .select("house_id")
             .eq("tenant_id", user.id)
             .single();
+    
+    if (!house_id) {
+        console.warn("No house_id found for user.");
+        return -1; // Or some other default/error value
+    }
 
     const { data: house_info } = await supabase
             .from("houses")
             .select("*")
             .eq("house_id", house_id.house_id)
             .single();
+
+    if (!house_info) {
+        console.warn("No house_info found for house_id:", house_id.house_id);
+        return -1; // Or some other default/error value
+    }
 
     const next_payment = house_info.next_payment;
 
@@ -62,6 +81,7 @@ const daysToRent = async () => {
 export default function HomeScreen() {
     const [due, setDue] = useState(0);
     const [dueIn, setDueIn] = useState(-1);
+    const router = useRouter(); // Initialize router
     
     useEffect(() => {
         const fetchRentDue = async () => {
@@ -78,6 +98,14 @@ export default function HomeScreen() {
         }
         fetchDaysToRent();
     }, []);
+
+    const handleReportRepair = () => {
+        // Assuming your contact screen is routed as '/contact'
+        // If contact.jsx is in (tenant_tabs), the path might be '/(tenant_tabs)/contact'
+        // or simply 'contact' if it's a sibling route.
+        // Adjust the path as per your file structure and routing setup.
+        router.push('/contact'); 
+    };
 
     return (
         <View style={styles.container}>
@@ -99,14 +127,14 @@ export default function HomeScreen() {
             {/* Notifications Section */}
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Notifications</Text>
-                <Text style={styles.notificationText}>Rent payment due {dueIn > 0 ? `in ${dueIn} days` : "now"}</Text>
+                <Text style={styles.notificationText}>Rent payment due {dueIn > 0 ? `in ${dueIn} days` : dueIn === 0 ? "today" : "now"}</Text>
             </View>
             
             {/* Quick Actions Section */}
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Quick actions</Text>
                 <View style={styles.quickActionsContainer}>
-                    <TouchableOpacity style={styles.actionButton}>
+                    <TouchableOpacity style={styles.actionButton} onPress={handleReportRepair}>
                         <Ionicons name="build-outline" size={24} color="#666" />
                         <Text style={styles.actionText}>Report repair</Text>
                     </TouchableOpacity>
