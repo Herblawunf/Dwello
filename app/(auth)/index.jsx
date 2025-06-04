@@ -53,7 +53,7 @@ const styles = StyleSheet.create({
   },
   button: {
     padding: "3%",
-    borderRadius: 5,
+    borderRadius: responsiveFontSize(10),
     alignItems: "center",
     marginBottom: "15%",
     width: "85%",
