@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react'; // Added useEffect for potential future use, though not strictly needed for placeholders
 import {
     View,
     Pressable,
@@ -21,6 +21,27 @@ const ExpensesScreen = () => {
     const [paidBy, setPaidBy] = useState('you');
     const [splitMethod, setSplitMethod] = useState('equally');
     const scaleAnim = useRef(new Animated.Value(1)).current;
+
+    // Placeholder data for housemate balances
+    const [housemateBalances, setHousemateBalances] = useState([
+        { id: 'hm1', name: 'Alice Wonderland', balance: 25.50 },
+        { id: 'hm2', name: 'Bob The Builder', balance: -10.00 },
+        { id: 'hm3', name: 'Charlie Chaplin', balance: 0 },
+        { id: 'hm4', name: 'Diana Ross', balance: 5.75 },
+        { id: 'hm5', name: 'Edward Scissorhands', balance: -30.20 },
+    ]);
+
+    // Helper function to format balance display and text
+    const formatBalanceText = (balance) => {
+        if (balance > 0) {
+            return `Owes you: $${balance.toFixed(2)}`;
+        } else if (balance < 0) {
+            return `You owe: $${Math.abs(balance).toFixed(2)}`;
+        } else {
+            return `Settled up: $0.00`;
+        }
+    };
+
 
     const handleAmountChange = (text) => {
         const regex = /^\d*(\.\d{0,2})?$/;
@@ -79,7 +100,6 @@ const ExpensesScreen = () => {
             }
         }
 
-        // Clear inputs after successful submission
         setAmount('');
         setDescription('');
     };
@@ -101,6 +121,7 @@ const ExpensesScreen = () => {
                 keyboardShouldPersistTaps="handled"
             >
                 <Pressable onPress={Keyboard.dismiss} style={styles.pressableWrapper}>
+                    <Text style={styles.title}>Add expense</Text>
                     {/* Top Inputs */}
                     <View style={styles.inputSection}>
                         <TextInput
@@ -170,6 +191,28 @@ const ExpensesScreen = () => {
                         </Animated.View>
                     </View>
                 </Pressable>
+
+                {/* Housemate Balances Section */}
+                <View style={styles.balancesSection}>
+                    <Text style={styles.balancesTitle}>Housemate Balances</Text>
+                    {housemateBalances.length > 0 ? (
+                        housemateBalances.map((hm) => (
+                            <View key={hm.id} style={styles.balanceItem}>
+                                <Text style={styles.housemateName}>{hm.name}</Text>
+                                <Text style={[
+                                    styles.balanceAmount,
+                                    hm.balance > 0 ? styles.positiveBalance : 
+                                    hm.balance < 0 ? styles.negativeBalance : 
+                                    styles.neutralBalance
+                                ]}>
+                                    {formatBalanceText(hm.balance)}
+                                </Text>
+                            </View>
+                        ))
+                    ) : (
+                        <Text style={styles.noBalancesText}>No housemate balances to show yet.</Text>
+                    )}
+                </View>
             </ScrollView>
         </View>
     );
@@ -185,15 +228,24 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingHorizontal: 20,
-        paddingTop: 60,
-        paddingBottom: 40,
-        alignItems: 'center',
-        minHeight: '100%',
-        justifyContent: 'flex-start',
+        paddingTop: Platform.OS === 'ios' ? 60 : 20,
+        paddingBottom: 40, // Ensure space at the bottom for scroll
+        alignItems: 'center', // This centers children like pressableWrapper and balancesSection
+        // minHeight: '100%', // Can be removed if content naturally fills height or scrolling is desired
+        // justifyContent: 'flex-start', // Default, good
     },
     pressableWrapper: {
-        width: '100%',
-        alignItems: 'center',
+        width: '100%', // Takes full width available from scrollContent's padding
+        alignItems: 'center', // Centers its own children if they don't have full width
+        marginBottom: 20, // Add some space before the balances section
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: '600',
+        color: '#333',
+        marginBottom: 30,
+        alignSelf: 'flex-start',
+        paddingHorizontal: 5, 
     },
     inputSection: {
         width: '100%',
@@ -231,6 +283,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         width: '100%',
         marginTop: 10,
+        paddingHorizontal: 5, // Align with title if it has padding
     },
     splitDetailsContainer: {
         flexDirection: 'row',
@@ -240,7 +293,7 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         paddingHorizontal: 12,
         borderRadius: 8,
-        flex: 1,
+        flex: 1, // Takes available space
     },
     splitText: {
         fontSize: 10,
@@ -295,6 +348,50 @@ const styles = StyleSheet.create({
         color: '#fff',
         lineHeight: 24,
     },
+    // Styles for Balances Section
+    balancesSection: {
+        width: '100%', // Takes full width available from scrollContent's padding
+        marginTop: 30, // Space above the balances section
+        paddingHorizontal: 5, // Consistent padding with title
+    },
+    balancesTitle: {
+        fontSize: 20, // Slightly smaller than main title
+        fontWeight: '600',
+        color: '#333',
+        marginBottom: 15,
+        alignSelf: 'flex-start', // Align to the left
+    },
+    balanceItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f0f0f0', // Lighter border color
+    },
+    housemateName: {
+        fontSize: 15,
+        color: '#555', // Slightly lighter text color
+    },
+    balanceAmount: {
+        fontSize: 15,
+        fontWeight: '500',
+    },
+    positiveBalance: {
+        color: '#28a745', // Green
+    },
+    negativeBalance: {
+        color: '#dc3545', // Red
+    },
+    neutralBalance: {
+        color: '#6c757d', // Gray
+    },
+    noBalancesText: {
+        fontSize: 14,
+        color: '#6c757d',
+        textAlign: 'center',
+        marginTop: 10,
+    }
 });
 
 export default ExpensesScreen;
