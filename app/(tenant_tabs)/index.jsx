@@ -1,8 +1,45 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { supabase } from '@/lib/supabase';
+
+const rentDue = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: house_id } = await supabase
+            .from("tenants")
+            .select("house_id")
+            .eq("tenant_id", user.id)
+            .single();
+
+    const { data: house_info } = await supabase
+            .from("houses")
+            .select("*")
+            .eq("house_id", house_id.house_id)
+            .single();
+
+    console.log("HOUSE INFO");
+    console.log(house_info);
+    const next_payment = house_info.next_payment;
+    const rent_per_period = house_info.monthly_rent * house_info.months_per_payment;
+
+    const today = new Date();
+    const paymentDate = new Date(next_payment);
+
+    return paymentDate <= today ? rent_per_period : 0;
+
+}
 
 export default function HomeScreen() {
+    const [due, setDue] = useState(0);
+    
+    useEffect(() => {
+        const fetchRentDue = async () => {
+            const amount = await rentDue();
+            setDue(amount);
+        };
+        fetchRentDue();
+    }, []);
+
     return (
         <View style={styles.container}>
             {/* Header */}
@@ -11,7 +48,7 @@ export default function HomeScreen() {
             {/* Balance Section */}
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Balance due</Text>
-                <Text style={styles.balanceAmount}>£1,247.50</Text>
+                <Text style={styles.balanceAmount}>${due}</Text>
             </View>
             
             {/* Splits Section */}
