@@ -124,7 +124,7 @@ export default function HomeScreen() {
     }, [getBalance])
   );
 
-  const getBalance = async () => {
+  const getBalance = useCallback(async () => {
     try {
       const { data, error } = await supabase.rpc("get_housemate_balances", {
         p_user_id: userId,
@@ -137,7 +137,7 @@ export default function HomeScreen() {
     } catch (error) {
       console.log(error);
     }
-  };
+  }, [userId]);
 
   const handleReportRepair = () => {
     // Assuming your contact screen is routed as '/contact'

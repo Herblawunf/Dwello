@@ -67,7 +67,7 @@ function AuthRouter() {
   // Attempt silent login on mount
   useEffect(() => {
     tryLocalLogin();
-  }, []);
+  }, [tryLocalLogin]);
 
   // Handle navigation based on auth state
   useEffect(() => {
