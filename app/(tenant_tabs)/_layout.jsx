@@ -1,8 +1,8 @@
 import { Tabs } from "expo-router";
 import { Platform } from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
 
 import { HapticTab } from "@/components/HapticTab";
-import { IconSymbol } from "@/components/ui/IconSymbol";
 import TabBarBackground from "@/components/ui/TabBarBackground";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
@@ -32,7 +32,7 @@ export default function TabLayout() {
           title: "Home",
           headerShown: false,
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="house.fill" color={color} />
+            <MaterialIcons name="home" size={28} color={color} />
           ),
         }}
       />
@@ -41,7 +41,7 @@ export default function TabLayout() {
         options={{
           title: "Notifications",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="bell.fill" color={color} />
+            <MaterialIcons name="notifications" size={28} color={color} />
           ),
         }}
       />
@@ -50,7 +50,7 @@ export default function TabLayout() {
         options={{
           title: "Chat",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="message.fill" color={color} />
+            <MaterialIcons name="chat" size={28} color={color} />
           ),
         }}
       />
@@ -59,7 +59,7 @@ export default function TabLayout() {
         options={{
           title: "Expenses",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="creditcard.fill" color={color} />
+            <MaterialIcons name="credit-card" size={28} color={color} />
           ),
         }}
       />
@@ -68,7 +68,7 @@ export default function TabLayout() {
         options={{
           title: "Settings",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="gearshape.fill" color={color} />
+            <MaterialIcons name="settings" size={28} color={color} />
           ),
         }}
       />
@@ -77,7 +77,7 @@ export default function TabLayout() {
         options={{
           title: "Requests",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="gearshape.fill" color={color} />
+            <MaterialIcons name="build" size={28} color={color} />
           ),
         }}
       />
