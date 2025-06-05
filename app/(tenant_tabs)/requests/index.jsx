@@ -11,9 +11,11 @@ import {
   Platform,
 } from "react-native";
 import { router } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function Requests() {
   const [activeTab, setActiveTab] = useState("pending");
+  const insets = useSafeAreaInsets();
 
   // Mock data - replace with actual API call
   const [requests] = useState([
@@ -139,7 +141,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
-    paddingTop: Platform.OS === "ios" ? 60 : 20,
+    paddingTop:
+      Platform.OS === "android" ? StatusBar.currentHeight : insets.top,
   },
   tabBar: {
     flexDirection: "row",
