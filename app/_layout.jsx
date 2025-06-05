@@ -80,7 +80,7 @@ function AuthRouter() {
       : "/(auth)";
 
     router.replace(route);
-  }, [isSignedIn, landlord, hasAttemptedLocalLogin]);
+  }, [isSignedIn, landlord, hasAttemptedLocalLogin, router]);
 
   if (!hasAttemptedLocalLogin) return <LoadingScreen />;
 
