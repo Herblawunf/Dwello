@@ -153,7 +153,7 @@ export default function HomeScreen() {
   };
 
   const handleGoToChat = () => {
-    router.push("/chat");
+    router.push("/chats");
   };
 
   return (
