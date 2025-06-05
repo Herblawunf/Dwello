@@ -62,7 +62,7 @@ jobs:
       - name: Build android on EAS
         if: github.ref == 'refs/heads/main'
         run: |
-          eas build --platform android --profile production --non-interactive
+          eas build --platform android --profile production --non-interactive --local
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
