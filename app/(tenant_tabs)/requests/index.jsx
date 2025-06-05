@@ -1,5 +1,4 @@
-import { Stack } from "expo-router";
-import { useState } from "react";
+import { useState, useCallback, useContext } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
 import {
   View,
@@ -7,36 +6,45 @@ import {
   TouchableOpacity,
   FlatList,
   StyleSheet,
+  SafeAreaView,
+  StatusBar,
+  Platform,
 } from "react-native";
 import { router } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
+import { Context as AuthContext } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabase";
 
 export default function Requests() {
   const [activeTab, setActiveTab] = useState("pending");
+  const insets = useSafeAreaInsets();
+  const [requests, setRequests] = useState([]);
+  const {
+    state: { userId },
+  } = useContext(AuthContext);
 
-  // Mock data - replace with actual API call
-  const [requests] = useState([
-    {
-      id: "1",
-      created_at: new Date(),
-      description: "Broken sink faucet",
-      priority: 2,
-      is_completed: false,
-    },
-    {
-      id: "2",
-      created_at: new Date(),
-      description: "Light bulb needs replacement",
-      priority: 0,
-      is_completed: false,
-    },
-    {
-      id: "3",
-      created_at: new Date(),
-      description: "Light bulb needs replacement",
-      priority: 0,
-      is_completed: true,
-    },
-  ]);
+  const getHouseRequests = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.rpc("get_house_requests", {
+        p_tenant_id: userId,
+      });
+      if (data) {
+        setRequests(data);
+        console.log(data);
+        return;
+      }
+      console.error(error);
+    } catch (error) {
+      console.error(error);
+    }
+  }, [userId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      getHouseRequests();
+    }, [getHouseRequests])
+  );
 
   const getPriorityText = (priority) => {
     switch (priority) {
@@ -67,12 +75,17 @@ export default function Requests() {
         </Text>
       </View>
       <Text style={styles.description}>{item.description}</Text>
+      <View style={styles.requestDetails}>
+        <Text style={styles.requestInfo}>
+          By: {item.poster_first_name} {item.poster_last_name}
+        </Text>
+      </View>
       <View style={styles.requestFooter}>
         <TouchableOpacity style={styles.footerButton} onPress={() => {}}>
           <MaterialIcons name="comment" size={20} color="#757575" />
           <Text style={styles.footerButtonText}>Comments</Text>
         </TouchableOpacity>
-        {!item.is_completed && (
+        {item.is_complete === "sent" && (
           <TouchableOpacity style={styles.footerButton} onPress={() => {}}>
             <MaterialIcons name="check" size={20} color="#757575" />
             <Text style={styles.footerButtonText}>Mark completed</Text>
@@ -83,7 +96,15 @@ export default function Requests() {
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        {
+          paddingTop:
+            Platform.OS === "android" ? StatusBar.currentHeight : insets.top,
+        },
+      ]}
+    >
       <View style={styles.tabBar}>
         <TouchableOpacity
           style={[styles.tab, activeTab === "pending" && styles.activeTab]}
@@ -113,10 +134,10 @@ export default function Requests() {
 
       <FlatList
         data={requests.filter(
-          (r) => r.is_completed === (activeTab === "completed")
+          (r) => (r.is_complete === "seen") === (activeTab === "completed")
         )}
         renderItem={renderRequest}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.request_id}
         style={styles.list}
         contentContainerStyle={styles.listContent}
       />
@@ -129,7 +150,7 @@ export default function Requests() {
           <Text style={styles.addButtonText}>Add maintenance request</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -191,6 +212,16 @@ const styles = StyleSheet.create({
   description: {
     fontSize: 14,
     color: "#212121",
+  },
+  requestDetails: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  requestInfo: {
+    fontSize: 12,
+    color: "#757575",
   },
   requestFooter: {
     flexDirection: "row",
