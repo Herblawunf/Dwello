@@ -59,7 +59,7 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Build iOS on EAS
+      - name: Build android on EAS
         if: github.ref == 'refs/heads/main'
         run: |
           eas build --platform android --profile production --non-interactive
