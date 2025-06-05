@@ -46,15 +46,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="contact"
-        options={{
-          title: "Contact",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="envelope.fill" color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="chat"
         options={{
           title: "Chat",
@@ -76,6 +67,15 @@ export default function TabLayout() {
         name="settings"
         options={{
           title: "Settings",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="gearshape.fill" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="requests"
+        options={{
+          title: "Requests",
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="gearshape.fill" color={color} />
           ),
