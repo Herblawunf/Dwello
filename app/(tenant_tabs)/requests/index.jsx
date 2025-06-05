@@ -87,7 +87,15 @@ export default function Requests() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        {
+          paddingTop:
+            Platform.OS === "android" ? StatusBar.currentHeight : insets.top,
+        },
+      ]}
+    >
       <View style={styles.tabBar}>
         <TouchableOpacity
           style={[styles.tab, activeTab === "pending" && styles.activeTab]}
@@ -141,8 +149,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
-    paddingTop:
-      Platform.OS === "android" ? StatusBar.currentHeight : insets.top,
   },
   tabBar: {
     flexDirection: "row",
