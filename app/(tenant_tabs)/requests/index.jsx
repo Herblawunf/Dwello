@@ -9,6 +9,7 @@ import {
   SafeAreaView,
   StatusBar,
   Platform,
+  Modal,
 } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -19,6 +20,8 @@ import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 
 export default function Requests() {
   const [activeTab, setActiveTab] = useState("pending");
+  const [sortBy, setSortBy] = useState("time");
+  const [sortMenuVisible, setSortMenuVisible] = useState(false);
   const insets = useSafeAreaInsets();
   const [requests, setRequests] = useState([]);
   const {
@@ -59,6 +62,17 @@ export default function Requests() {
       default:
         return { text: "Unknown Priority", color: "#9E9E9E" };
     }
+  };
+
+  const sortRequests = (requestsToSort) => {
+    if (sortBy === "time") {
+      return [...requestsToSort].sort((a, b) =>
+        new Date(b.created_at) - new Date(a.created_at)
+      );
+    } else if (sortBy === "priority") {
+      return [...requestsToSort].sort((a, b) => b.priority - a.priority);
+    }
+    return requestsToSort;
   };
 
   const renderRequest = ({ item }) => (
@@ -105,36 +119,82 @@ export default function Requests() {
         },
       ]}
     >
-      <View style={styles.tabBar}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "pending" && styles.activeTab]}
-          onPress={() => setActiveTab("pending")}
-        >
-          <Text
-            style={
-              activeTab === "pending" ? styles.activeTabText : styles.tabText
-            }
+      <View style={styles.header}>
+        <View style={styles.tabBar}>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "pending" && styles.activeTab]}
+            onPress={() => setActiveTab("pending")}
           >
-            Pending
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "completed" && styles.activeTab]}
-          onPress={() => setActiveTab("completed")}
-        >
-          <Text
-            style={
-              activeTab === "completed" ? styles.activeTabText : styles.tabText
-            }
+            <Text
+              style={
+                activeTab === "pending" ? styles.activeTabText : styles.tabText
+              }
+            >
+              Pending
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "completed" && styles.activeTab]}
+            onPress={() => setActiveTab("completed")}
           >
-            Completed
-          </Text>
+            <Text
+              style={
+                activeTab === "completed" ? styles.activeTabText : styles.tabText
+              }
+            >
+              Completed
+            </Text>
+          </TouchableOpacity>
+        </View>
+        <TouchableOpacity
+          style={styles.sortButton}
+          onPress={() => setSortMenuVisible(true)}
+        >
+          <MaterialIcons name="sort" size={24} color="#757575" />
         </TouchableOpacity>
       </View>
 
+      <Modal
+        visible={sortMenuVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setSortMenuVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setSortMenuVisible(false)}
+        >
+          <View style={styles.sortMenu}>
+            <TouchableOpacity
+              style={styles.sortMenuItem}
+              onPress={() => {
+                setSortBy("time");
+                setSortMenuVisible(false);
+              }}
+            >
+              <MaterialIcons name="schedule" size={20} color="#757575" />
+              <Text style={styles.sortMenuText}>Sort by Time</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.sortMenuItem}
+              onPress={() => {
+                setSortBy("priority");
+                setSortMenuVisible(false);
+              }}
+            >
+              <MaterialIcons name="flag" size={20} color="#757575" />
+              <Text style={styles.sortMenuText}>Sort by Priority</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       <FlatList
-        data={requests.filter(
-          (r) => (r.status === "completed") === (activeTab === "completed")
+        data={sortRequests(
+          requests.filter(
+            (r) => (r.status === "completed") === (activeTab === "completed")
+          )
         )}
         renderItem={renderRequest}
         keyExtractor={(item) => item.request_id}
@@ -164,7 +224,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
   },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+  },
   tabBar: {
+    flex: 1,
     flexDirection: "row",
     borderBottomWidth: 1,
     borderBottomColor: "#E0E0E0",
@@ -185,6 +251,10 @@ const styles = StyleSheet.create({
   activeTabText: {
     color: "#2196F3",
     fontWeight: "500",
+  },
+  sortButton: {
+    padding: 12,
+    marginRight: 8,
   },
   list: {
     flex: 1,
@@ -255,5 +325,32 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "500",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-start",
+  },
+  sortMenu: {
+    position: "absolute",
+    right: 8,
+    top: Platform.OS === "android" ? StatusBar.currentHeight + 56 : 56,
+    backgroundColor: "white",
+    borderRadius: 8,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  sortMenuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+  },
+  sortMenuText: {
+    marginLeft: 12,
+    fontSize: 16,
+    color: "#212121",
   },
 });
