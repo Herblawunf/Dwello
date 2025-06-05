@@ -1,4 +1,3 @@
-import { Stack } from "expo-router";
 import { useState } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
 import {
@@ -7,6 +6,9 @@ import {
   TouchableOpacity,
   FlatList,
   StyleSheet,
+  SafeAreaView,
+  StatusBar,
+  Platform,
 } from "react-native";
 import { router } from "expo-router";
 
@@ -83,7 +85,7 @@ export default function Requests() {
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.tabBar}>
         <TouchableOpacity
           style={[styles.tab, activeTab === "pending" && styles.activeTab]}
@@ -129,7 +131,7 @@ export default function Requests() {
           <Text style={styles.addButtonText}>Add maintenance request</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -137,6 +139,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
+    paddingTop: Platform.OS === "ios" ? 60 : 20,
   },
   tabBar: {
     flexDirection: "row",
