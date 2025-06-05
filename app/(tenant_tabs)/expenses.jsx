@@ -13,7 +13,6 @@ import {
   Modal,
 } from "react-native";
 import { Context as AuthContext } from "@/context/AuthContext";
-import { Picker } from "@react-native-picker/picker";
 import { getHousemates } from "@/context/utils";
 import { supabase } from "../../lib/supabase";
 import { useFocusEffect } from "@react-navigation/native";
@@ -31,6 +30,8 @@ const ExpensesScreen = () => {
   const [housemateBalances, setHousemateBalances] = useState([]);
   const [selectedHousemate, setSelectedHousemate] = useState(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showPaidByDropdown, setShowPaidByDropdown] = useState(false);
+  const [showSplitDropdown, setShowSplitDropdown] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -192,45 +193,27 @@ const ExpensesScreen = () => {
           <View style={styles.splitAndButtonContainer}>
             <View style={styles.splitDetailsContainer}>
               <Text style={styles.splitText}>Paid by</Text>
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={paidBy}
-                  style={styles.picker}
-                  itemStyle={
-                    Platform.OS === "ios" ? styles.pickerItem : undefined
-                  }
-                  onValueChange={(itemValue) => setPaidBy(itemValue)}
-                  mode="dropdown"
-                >
-                  {userOptions.map((option) => (
-                    <Picker.Item
-                      key={option.value}
-                      label={option.label}
-                      value={option.value}
-                    />
-                  ))}
-                </Picker>
-              </View>
+              <TouchableOpacity
+                style={styles.dropdownButton}
+                onPress={() => setShowPaidByDropdown(true)}
+              >
+                <Text style={styles.dropdownButtonText}>
+                  {userOptions.find((opt) => opt.value === paidBy)?.label || "You"}
+                </Text>
+              </TouchableOpacity>
+
               <Text style={styles.splitText}>and split</Text>
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={splitMethod}
-                  style={styles.picker}
-                  itemStyle={
-                    Platform.OS === "ios" ? styles.pickerItem : undefined
+              <TouchableOpacity
+                style={styles.dropdownButton}
+                onPress={() => setShowSplitDropdown(true)}
+              >
+                <Text style={styles.dropdownButtonText}>
+                  {
+                    splitOptions.find((opt) => opt.value === splitMethod)
+                      ?.label || "Equally"
                   }
-                  onValueChange={(itemValue) => setSplitMethod(itemValue)}
-                  mode="dropdown"
-                >
-                  {splitOptions.map((option) => (
-                    <Picker.Item
-                      key={option.value}
-                      label={option.label}
-                      value={option.value}
-                    />
-                  ))}
-                </Picker>
-              </View>
+                </Text>
+              </TouchableOpacity>
             </View>
 
             <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
@@ -326,6 +309,64 @@ const ExpensesScreen = () => {
               </View>
             </TouchableOpacity>
           </Modal>
+
+          {/* Paid By Dropdown Modal */}
+          <Modal
+            visible={showPaidByDropdown}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setShowPaidByDropdown(false)}
+          >
+            <TouchableOpacity
+              style={styles.modalOverlay}
+              activeOpacity={1}
+              onPress={() => setShowPaidByDropdown(false)}
+            >
+              <View style={styles.dropdownList}>
+                {userOptions.map((option) => (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={styles.dropdownItem}
+                    onPress={() => {
+                      setPaidBy(option.value);
+                      setShowPaidByDropdown(false);
+                    }}
+                  >
+                    <Text style={styles.dropdownItemText}>{option.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </TouchableOpacity>
+          </Modal>
+
+          {/* Split Method Dropdown Modal */}
+          <Modal
+            visible={showSplitDropdown}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setShowSplitDropdown(false)}
+          >
+            <TouchableOpacity
+              style={styles.modalOverlay}
+              activeOpacity={1}
+              onPress={() => setShowSplitDropdown(false)}
+            >
+              <View style={styles.dropdownList}>
+                {splitOptions.map((option) => (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={styles.dropdownItem}
+                    onPress={() => {
+                      setSplitMethod(option.value);
+                      setShowSplitDropdown(false);
+                    }}
+                  >
+                    <Text style={styles.dropdownItemText}>{option.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </TouchableOpacity>
+          </Modal>
         </View>
       </ScrollView>
     </View>
@@ -416,28 +457,40 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     lineHeight: 24,
   },
-  pickerContainer: {
-    marginHorizontal: 4,
-    ...(Platform.OS === "ios" && {
-      borderWidth: 1,
-      borderColor: "#ddd",
-      borderRadius: 6,
-      overflow: "hidden",
-      backgroundColor: "#fff",
-    }),
+  dropdownButton: {
+    backgroundColor: "#fff",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    minWidth: 75,
   },
-  picker: {
-    width: 75,
-    height: Platform.OS === "ios" ? 32 : 36,
-    backgroundColor: Platform.OS === "android" ? "#fff" : "transparent",
-    borderRadius: Platform.OS === "android" ? 6 : 0,
-  },
-  pickerItem: {
-    fontSize: 11,
-    height: 32,
+  dropdownButtonText: {
+    fontSize: 12,
     color: "#333",
-    paddingHorizontal: 0,
-    paddingVertical: 0,
+    textAlign: "center",
+  },
+  dropdownList: {
+    position: "absolute",
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    padding: 4,
+    width: 120,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  dropdownItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    color: "#333",
   },
   addButton: {
     width: 50,
