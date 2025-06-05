@@ -38,11 +38,11 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="notifications"
+        name="expenses"
         options={{
-          title: "Notifications",
+          title: "Expenses",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="bell.fill" color={color} />
+            <IconSymbol size={28} name="creditcard.fill" color={color} />
           ),
         }}
       />
@@ -55,21 +55,14 @@ export default function TabLayout() {
           ),
         }}
       />
+  
+      
       <Tabs.Screen
-        name="chat"
+        name="notifications"
         options={{
-          title: "Chat",
+          title: "Notifications",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="message.fill" color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="expenses"
-        options={{
-          title: "Expenses",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="creditcard.fill" color={color} />
+            <IconSymbol size={28} name="bell.fill" color={color} />
           ),
         }}
       />

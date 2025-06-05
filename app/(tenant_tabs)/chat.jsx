@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, SafeAreaView, KeyboardAvoidingView, Platform } from 'react-native';
 
+export const options = {
+  tabBarButton: () => null,
+  headerShown: false,
+};
+
 export default function ChatScreen() {
     const [selectedChat, setSelectedChat] = useState(null);
     const [messageText, setMessageText] = useState('');
