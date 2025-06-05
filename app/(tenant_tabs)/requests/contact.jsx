@@ -85,7 +85,6 @@ export default function Contact() {
           keyboardShouldPersistTaps="handled"
         >
           <Text style={styles.title}>Contact your landlord</Text>
-
           <View style={styles.section}>
             <Text style={styles.label}>Reason for Contact</Text>
             <TouchableOpacity
@@ -114,7 +113,7 @@ export default function Contact() {
               }}
             >
               <View style={styles.priorityContainer}>
-                {priority && (
+                {priority >= 0 && (
                   <View
                     style={[
                       styles.priorityDot,
@@ -123,7 +122,7 @@ export default function Contact() {
                   />
                 )}
                 <Text style={styles.dropdownText}>
-                  {priority
+                  {priority >= 0
                     ? priorities.find((p) => p.value === priority)?.label
                     : "Select priority..."}
                 </Text>
