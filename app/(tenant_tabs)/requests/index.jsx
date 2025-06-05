@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Context as AuthContext } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 
 export default function Requests() {
   const [activeTab, setActiveTab] = useState("pending");
@@ -23,6 +24,7 @@ export default function Requests() {
   const {
     state: { userId },
   } = useContext(AuthContext);
+  const tabBarHeight = useBottomTabBarHeight();
 
   const getHouseRequests = useCallback(async () => {
     try {
