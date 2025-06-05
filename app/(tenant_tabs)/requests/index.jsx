@@ -10,6 +10,7 @@ import {
   StatusBar,
   Platform,
   Modal,
+  TextInput,
 } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -22,6 +23,7 @@ export default function Requests() {
   const [activeTab, setActiveTab] = useState("pending");
   const [sortBy, setSortBy] = useState("time");
   const [sortMenuVisible, setSortMenuVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const insets = useSafeAreaInsets();
   const [requests, setRequests] = useState([]);
   const {
@@ -73,6 +75,13 @@ export default function Requests() {
       return [...requestsToSort].sort((a, b) => b.priority - a.priority);
     }
     return requestsToSort;
+  };
+
+  const filterRequests = (requestsToFilter) => {
+    const query = searchQuery.toLowerCase();
+    return requestsToFilter.filter((r) =>
+      r.description.toLowerCase().includes(query)
+    );
   };
 
   const renderRequest = ({ item }) => (
@@ -190,10 +199,22 @@ export default function Requests() {
         </TouchableOpacity>
       </Modal>
 
+      <View style={styles.searchContainer}>
+        <MaterialIcons name="search" size={20} color="#757575" />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search requests..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      </View>
+
       <FlatList
         data={sortRequests(
-          requests.filter(
-            (r) => (r.status === "completed") === (activeTab === "completed")
+          filterRequests(
+            requests.filter(
+              (r) => (r.status === "completed") === (activeTab === "completed")
+            )
           )
         )}
         renderItem={renderRequest}
@@ -350,6 +371,22 @@ const styles = StyleSheet.create({
   },
   sortMenuText: {
     marginLeft: 12,
+    fontSize: 16,
+    color: "#212121",
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+    margin: 16,
+    marginTop: 8,
+    marginBottom: 8,
+    padding: 8,
+    borderRadius: 8,
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 8,
     fontSize: 16,
     color: "#212121",
   },
