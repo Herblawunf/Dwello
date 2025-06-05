@@ -37,24 +37,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="notifications"
-        options={{
-          title: "Notifications",
-          tabBarIcon: ({ color }) => (
-            <MaterialIcons name="notifications" size={28} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="chat"
-        options={{
-          title: "Chat",
-          tabBarIcon: ({ color }) => (
-            <MaterialIcons name="chat" size={28} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="expenses"
         options={{
           title: "Expenses",
@@ -69,6 +51,15 @@ export default function TabLayout() {
           title: "Requests",
           tabBarIcon: ({ color }) => (
             <MaterialIcons name="build" size={28} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          title: "Notifications",
+          tabBarIcon: ({ color }) => (
+            <MaterialIcons name="notifications" size={28} color={color} />
           ),
         }}
       />

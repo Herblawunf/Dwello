@@ -1,5 +1,5 @@
 import React, { useState, useContext } from "react";
-import { Text, StyleSheet, TouchableOpacity } from "react-native";
+import { Text, StyleSheet } from "react-native";
 import { Context as AuthContext } from "@/context/AuthContext";
 import AuthInput from "@/components/AuthInput";
 import { ThemedText } from "@/components/ThemedText";

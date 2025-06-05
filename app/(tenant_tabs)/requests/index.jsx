@@ -15,10 +15,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Context as AuthContext } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 
 export default function Requests() {
   const [activeTab, setActiveTab] = useState("pending");
   const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
+
   const [requests, setRequests] = useState([]);
   const {
     state: { userId },
@@ -83,7 +86,7 @@ export default function Requests() {
       <View style={styles.requestFooter}>
         <TouchableOpacity style={styles.footerButton} onPress={() => {}}>
           <MaterialIcons name="comment" size={20} color="#757575" />
-          <Text style={styles.footerButtonText}>Comments</Text>
+          <Text style={styles.footerButtonText}>View thread</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.footerButton} onPress={() => {}}>
           <MaterialIcons name="check" size={20} color="#757575" />
@@ -98,38 +101,49 @@ export default function Requests() {
       style={[
         styles.container,
         {
+          // Only top padding: status bar / notch
           paddingTop:
             Platform.OS === "android" ? StatusBar.currentHeight : insets.top,
+          // Remove bottom padding here; we'll handle it on the list & button separately
+          paddingBottom: 0,
         },
       ]}
     >
-      <View style={styles.tabBar}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "pending" && styles.activeTab]}
-          onPress={() => setActiveTab("pending")}
-        >
-          <Text
-            style={
-              activeTab === "pending" ? styles.activeTabText : styles.tabText
-            }
+      {/* 
+        Wrap tabs + list in a flex:1 View so the button can sit at bottom 
+        without pushing the list off‐screen 
+      */}
+      <View style={{ flex: 1 }}>
+        <View style={styles.tabBar}>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "pending" && styles.activeTab]}
+            onPress={() => setActiveTab("pending")}
           >
-            Pending
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "completed" && styles.activeTab]}
-          onPress={() => setActiveTab("completed")}
-        >
-          <Text
-            style={
-              activeTab === "completed" ? styles.activeTabText : styles.tabText
-            }
+            <Text
+              style={
+                activeTab === "pending"
+                  ? styles.activeTabText
+                  : styles.tabText
+              }
+            >
+              Pending
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "completed" && styles.activeTab]}
+            onPress={() => setActiveTab("completed")}
           >
-            Completed
-          </Text>
-        </TouchableOpacity>
-      </View>
-
+            <Text
+              style={
+                activeTab === "completed"
+                  ? styles.activeTabText
+                  : styles.tabText
+              }
+            >
+              Completed
+            </Text>
+          </TouchableOpacity>
+        </View>
       <FlatList
         data={requests.filter(
           (r) => (r.status === "completed") === (activeTab === "completed")
@@ -140,7 +154,18 @@ export default function Requests() {
         contentContainerStyle={styles.listContent}
       />
 
-      <View style={styles.buttonContainer}>
+      {/* 
+        Button container with marginBottom = tabBarHeight 
+        so the button floats above the tab bar 
+      */}
+      <View
+        style={[
+          styles.addButton,
+          {
+            marginBottom: Platform.OS == "android" ? 0 : tabBarHeight,
+          },
+        ]}
+      >
         <TouchableOpacity
           style={styles.addButton}
           onPress={() => router.push("/(tenant_tabs)/requests/contact")}
@@ -182,11 +207,8 @@ const styles = StyleSheet.create({
   list: {
     flex: 1,
   },
-  listContent: {
-    paddingBottom: 16,
-  },
+  // We no longer use listContent here; added inline in contentContainerStyle above
   buttonContainer: {
-    paddingBottom: 16,
     backgroundColor: "#fff",
   },
   requestItem: {
@@ -240,7 +262,8 @@ const styles = StyleSheet.create({
   addButton: {
     backgroundColor: "#2196F3",
     padding: 16,
-    margin: 16,
+    marginHorizontal: 16,
+    marginTop: 8,
     borderRadius: 8,
     alignItems: "center",
   },

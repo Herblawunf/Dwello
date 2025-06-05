@@ -35,7 +35,7 @@ const ExpensesScreen = () => {
   useFocusEffect(
     useCallback(() => {
       getBalances();
-    }, [])
+    }, [getBalances])
   );
 
   const handlePaymentConfirmation = (confirmed, id) => {
@@ -47,7 +47,7 @@ const ExpensesScreen = () => {
     setSelectedHousemate(null);
   };
 
-  const getBalances = async () => {
+  const getBalances = useCallback(async () => {
     try {
       const { data, error } = await supabase.rpc("get_housemate_balances", {
         p_user_id: userId,
@@ -60,7 +60,7 @@ const ExpensesScreen = () => {
     } catch (error) {
       console.log(error);
     }
-  };
+  }, [userId]);
 
   const markExpenses = async (otherId) => {
     try {
@@ -80,11 +80,11 @@ const ExpensesScreen = () => {
   // Helper function to format balance display and text
   const formatBalanceText = (balance) => {
     if (balance > 0) {
-      return `Owes you: $${balance.toFixed(2)}`;
+      return `Owes you: £${balance.toFixed(2)}`;
     } else if (balance < 0) {
-      return `You owe: $${Math.abs(balance).toFixed(2)}`;
+      return `You owe: £${Math.abs(balance).toFixed(2)}`;
     } else {
-      return `Settled up: $0.00`;
+      return `Settled up: £0.00`;
     }
   };
 
@@ -333,241 +333,241 @@ const ExpensesScreen = () => {
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: "#fff",
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === "ios" ? 60 : 20,
+    paddingBottom: 40, // Ensure space at the bottom for scroll
+    alignItems: "center", // This centers children like pressableWrapper and balancesSection
+    // minHeight: '100%', // Can be removed if content naturally fills height or scrolling is desired
+    // justifyContent: 'flex-start', // Default, good
+  },
+  pressableWrapper: {
+    width: "100%", // Takes full width available from scrollContent's padding
+    alignItems: "center", // Centers its own children if they don't have full width
+    marginBottom: 20, // Add some space before the balances section
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 30,
+    alignSelf: "flex-start",
+    paddingHorizontal: 5,
+  },
+  inputSection: {
+    width: "100%",
+    alignItems: "center",
+    marginBottom: 30,
+  },
+  amountInput: {
+    fontSize: 48,
+    fontWeight: "600",
+    color: "#333",
+    borderBottomWidth: Platform.OS === "ios" ? 1 : 0,
+    borderColor: "#e0e0e0",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginBottom: 20,
+    width: "80%",
+    minHeight: 60,
+    alignSelf: "center",
+  },
+  descriptionInput: {
+    fontSize: 20,
+    fontWeight: "500",
+    color: "#555",
+    borderBottomWidth: Platform.OS === "ios" ? 1 : 0,
+    borderColor: "#e0e0e0",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    width: "80%",
+    minHeight: 50,
+    alignSelf: "center",
+  },
+  splitAndButtonContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    marginTop: 10,
+    paddingHorizontal: 5, // Align with title if it has padding
+  },
+  splitDetailsContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "nowrap",
+    backgroundColor: "#f8f9fa",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    flex: 1, // Takes available space
+  },
+  splitText: {
+    fontSize: 10,
+    color: "#666",
+    marginHorizontal: 4,
+    fontWeight: "500",
+    lineHeight: 24,
+  },
+  pickerContainer: {
+    marginHorizontal: 4,
+    ...(Platform.OS === "ios" && {
+      borderWidth: 1,
+      borderColor: "#ddd",
+      borderRadius: 6,
+      overflow: "hidden",
+      backgroundColor: "#fff",
+    }),
+  },
+  picker: {
+    width: 75,
+    height: Platform.OS === "ios" ? 32 : 36,
+    backgroundColor: Platform.OS === "android" ? "#fff" : "transparent",
+    borderRadius: Platform.OS === "android" ? 6 : 0,
+  },
+  pickerItem: {
+    fontSize: 11,
+    height: 32,
+    color: "#333",
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+  },
+  addButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#007AFF",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#007AFF",
+    shadowOffset: {
+      width: 0,
+      height: 2,
     },
-    scrollView: {
-        flex: 1,
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+    marginLeft: 12,
+  },
+  addButtonText: {
+    fontSize: 24,
+    fontWeight: "500",
+    color: "#fff",
+    lineHeight: 24,
+  },
+  balancesScrollView: {
+    maxHeight: responsiveFontSize(50) * 4,
+  },
+  balancesScrollContent: {
+    paddingHorizontal: 10, // optional padding
+  },
+  balancesSection: {
+    width: "100%", // Takes full width available from scrollContent's padding
+    marginTop: 30, // Space above the balances section
+    paddingHorizontal: 5, // Consistent padding with title
+  },
+  balancesTitle: {
+    fontSize: 20, // Slightly smaller than main title
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 15,
+    alignSelf: "flex-start", // Align to the left
+  },
+  balanceItem: {
+    height: responsiveFontSize(50),
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0", // Lighter border color
+  },
+  housemateName: {
+    fontSize: 15,
+    color: "#555", // Slightly lighter text color
+  },
+  balanceAmount: {
+    fontSize: 15,
+    fontWeight: "500",
+  },
+  positiveBalance: {
+    color: "#28a745", // Green
+  },
+  negativeBalance: {
+    color: "#dc3545", // Red
+  },
+  neutralBalance: {
+    color: "#6c757d", // Gray
+  },
+  clickableBalance: {
+    textDecorationLine: "underline",
+  },
+  noBalancesText: {
+    fontSize: 14,
+    color: "#6c757d",
+    textAlign: "center",
+    marginTop: 10,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  dropdownModal: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    width: "85%",
+    padding: 24,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
     },
-    scrollContent: {
-        paddingHorizontal: 20,
-        paddingTop: Platform.OS === "ios" ? 60 : 20,
-        paddingBottom: 40, // Ensure space at the bottom for scroll
-        alignItems: "center", // This centers children like pressableWrapper and balancesSection
-        // minHeight: '100%', // Can be removed if content naturally fills height or scrolling is desired
-        // justifyContent: 'flex-start', // Default, good
-    },
-    pressableWrapper: {
-        width: "100%", // Takes full width available from scrollContent's padding
-        alignItems: "center", // Centers its own children if they don't have full width
-        marginBottom: 20, // Add some space before the balances section
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: "600",
-        color: "#333",
-        marginBottom: 30,
-        alignSelf: "flex-start",
-        paddingHorizontal: 5,
-    },
-    inputSection: {
-        width: "100%",
-        alignItems: "center",
-        marginBottom: 30,
-    },
-    amountInput: {
-        fontSize: 48,
-        fontWeight: "600",
-        color: "#333",
-        borderBottomWidth: Platform.OS === "ios" ? 1 : 0,
-        borderColor: "#e0e0e0",
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-        marginBottom: 20,
-        width: "80%",
-        minHeight: 60,
-        alignSelf: "center",
-    },
-    descriptionInput: {
-        fontSize: 20,
-        fontWeight: "500",
-        color: "#555",
-        borderBottomWidth: Platform.OS === "ios" ? 1 : 0,
-        borderColor: "#e0e0e0",
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        width: "80%",
-        minHeight: 50,
-        alignSelf: "center",
-    },
-    splitAndButtonContainer: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        width: "100%",
-        marginTop: 10,
-        paddingHorizontal: 5, // Align with title if it has padding
-    },
-    splitDetailsContainer: {
-        flexDirection: "row",
-        alignItems: "center",
-        flexWrap: "nowrap",
-        backgroundColor: "#f8f9fa",
-        paddingVertical: 10,
-        paddingHorizontal: 12,
-        borderRadius: 8,
-        flex: 1, // Takes available space
-    },
-    splitText: {
-        fontSize: 10,
-        color: "#666",
-        marginHorizontal: 4,
-        fontWeight: "500",
-        lineHeight: 24,
-    },
-    pickerContainer: {
-        marginHorizontal: 4,
-        ...(Platform.OS === "ios" && {
-            borderWidth: 1,
-            borderColor: "#ddd",
-            borderRadius: 6,
-            overflow: "hidden",
-            backgroundColor: "#fff",
-        }),
-    },
-    picker: {
-        width: 75,
-        height: Platform.OS === "ios" ? 32 : 36,
-        backgroundColor: Platform.OS === "android" ? "#fff" : "transparent",
-        borderRadius: Platform.OS === "android" ? 6 : 0,
-    },
-    pickerItem: {
-        fontSize: 11,
-        height: 32,
-        color: "#333",
-        paddingHorizontal: 0,
-        paddingVertical: 0,
-    },
-    addButton: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
-        backgroundColor: "#007AFF",
-        justifyContent: "center",
-        alignItems: "center",
-        shadowColor: "#007AFF",
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
-        elevation: 4,
-        marginLeft: 12,
-    },
-    addButtonText: {
-        fontSize: 24,
-        fontWeight: "500",
-        color: "#fff",
-        lineHeight: 24,
-    },
-    balancesScrollView: {
-        maxHeight: responsiveFontSize(50) * 4,
-    },
-    balancesScrollContent: {
-        paddingHorizontal: 10, // optional padding
-    },
-    balancesSection: {
-        width: "100%", // Takes full width available from scrollContent's padding
-        marginTop: 30, // Space above the balances section
-        paddingHorizontal: 5, // Consistent padding with title
-    },
-    balancesTitle: {
-        fontSize: 20, // Slightly smaller than main title
-        fontWeight: "600",
-        color: "#333",
-        marginBottom: 15,
-        alignSelf: "flex-start", // Align to the left
-    },
-    balanceItem: {
-        height: responsiveFontSize(50),
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: "#f0f0f0", // Lighter border color
-    },
-    housemateName: {
-        fontSize: 15,
-        color: "#555", // Slightly lighter text color
-    },
-    balanceAmount: {
-        fontSize: 15,
-        fontWeight: "500",
-    },
-    positiveBalance: {
-        color: "#28a745", // Green
-    },
-    negativeBalance: {
-        color: "#dc3545", // Red
-    },
-    neutralBalance: {
-        color: "#6c757d", // Gray
-    },
-    clickableBalance: {
-        textDecorationLine: "underline",
-    },
-    noBalancesText: {
-        fontSize: 14,
-        color: "#6c757d",
-        textAlign: "center",
-        marginTop: 10,
-    },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: "rgba(0, 0, 0, 0.3)",
-        justifyContent: "center",
-        alignItems: "center",
-        padding: 20,
-    },
-    dropdownModal: {
-        backgroundColor: "#fff",
-        borderRadius: 12,
-        width: "85%",
-        padding: 24,
-        shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: 4,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 8,
-    },
-    modalText: {
-        fontSize: 18,
-        fontWeight: "500",
-        color: "#333",
-        textAlign: "center",
-        marginBottom: 24,
-        lineHeight: 24,
-    },
-    modalButtonContainer: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        gap: 12,
-    },
-    modalButton: {
-        flex: 1,
-        paddingVertical: 14,
-        borderRadius: 8,
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    confirmButton: {
-        backgroundColor: "#007AFF",
-    },
-    cancelButton: {
-        backgroundColor: "#f8f9fa",
-        borderWidth: 1,
-        borderColor: "#e0e0e0",
-    },
-    modalButtonText: {
-        fontSize: 16,
-        fontWeight: "500",
-    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  modalText: {
+    fontSize: 18,
+    fontWeight: "500",
+    color: "#333",
+    textAlign: "center",
+    marginBottom: 24,
+    lineHeight: 24,
+  },
+  modalButtonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  confirmButton: {
+    backgroundColor: "#007AFF",
+  },
+  cancelButton: {
+    backgroundColor: "#f8f9fa",
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+  },
+  modalButtonText: {
+    fontSize: 16,
+    fontWeight: "500",
+  },
 });
 
 export default ExpensesScreen;

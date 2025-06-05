@@ -18,7 +18,7 @@ const NotificationItem = ({ item }) => (
       {item.payee.name} added {item.description}
     </Text>
     <Text style={styles.notificationMessage}>
-      You {item.type == "receive" ? "will receive" : "owe"} £
+      You {item.type === "receive" ? "will receive" : "owe"} £
       {item.amount.toFixed(2)}
     </Text>
     <Text style={styles.notificationTime}>{formatDate(item.date)}</Text>
@@ -34,12 +34,11 @@ const NotificationsScreen = () => {
   useFocusEffect(
     useCallback(() => {
       getNotifications();
-    }, [])
+    }, [getNotifications])
   );
 
-  const getNotifications = async () => {
+  const getNotifications = useCallback(async () => {
     setRefreshing(true);
-    // Policy ensures only userId related expenses are selected
     try {
       const { data, error } = await supabase
         .from("expenses")
@@ -58,17 +57,17 @@ const NotificationsScreen = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      console.log(userId);
+
       const items = data.map((expense) => ({
         id: expense.expense_id,
         amount: expense.amount,
         date: expense.created_at,
-        isPaid: expense.status,
+        isPaid: expense.is_paid,
         description: expense.description,
-        type: userId == expense.payer_id ? "receive" : "send",
+        type: userId === expense.payer_id ? "receive" : "send",
         payee: {
           id: expense.payer_id,
-          name: userId == expense.payer_id ? "You" : expense.users?.first_name,
+          name: userId === expense.payer_id ? "You" : expense.users?.first_name,
         },
       }));
 
@@ -79,7 +78,6 @@ const NotificationsScreen = () => {
           );
 
           if (existingItem) {
-            // Combine amounts and keep the most recent date
             existingItem.amount += item.amount;
             existingItem.date =
               new Date(existingItem.date) > new Date(item.date)
@@ -97,11 +95,10 @@ const NotificationsScreen = () => {
       setNotifications(combinedItems);
     } catch (error) {
       console.error("Error fetching notifications:", error.message);
-      return [];
     } finally {
       setRefreshing(false);
     }
-  };
+  }, [userId]);
 
   return (
     <SafeAreaView style={styles.container}>
