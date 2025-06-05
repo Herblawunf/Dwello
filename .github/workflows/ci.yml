@@ -62,7 +62,7 @@ jobs:
       - name: Build iOS on EAS
         if: github.ref == 'refs/heads/main'
         run: |
-          eas build --platform android --profile development --non-interactive
+          eas build --platform android --profile production --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
