@@ -68,8 +68,8 @@ export default function Requests() {
 
   const sortRequests = (requestsToSort) => {
     if (sortBy === "time") {
-      return [...requestsToSort].sort((a, b) =>
-        new Date(b.created_at) - new Date(a.created_at)
+      return [...requestsToSort].sort(
+        (a, b) => new Date(b.created_at) - new Date(a.created_at)
       );
     } else if (sortBy === "priority") {
       return [...requestsToSort].sort((a, b) => b.priority - a.priority);
@@ -148,7 +148,9 @@ export default function Requests() {
           >
             <Text
               style={
-                activeTab === "completed" ? styles.activeTabText : styles.tabText
+                activeTab === "completed"
+                  ? styles.activeTabText
+                  : styles.tabText
               }
             >
               Completed
