@@ -85,12 +85,10 @@ export default function Requests() {
           <MaterialIcons name="comment" size={20} color="#757575" />
           <Text style={styles.footerButtonText}>Comments</Text>
         </TouchableOpacity>
-        {item.is_complete === "sent" && (
-          <TouchableOpacity style={styles.footerButton} onPress={() => {}}>
-            <MaterialIcons name="check" size={20} color="#757575" />
-            <Text style={styles.footerButtonText}>Mark completed</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity style={styles.footerButton} onPress={() => {}}>
+          <MaterialIcons name="check" size={20} color="#757575" />
+          <Text style={styles.footerButtonText}>{item.status}</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -134,7 +132,7 @@ export default function Requests() {
 
       <FlatList
         data={requests.filter(
-          (r) => (r.is_complete === "seen") === (activeTab === "completed")
+          (r) => (r.status === "completed") === (activeTab === "completed")
         )}
         renderItem={renderRequest}
         keyExtractor={(item) => item.request_id}
