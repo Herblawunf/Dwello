@@ -18,7 +18,7 @@ const NotificationItem = ({ item }) => (
       {item.payee.name} added {item.description}
     </Text>
     <Text style={styles.notificationMessage}>
-      You {item.type == "receive" ? "will receive" : "owe"} £
+      You {item.type === "receive" ? "will receive" : "owe"} £
       {item.amount.toFixed(2)}
     </Text>
     <Text style={styles.notificationTime}>{formatDate(item.date)}</Text>
@@ -34,7 +34,7 @@ const NotificationsScreen = () => {
   useFocusEffect(
     useCallback(() => {
       getNotifications();
-    }, [])
+    }, [getNotifications])
   );
 
   const getNotifications = async () => {
@@ -65,10 +65,10 @@ const NotificationsScreen = () => {
         date: expense.created_at,
         isPaid: expense.status,
         description: expense.description,
-        type: userId == expense.payer_id ? "receive" : "send",
+        type: userId === expense.payer_id ? "receive" : "send",
         payee: {
           id: expense.payer_id,
-          name: userId == expense.payer_id ? "You" : expense.users?.first_name,
+          name: userId === expense.payer_id ? "You" : expense.users?.first_name,
         },
       }));
 

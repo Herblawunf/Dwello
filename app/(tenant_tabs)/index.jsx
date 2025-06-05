@@ -121,7 +121,7 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       getBalance();
-    }, [])
+    }, [getBalance])
   );
 
   const getBalance = async () => {

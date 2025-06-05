@@ -35,7 +35,7 @@ const ExpensesScreen = () => {
   useFocusEffect(
     useCallback(() => {
       getBalances();
-    }, [])
+    }, [getBalances])
   );
 
   const handlePaymentConfirmation = (confirmed, id) => {
