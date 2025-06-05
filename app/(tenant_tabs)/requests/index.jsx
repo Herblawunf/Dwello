@@ -1,5 +1,6 @@
 import { Stack } from "expo-router";
 import { useState } from "react";
+import { MaterialIcons } from "@expo/vector-icons";
 import {
   View,
   Text,
@@ -66,6 +67,18 @@ export default function Requests() {
         </Text>
       </View>
       <Text style={styles.description}>{item.description}</Text>
+      <View style={styles.requestFooter}>
+        <TouchableOpacity style={styles.footerButton} onPress={() => {}}>
+          <MaterialIcons name="comment" size={20} color="#757575" />
+          <Text style={styles.footerButtonText}>Comments</Text>
+        </TouchableOpacity>
+        {!item.is_completed && (
+          <TouchableOpacity style={styles.footerButton} onPress={() => {}}>
+            <MaterialIcons name="check" size={20} color="#757575" />
+            <Text style={styles.footerButtonText}>Mark completed</Text>
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 
@@ -105,14 +118,17 @@ export default function Requests() {
         renderItem={renderRequest}
         keyExtractor={(item) => item.id}
         style={styles.list}
+        contentContainerStyle={styles.listContent}
       />
 
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={() => router.push("/(tenant_tabs)/requests/contact")}
-      >
-        <Text style={styles.addButtonText}>Add maintenance request</Text>
-      </TouchableOpacity>
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => router.push("/(tenant_tabs)/requests/contact")}
+        >
+          <Text style={styles.addButtonText}>Add maintenance request</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -147,6 +163,13 @@ const styles = StyleSheet.create({
   list: {
     flex: 1,
   },
+  listContent: {
+    paddingBottom: 16,
+  },
+  buttonContainer: {
+    paddingBottom: 16,
+    backgroundColor: "#fff",
+  },
   requestItem: {
     padding: 16,
     borderBottomWidth: 1,
@@ -168,6 +191,22 @@ const styles = StyleSheet.create({
   description: {
     fontSize: 14,
     color: "#212121",
+  },
+  requestFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 12,
+    paddingTop: 8,
+  },
+  footerButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 4,
+  },
+  footerButtonText: {
+    marginLeft: 4,
+    color: "#757575",
+    fontSize: 14,
   },
   addButton: {
     backgroundColor: "#2196F3",
