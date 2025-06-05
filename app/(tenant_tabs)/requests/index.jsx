@@ -88,7 +88,7 @@ export default function Requests() {
           <MaterialIcons name="comment" size={20} color="#757575" />
           <Text style={styles.footerButtonText}>View thread</Text>
         </TouchableOpacity>
-        {item.is_complete && (
+        {item.is_complete === "sent" && (
           <TouchableOpacity style={styles.footerButton} onPress={() => {}}>
             <MaterialIcons name="check" size={20} color="#757575" />
             <Text style={styles.footerButtonText}>Mark as completed</Text>
