@@ -1,9 +1,14 @@
 import React, { useState, useEffect, useCallback, useContext } from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
 import { getHousemates } from "../../context/utils";
-import { useRouter } from "expo-router"; // Import useRouter
+import { useRouter } from "expo-router"; // for navigation
 import { useFocusEffect } from "@react-navigation/native";
 import { Context as AuthContext } from "@/context/AuthContext";
 
@@ -69,7 +74,7 @@ const daysToRent = async () => {
 
   if (!house_id) {
     console.warn("No house_id found for user.");
-    return -1; // Or some other default/error value
+    return -1;
   }
 
   const { data: house_info } = await supabase
@@ -80,17 +85,14 @@ const daysToRent = async () => {
 
   if (!house_info) {
     console.warn("No house_info found for house_id:", house_id.house_id);
-    return -1; // Or some other default/error value
+    return -1;
   }
 
   const next_payment = house_info.next_payment;
-
   const today = new Date();
   const paymentDate = new Date(next_payment);
-
   const timeDiff = paymentDate.getTime() - today.getTime();
   const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-
   return daysDiff;
 };
 
@@ -102,6 +104,7 @@ export default function HomeScreen() {
   const { state: authState } = useContext(AuthContext);
   const userId = authState.userId;
 
+  // Fetch rent due amount
   useEffect(() => {
     const fetchRentDue = async () => {
       const amount = await rentDue();
@@ -110,6 +113,7 @@ export default function HomeScreen() {
     fetchRentDue();
   }, []);
 
+  // Fetch days until rent
   useEffect(() => {
     const fetchDaysToRent = async () => {
       const days = await daysToRent();
@@ -118,6 +122,7 @@ export default function HomeScreen() {
     fetchDaysToRent();
   }, []);
 
+  // Fetch balance whenever focused
   useFocusEffect(
     useCallback(() => {
       getBalance();
@@ -131,31 +136,35 @@ export default function HomeScreen() {
       });
       if (data) {
         setBalance(data.reduce((sum, account) => sum + account.balance, 0));
-        return;
+      } else {
+        console.log(error);
       }
-      console.log(error);
     } catch (error) {
       console.log(error);
     }
   }, [userId]);
 
   const handleReportRepair = () => {
-    // Assuming your contact screen is routed as '/contact'
-    // If contact.jsx is in (tenant_tabs), the path might be '/(tenant_tabs)/contact'
-    // or simply 'contact' if it's a sibling route.
-    // Adjust the path as per your file structure and routing setup.
     router.push("/contact");
   };
 
   const handleAddExpenses = () => {
-    // Adjust the path as per your file structure and routing setup for expenses.jsx
     router.push("/expenses");
+  };
+
+  const handleGoToChat = () => {
+    router.push("/chats");
   };
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <Text style={styles.header}>dwello</Text>
+      {/* HEADER WITH TITLE + CHAT ICON */}
+      <View style={styles.topBar}>
+        <Text style={styles.header}>dwello</Text>
+        <TouchableOpacity onPress={handleGoToChat} style={styles.chatButton}>
+          <Ionicons name="chatbubble-ellipses-outline" size={24} color="#333" />
+        </TouchableOpacity>
+      </View>
 
       {/* Balance Section */}
       <View style={styles.section}>
@@ -213,14 +222,27 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FFFFFF",
     padding: 20,
-    paddingTop: 60,
+    paddingTop: 40, // reduce top padding since we have a custom topBar
+  },
+
+  // New topBar style: title on left, chat icon on right
+  topBar: {
+    flexDirection: "row",
+    marginTop: 20,
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 30,
   },
   header: {
     fontSize: 28,
     fontWeight: "300",
+    fontWeight: 'bold',
     color: "#333",
-    marginBottom: 40,
   },
+  chatButton: {
+    padding: 9, // increase tap area
+  },
+
   section: {
     marginBottom: 30,
   },
