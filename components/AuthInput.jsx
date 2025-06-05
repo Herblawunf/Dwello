@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, TouchableOpacity, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedTextInput } from "@/components/ThemedTextInput";
 import { ThemedTouchableOpacity } from "@/components/ThemedTouchableOpacity";
@@ -20,10 +20,9 @@ const AuthInput = ({
   const [passwordIcon, setPasswordIcon] = useState("eye");
 
   const handleShowPassword = () => {
-    setIsSecurePassword(!isSecurePassword);
-    passwordIcon === "eye"
-      ? setPasswordIcon("eye-off")
-      : setPasswordIcon("eye");
+    const newIsSecurePassword = !isSecurePassword;
+    setIsSecurePassword(newIsSecurePassword);
+    setPasswordIcon(newIsSecurePassword ? "eye-off" : "eye");
   };
 
   const iconColour = useThemeColor(

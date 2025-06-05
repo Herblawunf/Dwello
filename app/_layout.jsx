@@ -67,7 +67,7 @@ function AuthRouter() {
   // Attempt silent login on mount
   useEffect(() => {
     tryLocalLogin();
-  }, []);
+  }, [tryLocalLogin]);
 
   // Handle navigation based on auth state
   useEffect(() => {
@@ -80,7 +80,7 @@ function AuthRouter() {
       : "/(auth)";
 
     router.replace(route);
-  }, [isSignedIn, landlord, hasAttemptedLocalLogin]);
+  }, [isSignedIn, landlord, hasAttemptedLocalLogin, router]);
 
   if (!hasAttemptedLocalLogin) return <LoadingScreen />;
 
