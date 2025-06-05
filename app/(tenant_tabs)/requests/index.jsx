@@ -86,12 +86,12 @@ export default function Requests() {
       <View style={styles.requestFooter}>
         <TouchableOpacity style={styles.footerButton} onPress={() => {}}>
           <MaterialIcons name="comment" size={20} color="#757575" />
-          <Text style={styles.footerButtonText}>Comments</Text>
+          <Text style={styles.footerButtonText}>View thread</Text>
         </TouchableOpacity>
-        {item.is_complete === "sent" && (
+        {item.is_complete && (
           <TouchableOpacity style={styles.footerButton} onPress={() => {}}>
             <MaterialIcons name="check" size={20} color="#757575" />
-            <Text style={styles.footerButtonText}>Mark completed</Text>
+            <Text style={styles.footerButtonText}>Mark as completed</Text>
           </TouchableOpacity>
         )}
       </View>
