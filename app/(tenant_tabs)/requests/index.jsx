@@ -88,12 +88,10 @@ export default function Requests() {
           <MaterialIcons name="comment" size={20} color="#757575" />
           <Text style={styles.footerButtonText}>View thread</Text>
         </TouchableOpacity>
-        {item.is_complete === "sent" && (
-          <TouchableOpacity style={styles.footerButton} onPress={() => {}}>
-            <MaterialIcons name="check" size={20} color="#757575" />
-            <Text style={styles.footerButtonText}>Mark as completed</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity style={styles.footerButton} onPress={() => {}}>
+          <MaterialIcons name="check" size={20} color="#757575" />
+          <Text style={styles.footerButtonText}>{item.status}</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -146,20 +144,15 @@ export default function Requests() {
             </Text>
           </TouchableOpacity>
         </View>
-
-        <FlatList
-          data={requests.filter(
-            (r) => (r.is_complete === "seen") === (activeTab === "completed")
-          )}
-          renderItem={renderRequest}
-          keyExtractor={(item) => item.request_id}
-          style={styles.list}
-          contentContainerStyle={{
-            // Give bottom padding so last items scroll above the button + tab bar
-            paddingBottom: tabBarHeight + 16,
-          }}
-        />
-      </View>
+      <FlatList
+        data={requests.filter(
+          (r) => (r.status === "completed") === (activeTab === "completed")
+        )}
+        renderItem={renderRequest}
+        keyExtractor={(item) => item.request_id}
+        style={styles.list}
+        contentContainerStyle={styles.listContent}
+      />
 
       {/* 
         Button container with marginBottom = tabBarHeight 
@@ -167,8 +160,10 @@ export default function Requests() {
       */}
       <View
         style={[
-          styles.buttonContainer,
-          { marginBottom: tabBarHeight },
+          styles.addButton,
+          {
+            marginBottom: Platform.OS == "android" ? 0 : tabBarHeight,
+          },
         ]}
       >
         <TouchableOpacity
