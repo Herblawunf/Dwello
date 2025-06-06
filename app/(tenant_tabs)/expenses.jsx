@@ -413,7 +413,7 @@ const ExpensesScreen = () => {
             )}
           </ScrollView>
         </View>
-        <View style={styles.pastExpensesSection}>
+        <View style={[styles.pastExpensesSection, {marginBottom: 150}]}>
           <Text style={styles.pastExpensesTitle}>Recent Activity</Text>
           {pastExpenses.length > 0 ? (
             <View style={styles.pastExpensesList}>

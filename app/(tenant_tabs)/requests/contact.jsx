@@ -11,16 +11,24 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   ScrollView,
+  Image,
+  ActivityIndicator,
 } from "react-native";
 import { supabase } from "@/lib/supabase";
+import * as ImagePicker from "expo-image-picker";
+// FileSystem is no longer needed as FormData handles URI directly for uploads
+// import * as FileSystem from "expo-file-system";
+
 
 export default function Contact() {
   const [reason, setReason] = useState("");
   const [priority, setPriority] = useState(-1);
   const [message, setMessage] = useState("");
-  const [attachments, setAttachments] = useState([]);
   const [showReasonDropdown, setShowReasonDropdown] = useState(false);
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
+  const [selectedImageUri, setSelectedImageUri] = useState(null); // URI for selected image or video
+  const [uploadedFileUrl, setUploadedFileUrl] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const reasons = [
     { label: "General Inquiry", value: "general" },
@@ -33,38 +41,230 @@ export default function Contact() {
     { label: "High", value: 2, color: "#F44336" },
   ];
 
-  const handleSend = async () => {
-    // Dismiss keyboard before showing alert
+  const uploadImage = async (asset) => { // Renaming to uploadMedia might be more accurate but keeping for consistency
+    if (!asset || !asset.uri) {
+      Alert.alert("Error", "No media asset provided for upload.");
+      return null;
+    }
+
+    if (typeof asset.fileSize === 'number' && asset.fileSize === 0) {
+        Alert.alert("Upload Error", "The selected file is empty.");
+        setSelectedImageUri(null);
+        return null;
+    }
+
+    setIsUploading(true);
+    setUploadedFileUrl(null);
+
+    try {
+      const uri = asset.uri;
+      const isVideo = asset.mediaType === 'video';
+
+      // 1. Determine Content-Type
+      let determinedContentType = asset.mimeType;
+      if (!determinedContentType || 
+          determinedContentType === 'application/octet-stream' ||
+          (!determinedContentType.startsWith('image/') && !determinedContentType.startsWith('video/'))) {
+          
+          const extensionFromUri = uri.includes('.') ? uri.split('.').pop().toLowerCase() : null;
+          const fileNameExt = asset.fileName && asset.fileName.includes('.') ? asset.fileName.split('.').pop().toLowerCase() : null;
+          const bestGuessExt = extensionFromUri || fileNameExt;
+
+          if (isVideo) {
+              if (bestGuessExt) {
+                  if (['mp4', 'm4v'].includes(bestGuessExt)) determinedContentType = 'video/mp4';
+                  else if (['mov', 'qt'].includes(bestGuessExt)) determinedContentType = 'video/quicktime';
+                  else if (['avi'].includes(bestGuessExt)) determinedContentType = 'video/x-msvideo';
+                  else if (['wmv'].includes(bestGuessExt)) determinedContentType = 'video/x-ms-wmv';
+                  else if (['mkv'].includes(bestGuessExt)) determinedContentType = 'video/x-matroska';
+                  else if (['webm'].includes(bestGuessExt)) determinedContentType = 'video/webm';
+                  else determinedContentType = 'video/mp4'; // Default video fallback
+              } else {
+                  determinedContentType = 'video/mp4'; // Ultimate video fallback
+              }
+          } else { // It's an image
+              if (bestGuessExt) {
+                  if (['jpg', 'jpeg'].includes(bestGuessExt)) determinedContentType = 'image/jpeg';
+                  else if (['png'].includes(bestGuessExt)) determinedContentType = 'image/png';
+                  else if (['gif'].includes(bestGuessExt)) determinedContentType = 'image/gif';
+                  else if (['webp'].includes(bestGuessExt)) determinedContentType = 'image/webp';
+                  else if (['bmp'].includes(bestGuessExt)) determinedContentType = 'image/bmp';
+                  else determinedContentType = 'image/jpeg'; // Default image fallback
+              } else {
+                  determinedContentType = 'image/jpeg'; // Ultimate image fallback
+              }
+          }
+      }
+      
+      // 2. Determine File Extension
+      let fileExt;
+      if (determinedContentType && determinedContentType.includes('/')) {
+          fileExt = determinedContentType.split('/')[1];
+          if (fileExt === 'jpeg') fileExt = 'jpg';
+          else if (fileExt === 'quicktime') fileExt = 'mov';
+          else if (fileExt === 'x-matroska') fileExt = 'mkv';
+          else if (fileExt === 'x-msvideo') fileExt = 'avi';
+          else if (fileExt === 'x-ms-wmv') fileExt = 'wmv';
+          // Add other normalizations if common, e.g., svg+xml -> svg
+      }
+
+      if (!fileExt || fileExt === 'octet-stream' || fileExt.length > 5) { // Check for generic or complex subtypes
+          if (asset.fileName && asset.fileName.includes('.')) {
+              const extFromFilename = asset.fileName.split('.').pop().toLowerCase();
+              if (extFromFilename.length > 0 && extFromFilename.length <= 4 && /^[a-z0-9]+$/.test(extFromFilename)) {
+                   fileExt = extFromFilename;
+              }
+          }
+      }
+      if (!fileExt) {
+          fileExt = isVideo ? 'mp4' : 'jpg'; // Final fallback extension
+      }
+
+
+      // 3. Determine Base Filename
+      let baseFileName;
+      if (asset.fileName) {
+          baseFileName = asset.fileName.includes('.') ? asset.fileName.substring(0, asset.fileName.lastIndexOf('.')) : asset.fileName;
+      } else {
+          const uriPathName = uri.substring(uri.lastIndexOf('/') + 1);
+          baseFileName = uriPathName.includes('.') ? uriPathName.substring(0, uriPathName.lastIndexOf('.')) : uriPathName;
+      }
+      const sanitizedBaseFileName = baseFileName.replace(/[^a-zA-Z0-9_-]/g, '_');
+      
+      const filePath = `public/${Date.now()}_${sanitizedBaseFileName}.${fileExt}`;
+      const fileNameForFormData = `${sanitizedBaseFileName}.${fileExt}`;
+
+      // FormData handles URI directly in React Native for network requests.
+      // No need to read file as base64.
+      const formData = new FormData();
+      formData.append('file', {
+        uri: asset.uri,
+        name: fileNameForFormData,
+        type: determinedContentType,
+      });
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('requests') // Same bucket for photos and videos
+        .upload(filePath, formData, {
+          upsert: false,
+        });
+
+      if (uploadError) {
+        console.error("Supabase upload error:", uploadError);
+        Alert.alert("Upload Error", `Failed to upload media: ${uploadError.message}`);
+        setIsUploading(false);
+        setSelectedImageUri(null); 
+        return null;
+      }
+
+      const { data: publicUrlData, error: getUrlError } = await supabase.storage
+        .from('requests')
+        .getPublicUrl(filePath);
+
+      if (getUrlError) {
+        console.error('Error getting public URL from Supabase:', getUrlError);
+        Alert.alert('Error', `Failed to get media URL after upload: ${getUrlError.message}`);
+        setIsUploading(false);
+        setSelectedImageUri(null); 
+        return null;
+      }
+      
+      if (!publicUrlData || !publicUrlData.publicUrl) {
+        console.error('Error getting public URL from Supabase: No public URL in data.');
+        Alert.alert('Error', 'Failed to get media URL after upload.');
+        setIsUploading(false);
+        setSelectedImageUri(null);
+        return null;
+      }
+
+      console.log('Successfully uploaded media. Public URL:', publicUrlData.publicUrl);
+      setUploadedFileUrl(publicUrlData.publicUrl);
+      setIsUploading(false);
+      return publicUrlData.publicUrl;
+
+    } catch (e) {
+      console.error("Upload process error:", e);
+      Alert.alert("Upload Error", `An unexpected error occurred during upload: ${e.message}`);
+      setSelectedImageUri(null); 
+      setUploadedFileUrl(null);
+      setIsUploading(false);
+      return null;
+    }
+  };
+
+  const handleAttachPicture = async () => {
     Keyboard.dismiss();
+
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (permissionResult.granted === false) {
+      Alert.alert(
+        "Permission Required",
+        "You've refused to allow this app to access your photos/videos."
+      );
+      return;
+    }
+
+    const pickerResult = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All, // Allow both images and videos
+      allowsEditing: true, // Note: video editing might not be supported on all platforms or might be limited
+      aspect: [4, 3], // Aspect ratio might apply mainly to image cropping
+      quality: 1, 
+      // For videos, you might want to add videoExportPreset or videoQuality on iOS
+    });
+
+    if (pickerResult.canceled === true) {
+      return;
+    }
+
+    if (pickerResult.assets && pickerResult.assets.length > 0) {
+      const asset = pickerResult.assets[0];
+      // asset object contains 'mediaType' ('image' or 'video'), 'mimeType', 'uri', 'fileName', 'fileSize' etc.
+      setSelectedImageUri(asset.uri); // This URI will be used for preview (Image component might not show video thumbnail)
+      await uploadImage(asset); // Pass the full asset object
+    }
+  };
+
+  const handleSend = async () => {
+    Keyboard.dismiss();
+
+    if (isUploading) {
+        Alert.alert("Please wait", "Media is still uploading.");
+        return;
+    }
 
     const {
       data: { user },
     } = await supabase.auth.getUser();
+
+    if (!user) {
+        Alert.alert("Authentication Error", "Could not find user. Please log in again.");
+        return;
+    }
 
     const requestData = {
       user_id: user.id,
       reason: reason,
       priority: priority,
       description: message,
+      image: uploadedFileUrl, // This field will now store URL for image or video
     };
 
-    const { error } = await supabase.from("requests").insert(requestData);
+    const { error } = await supabase.from("requests").insert([requestData]);
 
     if (error) {
       console.error("Error adding request:", error);
+      Alert.alert("Error", `Failed to send message: ${error.message}`);
+      return;
     }
 
-    // Clear form
     setReason("");
     setPriority(-1);
     setMessage("");
-    setAttachments([]);
+    setSelectedImageUri(null);
+    setUploadedFileUrl(null);
     Alert.alert("Success", "Message sent successfully!");
-  };
-
-  const handleAttachPicture = () => {
-    Keyboard.dismiss();
-    Alert.alert("Info", "Picture attachment feature coming soon!");
   };
 
   const dismissKeyboard = () => {
@@ -74,6 +274,14 @@ export default function Contact() {
   const getPriorityColor = () => {
     const selectedPriority = priorities.find((p) => p.value === priority);
     return selectedPriority ? selectedPriority.color : "#666";
+  };
+
+  const removeSelectedImage = () => { // Name kept for simplicity, handles selected media
+    setSelectedImageUri(null);
+    setUploadedFileUrl(null);
+    if (isUploading) {
+        setIsUploading(false); 
+    }
   };
 
   return (
@@ -131,7 +339,6 @@ export default function Contact() {
             </TouchableOpacity>
           </View>
 
-          {/* Reason Dropdown Modal */}
           <Modal
             visible={showReasonDropdown}
             transparent={true}
@@ -162,7 +369,6 @@ export default function Contact() {
             </TouchableOpacity>
           </Modal>
 
-          {/* Priority Dropdown Modal */}
           <Modal
             visible={showPriorityDropdown}
             transparent={true}
@@ -219,14 +425,38 @@ export default function Contact() {
             />
           </View>
 
+          {selectedImageUri && (
+            <View style={styles.imagePreviewContainer}>
+              {/* Image component might not display video previews. 
+                  For video previews, expo-av Video component would be needed.
+                  This will show image previews and potentially a placeholder/first frame for videos. */}
+              <Image source={{ uri: selectedImageUri }} style={styles.imagePreview} />
+              <TouchableOpacity onPress={removeSelectedImage} style={styles.removeImageButton}>
+                <Text style={styles.removeImageButtonText}>Remove</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           <TouchableOpacity
-            style={styles.attachButton}
+            style={[styles.attachButton, isUploading && styles.disabledButton]}
             onPress={handleAttachPicture}
+            disabled={isUploading}
           >
-            <Text style={styles.attachButtonText}>📎 Attach Pictures</Text>
+            {isUploading ? (
+                <View style={styles.attachButtonContent}>
+                    <ActivityIndicator size="small" color="#666" style={{marginRight: 8}} />
+                    <Text style={styles.attachButtonText}>Uploading...</Text>
+                </View>
+            ) : (
+                <Text style={styles.attachButtonText}>📎 Attach Media</Text>
+            )}
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
+          <TouchableOpacity 
+            style={[styles.sendButton, (isUploading || !reason || priority < 0 || !message.trim()) && styles.disabledButton]} 
+            onPress={handleSend}
+            disabled={isUploading || !reason || priority < 0 || !message.trim()}
+          >
             <Text style={styles.sendButtonText}>Send</Text>
           </TouchableOpacity>
         </ScrollView>
@@ -244,8 +474,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
+    paddingHorizontal: 20,
     paddingTop: 60,
+    paddingBottom: 60,
   },
   title: {
     fontSize: 24,
@@ -337,6 +568,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ddd",
   },
+  attachButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   attachButtonText: {
     fontSize: 16,
     color: "#666",
@@ -352,4 +587,30 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
+  imagePreviewContainer: { // Name kept for simplicity
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  imagePreview: { // Name kept for simplicity
+    width: 150,
+    height: 150,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    marginBottom: 10,
+  },
+  removeImageButton: { // Name kept for simplicity
+    backgroundColor: "#F44336",
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 5,
+  },
+  removeImageButtonText: {
+    color: "#fff",
+    fontSize: 14,
+  },
+  disabledButton: {
+    opacity: 0.7,
+  },
 });
+
