@@ -37,6 +37,11 @@ const ExpensesScreen = () => {
   // State for past expenses
   const [pastExpenses, setPastExpenses] = useState([]);
 
+  const deleteExpense = () => {
+    // Empty function to be implemented later
+    console.log("Deleting expense");
+  };
+
   const getBalances = useCallback(async () => {
     if (!userId) return;
     try {
@@ -311,12 +316,20 @@ const ExpensesScreen = () => {
           Paid by {item.payerName} on {formatDate(item.date)}
         </Text>
       </View>
-      <Text style={[
-        styles.pastExpenseAmount,
-        item.paidByCurrentUser ? styles.amountPositive : styles.amountNegative
-      ]}>
-        £{item.totalAmount.toFixed(2)}
-      </Text>
+      <View style={styles.pastExpenseRightSection}>
+        <Text style={[
+          styles.pastExpenseAmount,
+          item.paidByCurrentUser ? styles.amountPositive : styles.amountNegative
+        ]}>
+          £{item.totalAmount.toFixed(2)}
+        </Text>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => deleteExpense()}
+        >
+          <Text style={styles.deleteButtonText}>🗑️</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -854,6 +867,11 @@ const styles = StyleSheet.create({
     flex: 1, 
     marginRight: 10, 
   },
+  pastExpenseRightSection: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
   pastExpenseDescription: {
     fontSize: 15,
     fontWeight: "500",
@@ -874,6 +892,19 @@ const styles = StyleSheet.create({
   amountNegative: { // Paid by someone else - red
     color: "#dc3545",
   },
+  deleteButton: {
+    backgroundColor: "#dc3545",
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 6,
+    minWidth: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deleteButtonText: {
+    fontSize: 16,
+    color: "#fff",
+  },
   noPastExpensesText: {
     fontSize: 14,
     color: "#6c757d",
@@ -884,4 +915,3 @@ const styles = StyleSheet.create({
 });
 
 export default ExpensesScreen;
-
