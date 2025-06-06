@@ -140,7 +140,7 @@ const NotificationsScreen = () => {
               const dueDate = new Date(rent.next_payment);
               const warningDate = new Date(dueDate.getTime() - oneWeek);
               return {
-                id: `rent-${rent.payment_id}`,
+                id: `rent-${rent.payment_id}-${warningDate.getTime()}`,
                 amount: rent.monthly_rent,
                 date: warningDate,
                 dueDate: rent.next_payment,
