@@ -18,13 +18,22 @@ import { MaterialIcons } from "@expo/vector-icons";
 const NotificationItem = ({ item }) => (
   <View style={styles.notificationItem}>
     <Text style={styles.notificationTitle}>
-      {item.payee.name} added {item.description}
+      {item.type === "rent"
+        ? "Rent Payment Due"
+        : `${item.payee.name} added ${item.description}`}
     </Text>
     <Text style={styles.notificationMessage}>
-      You {item.type === "receive" ? "will receive" : "owe"} £
-      {item.amount.toFixed(2)}
+      {item.type === "rent"
+        ? `Due date: ${formatDate(item.dueDate, (reverse = true))}`
+        : `You ${
+            item.type === "receive" ? "will receive" : "owe"
+          } £${item.amount.toFixed(2)}`}
     </Text>
-    <Text style={styles.notificationTime}>{formatDate(item.date)}</Text>
+    <Text style={styles.notificationTime}>
+      {item.type === "rent"
+        ? `Amount: £${item.amount.toFixed(2)}`
+        : formatDate(item.date)}
+    </Text>
   </View>
 );
 
@@ -69,11 +78,7 @@ const NotificationsScreen = () => {
         date: expense.created_at,
         isPaid: expense.is_paid,
         description: expense.description,
-        type: expense.description.toLowerCase().includes("rent")
-          ? "rent"
-          : userId === expense.payer_id
-          ? "receive"
-          : "send",
+        type: userId === expense.payer_id ? "receive" : "send",
         payee: {
           id: expense.payer_id,
           name: userId === expense.payer_id ? "You" : expense.users?.first_name,
@@ -101,6 +106,44 @@ const NotificationsScreen = () => {
         return acc;
       }, []);
 
+      try {
+        const { data: rentData, error } = await supabase.rpc(
+          "get_tenant_payment_info",
+          {
+            p_tenant_id: userId,
+          }
+        );
+        if (rentData) {
+          const oneWeek = 7 * 24 * 60 * 60 * 1000; // milliseconds in a week
+          const now = new Date();
+
+          const rentItems = rentData
+            .filter((rent) => {
+              const dueDate = new Date(rent.next_payment);
+              const warningDate = new Date(dueDate.getTime() - oneWeek);
+              return now >= warningDate && now <= dueDate;
+            })
+            .map((rent) => {
+              const dueDate = new Date(rent.next_payment);
+              const warningDate = new Date(dueDate.getTime() - oneWeek);
+              return {
+                id: `rent-${rent.payment_id}`,
+                amount: rent.monthly_rent,
+                date: warningDate,
+                dueDate: rent.next_payment,
+                isPaid: false,
+                description: "Rent Payment",
+                type: "rent",
+              };
+            });
+          setNotifications([...combinedItems, ...rentItems]);
+          return;
+        }
+        console.error(error);
+      } catch (error) {
+        console.error(error);
+      }
+
       setNotifications(combinedItems);
     } catch (error) {
       console.error("Error fetching notifications:", error.message);
@@ -110,8 +153,11 @@ const NotificationsScreen = () => {
   }, [userId]);
 
   const filterNotifications = (items) => {
-    if (filterBy === "all") return items;
-    return items.filter((item) => item.type === filterBy);
+    const filtered =
+      filterBy === "all"
+        ? items
+        : items.filter((item) => item.type === filterBy);
+    return filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
   };
 
   return (
