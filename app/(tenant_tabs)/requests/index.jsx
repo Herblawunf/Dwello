@@ -84,6 +84,21 @@ export default function Requests() {
     );
   };
 
+  const setStatus = async (request_id, status) => {
+    try {
+      const { data, error } = await supabase.rpc("update_request_status", {
+        p_request_id: request_id,
+        p_new_status: status,
+      });
+      console.log(status);
+      if (error) throw error;
+      getHouseRequests();
+    } catch (error) {
+      console.error("Error updating status:", error);
+      return { error: error.message };
+    }
+  };
+
   const renderRequest = ({ item }) => (
     <View style={styles.requestItem}>
       <View style={styles.requestHeader}>
@@ -110,10 +125,35 @@ export default function Requests() {
           <MaterialIcons name="comment" size={20} color="#757575" />
           <Text style={styles.footerButtonText}>View thread</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.footerButton} onPress={() => {}}>
-          <MaterialIcons name="check" size={20} color="#757575" />
-          <Text style={styles.footerButtonText}>{item.status}</Text>
-        </TouchableOpacity>
+        {item.status === "contractor sent" || item.status === "completed" ? (
+          <TouchableOpacity
+            style={styles.footerButton}
+            onPress={() =>
+              setStatus(
+                item.request_id,
+                item.status === "contractor sent"
+                  ? "completed"
+                  : "contractor sent"
+              )
+            }
+          >
+            <MaterialIcons
+              name={item.status === "contractor sent" ? "check" : "undo"}
+              size={20}
+              color="#757575"
+            />
+            <Text style={styles.footerButtonText}>
+              {item.status === "contractor sent"
+                ? "Mark completed"
+                : "Mark incomplete"}
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.footerButton}>
+            <MaterialIcons name="info" size={20} color="#757575" />
+            <Text style={styles.footerButtonText}>{item.status}</Text>
+          </View>
+        )}
       </View>
     </View>
   );
