@@ -6,11 +6,14 @@ import {
   FlatList,
   SafeAreaView,
   RefreshControl,
+  TouchableOpacity,
+  Modal,
 } from "react-native";
 import { supabase } from "@/lib/supabase";
 import { useFocusEffect } from "@react-navigation/native";
 import { Context as AuthContext } from "@/context/AuthContext";
 import { formatDate } from "@/tools/formatDate";
+import { MaterialIcons } from "@expo/vector-icons";
 
 const NotificationItem = ({ item }) => (
   <View style={styles.notificationItem}>
@@ -28,6 +31,8 @@ const NotificationItem = ({ item }) => (
 const NotificationsScreen = () => {
   const [notifications, setNotifications] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [filterBy, setFilterBy] = useState("all");
+  const [filterMenuVisible, setFilterMenuVisible] = useState(false);
   const { state: authState } = useContext(AuthContext);
   const userId = authState.userId;
 
@@ -64,7 +69,11 @@ const NotificationsScreen = () => {
         date: expense.created_at,
         isPaid: expense.is_paid,
         description: expense.description,
-        type: userId === expense.payer_id ? "receive" : "send",
+        type: expense.description.toLowerCase().includes("rent")
+          ? "rent"
+          : userId === expense.payer_id
+          ? "receive"
+          : "send",
         payee: {
           id: expense.payer_id,
           name: userId === expense.payer_id ? "You" : expense.users?.first_name,
@@ -100,13 +109,81 @@ const NotificationsScreen = () => {
     }
   }, [userId]);
 
+  const filterNotifications = (items) => {
+    if (filterBy === "all") return items;
+    return items.filter((item) => item.type === filterBy);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Notifications</Text>
+        <TouchableOpacity
+          style={styles.filterButton}
+          onPress={() => setFilterMenuVisible(true)}
+        >
+          <MaterialIcons name="sort" size={24} color="#757575" />
+        </TouchableOpacity>
       </View>
+
+      <Modal
+        visible={filterMenuVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setFilterMenuVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setFilterMenuVisible(false)}
+        >
+          <View style={styles.filterMenu}>
+            <TouchableOpacity
+              style={styles.filterMenuItem}
+              onPress={() => {
+                setFilterBy("all");
+                setFilterMenuVisible(false);
+              }}
+            >
+              <MaterialIcons name="list" size={20} color="#757575" />
+              <Text style={styles.filterMenuText}>Show All</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.filterMenuItem}
+              onPress={() => {
+                setFilterBy("rent");
+                setFilterMenuVisible(false);
+              }}
+            >
+              <MaterialIcons name="home" size={20} color="#757575" />
+              <Text style={styles.filterMenuText}>Rent</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.filterMenuItem}
+              onPress={() => {
+                setFilterBy("receive");
+                setFilterMenuVisible(false);
+              }}
+            >
+              <MaterialIcons name="arrow-downward" size={20} color="#757575" />
+              <Text style={styles.filterMenuText}>Receiving</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.filterMenuItem}
+              onPress={() => {
+                setFilterBy("send");
+                setFilterMenuVisible(false);
+              }}
+            >
+              <MaterialIcons name="arrow-upward" size={20} color="#757575" />
+              <Text style={styles.filterMenuText}>Sending</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       <FlatList
-        data={notifications}
+        data={filterNotifications(notifications)}
         renderItem={({ item }) => <NotificationItem item={item} />}
         keyExtractor={(item) => item.id}
         style={styles.list}
@@ -128,6 +205,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#f5f5f5",
   },
   header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 16,
     backgroundColor: "#f5f5f5",
@@ -138,6 +218,9 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "bold",
     color: "#333",
+  },
+  filterButton: {
+    padding: 8,
   },
   list: {
     flex: 1,
@@ -168,6 +251,33 @@ const styles = StyleSheet.create({
   notificationTime: {
     fontSize: 12,
     color: "#999",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-start",
+  },
+  filterMenu: {
+    position: "absolute",
+    right: 8,
+    top: 56,
+    backgroundColor: "white",
+    borderRadius: 8,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  filterMenuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+  },
+  filterMenuText: {
+    marginLeft: 12,
+    fontSize: 16,
+    color: "#212121",
   },
 });
 
