@@ -26,25 +26,16 @@ const rentDue = async () => {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const { data: house_id } = await supabase
-    .from("tenants")
-    .select("house_id")
-    .eq("tenant_id", user.id)
-    .single();
-
-  if (!house_id) {
-    console.warn("No house_id found for user.");
-    return 0;
-  }
-
   const { data: rent_info } = await supabase
     .from("tenants")
     .select("*")
-    .eq("house_id", house_id.house_id)
+    .eq("tenant_id", user.id)
     .single();
 
+  console.log("Rent info:", rent_info);
+
   if (!rent_info) {
-    console.warn("No house_info found for house_id:", house_id.house_id);
+    console.warn("No house_info found for user:", user.id);
     return 0;
   }
 
@@ -62,27 +53,11 @@ const daysToRent = async () => {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const { data: house_id } = await supabase
+  const { data: house_info } = await supabase
     .from("tenants")
-    .select("house_id")
+    .select("*")
     .eq("tenant_id", user.id)
     .single();
-
-  if (!house_id) {
-    console.warn("No house_id found for user.");
-    return -1;
-  }
-
-  const { data: house_info } = await supabase
-    .from("houses")
-    .select("*")
-    .eq("house_id", house_id.house_id)
-    .single();
-
-  if (!house_info) {
-    console.warn("No house_info found for house_id:", house_id.house_id);
-    return -1;
-  }
 
   const next_payment = house_info.next_payment;
   const today = new Date();
