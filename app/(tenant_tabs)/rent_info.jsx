@@ -9,8 +9,9 @@ import {
   Modal,
   TextInput,
   Alert,
-  Keyboard, // Import Keyboard
-  TouchableWithoutFeedback, // Import TouchableWithoutFeedback
+  Keyboard,
+  TouchableWithoutFeedback,
+  ScrollView, // Add this import
 } from "react-native";
 import { Context as AuthContext } from "@/context/AuthContext";
 
@@ -179,176 +180,183 @@ const RentScreen = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <Text style={styles.title}>Rent</Text>
+      <ScrollView style={styles.container}>
+        <View style={styles.contentContainer}>
+          <Text style={styles.title}>Rent</Text>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Rent Balance Owed</Text>
-          <Text style={styles.amountText}>
-            £
-            {rentInfo.isPastDue
-              ? rentInfo.monthly_rent.toFixed(2) * rentInfo.months_per_payment
-              : 0}
-          </Text>
-        </View>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Rent Balance Owed</Text>
+            <Text style={styles.amountText}>
+              £
+              {rentInfo.isPastDue
+                ? rentInfo.monthly_rent.toFixed(2) * rentInfo.months_per_payment
+                : 0}
+            </Text>
+          </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Next Rent Due</Text>
-          <Text
-            style={[styles.dateText, rentInfo.isPastDue && styles.pastDueDate]}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Next Rent Due</Text>
+            <Text
+              style={[
+                styles.dateText,
+                rentInfo.isPastDue && styles.pastDueDate,
+              ]}
+            >
+              {formatDate(new Date(rentInfo.next_payment))}
+            </Text>
+            <Text style={styles.frequencyText}>
+              Paid every{" "}
+              {rentInfo.months_per_payment === 1
+                ? "month"
+                : rentInfo.months_per_payment + " months"}
+            </Text>
+          </View>
+
+          {!rentInfo.isPaid && (
+            <TouchableOpacity style={styles.button} onPress={handleRentPaid}>
+              <Text style={styles.buttonText}>Rent Paid</Text>
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={handleOpenDelayModal}
           >
-            {formatDate(new Date(rentInfo.next_payment))}
-          </Text>
-          <Text style={styles.frequencyText}>
-            Paid every{" "}
-            {rentInfo.months_per_payment == 1
-              ? "month"
-              : rentInfo.months_per_payment + " months"}
-          </Text>
-        </View>
-
-        {!rentInfo.isPaid && (
-          <TouchableOpacity style={styles.button} onPress={handleRentPaid}>
-            <Text style={styles.buttonText}>Rent Paid</Text>
+            <Text style={styles.secondaryButtonText}>Request Rent Delay</Text>
           </TouchableOpacity>
-        )}
 
-        <TouchableOpacity
-          style={styles.secondaryButton}
-          onPress={handleOpenDelayModal}
-        >
-          <Text style={styles.secondaryButtonText}>Request Rent Delay</Text>
-        </TouchableOpacity>
+          {/* Delay Request Log Section */}
+          <View style={styles.logContainer}>
+            <Text style={styles.logTitle}>Delay Request History</Text>
+            {placeholderDelayRequests.length > 0 ? (
+              placeholderDelayRequests.map((request) => (
+                <TouchableOpacity
+                  key={request.id}
+                  style={styles.logItem}
+                  onPress={() => handleOpenReasonModal(request)}
+                >
+                  {getStatusIcon(request.status)}
+                  <View style={styles.logItemTextContainer}>
+                    <Text style={styles.logItemTextPrimary}>
+                      {request.days} day(s) delay requested on{" "}
+                      {formatDate(request.dateRequested)}
+                    </Text>
+                    <Text style={styles.logItemTextSecondary}>
+                      Status:{" "}
+                      {request.status.charAt(0).toUpperCase() +
+                        request.status.slice(1)}
+                    </Text>
+                  </View>
+                  <Text style={styles.logItemChevron}>›</Text>
+                </TouchableOpacity>
+              ))
+            ) : (
+              <Text style={styles.noRequestsText}>
+                No delay requests found.
+              </Text>
+            )}
+          </View>
 
-        {/* Delay Request Log Section */}
-        <View style={styles.logContainer}>
-          <Text style={styles.logTitle}>Delay Request History</Text>
-          {placeholderDelayRequests.length > 0 ? (
-            placeholderDelayRequests.map((request) => (
-              <TouchableOpacity
-                key={request.id}
-                style={styles.logItem}
-                onPress={() => handleOpenReasonModal(request)}
-              >
-                {getStatusIcon(request.status)}
-                <View style={styles.logItemTextContainer}>
-                  <Text style={styles.logItemTextPrimary}>
-                    {request.days} day(s) delay requested on{" "}
-                    {formatDate(request.dateRequested)}
+          {/* Modal for Requesting Delay */}
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={isDelayModalVisible}
+            onRequestClose={handleCloseDelayModal}
+          >
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+              <View style={styles.modalOverlay}>
+                <TouchableWithoutFeedback>
+                  <View style={styles.modalView}>
+                    <Text style={styles.modalTitle}>
+                      Request Rent Payment Delay
+                    </Text>
+                    <Text style={styles.inputLabel}>
+                      Number of Days for Extension
+                    </Text>
+                    <TextInput
+                      style={styles.input}
+                      onChangeText={setDelayDays}
+                      value={delayDays}
+                      placeholder="e.g., 7"
+                      keyboardType="numeric"
+                    />
+                    <Text style={styles.inputLabel}>Reason for Delay</Text>
+                    <TextInput
+                      style={[styles.input, styles.reasonInput]}
+                      onChangeText={setDelayReason}
+                      value={delayReason}
+                      placeholder="Briefly explain your reason"
+                      multiline={true}
+                      numberOfLines={3}
+                    />
+                    <View style={styles.modalButtonContainer}>
+                      <TouchableOpacity
+                        style={[styles.modalButton, styles.cancelButton]}
+                        onPress={handleCloseDelayModal}
+                      >
+                        <Text style={styles.modalButtonText}>Cancel</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.modalButton, styles.submitButton]}
+                        onPress={handleSubmitDelayRequest}
+                      >
+                        <Text style={styles.modalButtonText}>Submit</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </TouchableWithoutFeedback>
+              </View>
+            </TouchableWithoutFeedback>
+          </Modal>
+
+          {/* Modal for Displaying Reason */}
+          {selectedRequest && (
+            <Modal
+              animationType="fade"
+              transparent={true}
+              visible={isReasonModalVisible}
+              onRequestClose={handleCloseReasonModal}
+            >
+              <View style={styles.reasonModalOverlay}>
+                <View style={styles.reasonModalView}>
+                  <Text style={styles.reasonModalTitle}>Request Details</Text>
+                  <Text style={styles.reasonModalDetail}>
+                    <Text style={styles.reasonModalDetailLabel}>
+                      Date Requested:
+                    </Text>
+                    <Text> {formatDate(selectedRequest.dateRequested)}</Text>
                   </Text>
-                  <Text style={styles.logItemTextSecondary}>
-                    Status:{" "}
-                    {request.status.charAt(0).toUpperCase() +
-                      request.status.slice(1)}
+                  <Text style={styles.reasonModalDetail}>
+                    <Text style={styles.reasonModalDetailLabel}>
+                      Days Requested:
+                    </Text>
+                    <Text> {selectedRequest.days}</Text>
                   </Text>
+                  <Text style={styles.reasonModalDetail}>
+                    <Text style={styles.reasonModalDetailLabel}>Status:</Text>
+                    <Text>
+                      {" "}
+                      {selectedRequest.status.charAt(0).toUpperCase() +
+                        selectedRequest.status.slice(1)}
+                    </Text>
+                  </Text>
+                  <Text style={styles.reasonModalDetailLabel}>Reason:</Text>
+                  <Text style={styles.reasonModalReasonText}>
+                    {selectedRequest.reason}
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.reasonModalCloseButton}
+                    onPress={handleCloseReasonModal}
+                  >
+                    <Text style={styles.modalButtonText}>Close</Text>
+                  </TouchableOpacity>
                 </View>
-                <Text style={styles.logItemChevron}>›</Text>
-              </TouchableOpacity>
-            ))
-          ) : (
-            <Text style={styles.noRequestsText}>No delay requests found.</Text>
+              </View>
+            </Modal>
           )}
         </View>
-
-        {/* Modal for Requesting Delay */}
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={isDelayModalVisible}
-          onRequestClose={handleCloseDelayModal}
-        >
-          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <View style={styles.modalOverlay}>
-              <TouchableWithoutFeedback>
-                <View style={styles.modalView}>
-                  <Text style={styles.modalTitle}>
-                    Request Rent Payment Delay
-                  </Text>
-                  <Text style={styles.inputLabel}>
-                    Number of Days for Extension
-                  </Text>
-                  <TextInput
-                    style={styles.input}
-                    onChangeText={setDelayDays}
-                    value={delayDays}
-                    placeholder="e.g., 7"
-                    keyboardType="numeric"
-                  />
-                  <Text style={styles.inputLabel}>Reason for Delay</Text>
-                  <TextInput
-                    style={[styles.input, styles.reasonInput]}
-                    onChangeText={setDelayReason}
-                    value={delayReason}
-                    placeholder="Briefly explain your reason"
-                    multiline={true}
-                    numberOfLines={3}
-                  />
-                  <View style={styles.modalButtonContainer}>
-                    <TouchableOpacity
-                      style={[styles.modalButton, styles.cancelButton]}
-                      onPress={handleCloseDelayModal}
-                    >
-                      <Text style={styles.modalButtonText}>Cancel</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.modalButton, styles.submitButton]}
-                      onPress={handleSubmitDelayRequest}
-                    >
-                      <Text style={styles.modalButtonText}>Submit</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </TouchableWithoutFeedback>
-            </View>
-          </TouchableWithoutFeedback>
-        </Modal>
-
-        {/* Modal for Displaying Reason */}
-        {selectedRequest && (
-          <Modal
-            animationType="fade"
-            transparent={true}
-            visible={isReasonModalVisible}
-            onRequestClose={handleCloseReasonModal}
-          >
-            <View style={styles.reasonModalOverlay}>
-              <View style={styles.reasonModalView}>
-                <Text style={styles.reasonModalTitle}>Request Details</Text>
-                <Text style={styles.reasonModalDetail}>
-                  <Text style={styles.reasonModalDetailLabel}>
-                    Date Requested:
-                  </Text>
-                  <Text> {formatDate(selectedRequest.dateRequested)}</Text>
-                </Text>
-                <Text style={styles.reasonModalDetail}>
-                  <Text style={styles.reasonModalDetailLabel}>
-                    Days Requested:
-                  </Text>
-                  <Text> {selectedRequest.days}</Text>
-                </Text>
-                <Text style={styles.reasonModalDetail}>
-                  <Text style={styles.reasonModalDetailLabel}>Status:</Text>
-                  <Text>
-                    {" "}
-                    {selectedRequest.status.charAt(0).toUpperCase() +
-                      selectedRequest.status.slice(1)}
-                  </Text>
-                </Text>
-                <Text style={styles.reasonModalDetailLabel}>Reason:</Text>
-                <Text style={styles.reasonModalReasonText}>
-                  {selectedRequest.reason}
-                </Text>
-                <TouchableOpacity
-                  style={styles.reasonModalCloseButton}
-                  onPress={handleCloseReasonModal}
-                >
-                  <Text style={styles.modalButtonText}>Close</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Modal>
-        )}
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -365,9 +373,10 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+    backgroundColor: "#f8f9fa",
+  },
+  contentContainer: {
     padding: 20,
-    // alignItems: 'center', // Keep for global centering if needed, but sections are width 100%
-    // justifyContent: 'flex-start', // Removed to allow natural flow
   },
   title: {
     fontSize: 32,
