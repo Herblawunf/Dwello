@@ -15,41 +15,9 @@ import {
 } from "react-native";
 import { Context as AuthContext } from "@/context/AuthContext";
 
-// Placeholder data for delay requests
-const placeholderDelayRequests = [
-  {
-    id: "1",
-    dateRequested: new Date(2024, 0, 15),
-    days: 7,
-    reason: "Waiting for paycheck, it will arrive a few days late this month.",
-    status: "open",
-  },
-  {
-    id: "2",
-    dateRequested: new Date(2023, 11, 10),
-    days: 5,
-    reason: "Unexpected car repair expenses.",
-    status: "accepted",
-  },
-  {
-    id: "3",
-    dateRequested: new Date(2023, 10, 5),
-    days: 10,
-    reason:
-      "The reason provided was insufficient for approval of such a long delay.",
-    status: "denied",
-  },
-  {
-    id: "4",
-    dateRequested: new Date(2024, 1, 20),
-    days: 3,
-    reason: "Short business trip, will pay upon return.",
-    status: "open",
-  },
-];
-
 const RentScreen = () => {
   const [rentInfo, setRentInfo] = useState({});
+  const [rentExtensions, setRentExtensions] = useState([]);
   const [isDelayModalVisible, setIsDelayModalVisible] = useState(false);
   const [delayDays, setDelayDays] = useState("");
   const [delayReason, setDelayReason] = useState("");
@@ -62,6 +30,7 @@ const RentScreen = () => {
 
   useEffect(() => {
     getRentInfo();
+    getRentExtensions();
   }, []);
 
   const getRentInfo = async () => {
@@ -83,6 +52,19 @@ const RentScreen = () => {
       console.log(newRentData);
     } catch (error) {
       console.error("Error in getRentInfo:", error);
+    }
+  };
+
+  const getRentExtensions = async () => {
+    try {
+      const { data, error } = await supabase.rpc("get_rent_extensions", {
+        p_user_id: userId,
+      });
+      if (error) throw error;
+      console.log(data);
+      setRentExtensions(data || []);
+    } catch (error) {
+      console.error("Error fetching rent extensions:", error);
     }
   };
 
@@ -120,10 +102,9 @@ const RentScreen = () => {
         p_reason: delayReason,
       });
 
-      console.log(data);
-
       if (error) throw error;
 
+      await getRentExtensions(); // Refresh the extensions list
       Alert.alert(
         "Request Submitted",
         `Your request for a ${delayDays}-day rent delay has been submitted.`
@@ -242,8 +223,8 @@ const RentScreen = () => {
           {/* Delay Request Log Section */}
           <View style={styles.logContainer}>
             <Text style={styles.logTitle}>Delay Request History</Text>
-            {placeholderDelayRequests.length > 0 ? (
-              placeholderDelayRequests.map((request) => (
+            {rentExtensions.length > 0 ? (
+              rentExtensions.map((request) => (
                 <TouchableOpacity
                   key={request.id}
                   style={styles.logItem}
@@ -253,7 +234,7 @@ const RentScreen = () => {
                   <View style={styles.logItemTextContainer}>
                     <Text style={styles.logItemTextPrimary}>
                       {request.days} day(s) delay requested on{" "}
-                      {formatDate(request.dateRequested)}
+                      {formatDate(new Date(request.created_at))}
                     </Text>
                     <Text style={styles.logItemTextSecondary}>
                       Status:{" "}
@@ -265,9 +246,7 @@ const RentScreen = () => {
                 </TouchableOpacity>
               ))
             ) : (
-              <Text style={styles.noRequestsText}>
-                No delay requests found.
-              </Text>
+              <Text style={styles.noRequestsText}>No delay requests found.</Text>
             )}
           </View>
 
@@ -339,7 +318,7 @@ const RentScreen = () => {
                     <Text style={styles.reasonModalDetailLabel}>
                       Date Requested:
                     </Text>
-                    <Text> {formatDate(selectedRequest.dateRequested)}</Text>
+                    <Text> {formatDate(new Date(selectedRequest.created_at))}</Text>
                   </Text>
                   <Text style={styles.reasonModalDetail}>
                     <Text style={styles.reasonModalDetailLabel}>
