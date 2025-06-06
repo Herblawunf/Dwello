@@ -16,8 +16,8 @@ import {
 } from "react-native";
 import { supabase } from "@/lib/supabase";
 import * as ImagePicker from "expo-image-picker";
-// FileSystem might not be needed if FormData handles URI directly
-import * as FileSystem from "expo-file-system";
+// FileSystem is no longer needed as FormData handles URI directly for uploads
+// import * as FileSystem from "expo-file-system";
 
 
 export default function Contact() {
@@ -26,7 +26,7 @@ export default function Contact() {
   const [message, setMessage] = useState("");
   const [showReasonDropdown, setShowReasonDropdown] = useState(false);
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
-  const [selectedImageUri, setSelectedImageUri] = useState(null);
+  const [selectedImageUri, setSelectedImageUri] = useState(null); // URI for selected image or video
   const [uploadedFileUrl, setUploadedFileUrl] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -41,16 +41,15 @@ export default function Contact() {
     { label: "High", value: 2, color: "#F44336" },
   ];
 
-  const uploadImage = async (asset) => {
+  const uploadImage = async (asset) => { // Renaming to uploadMedia might be more accurate but keeping for consistency
     if (!asset || !asset.uri) {
-      Alert.alert("Error", "No image asset provided for upload.");
+      Alert.alert("Error", "No media asset provided for upload.");
       return null;
     }
 
     if (typeof asset.fileSize === 'number' && asset.fileSize === 0) {
-        Alert.alert("Upload Error", "The selected image file is empty.");
-        // No need to setIsUploading(true) if we return early
-        setSelectedImageUri(null); 
+        Alert.alert("Upload Error", "The selected file is empty.");
+        setSelectedImageUri(null);
         return null;
     }
 
@@ -59,44 +58,84 @@ export default function Contact() {
 
     try {
       const uri = asset.uri;
+      const isVideo = asset.mediaType === 'video';
 
-      // 1. Determine Content-Type (primary source: asset.mimeType)
+      // 1. Determine Content-Type
       let determinedContentType = asset.mimeType;
-      if (!determinedContentType || !determinedContentType.startsWith('image/')) {
+      if (!determinedContentType || 
+          determinedContentType === 'application/octet-stream' ||
+          (!determinedContentType.startsWith('image/') && !determinedContentType.startsWith('video/'))) {
+          
           const extensionFromUri = uri.includes('.') ? uri.split('.').pop().toLowerCase() : null;
-          if (extensionFromUri && ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extensionFromUri)) {
-              determinedContentType = `image/${extensionFromUri === 'jpeg' ? 'jpg' : extensionFromUri}`;
-          } else {
-              determinedContentType = 'image/jpeg'; // Ultimate fallback if type is unknown
+          const fileNameExt = asset.fileName && asset.fileName.includes('.') ? asset.fileName.split('.').pop().toLowerCase() : null;
+          const bestGuessExt = extensionFromUri || fileNameExt;
+
+          if (isVideo) {
+              if (bestGuessExt) {
+                  if (['mp4', 'm4v'].includes(bestGuessExt)) determinedContentType = 'video/mp4';
+                  else if (['mov', 'qt'].includes(bestGuessExt)) determinedContentType = 'video/quicktime';
+                  else if (['avi'].includes(bestGuessExt)) determinedContentType = 'video/x-msvideo';
+                  else if (['wmv'].includes(bestGuessExt)) determinedContentType = 'video/x-ms-wmv';
+                  else if (['mkv'].includes(bestGuessExt)) determinedContentType = 'video/x-matroska';
+                  else if (['webm'].includes(bestGuessExt)) determinedContentType = 'video/webm';
+                  else determinedContentType = 'video/mp4'; // Default video fallback
+              } else {
+                  determinedContentType = 'video/mp4'; // Ultimate video fallback
+              }
+          } else { // It's an image
+              if (bestGuessExt) {
+                  if (['jpg', 'jpeg'].includes(bestGuessExt)) determinedContentType = 'image/jpeg';
+                  else if (['png'].includes(bestGuessExt)) determinedContentType = 'image/png';
+                  else if (['gif'].includes(bestGuessExt)) determinedContentType = 'image/gif';
+                  else if (['webp'].includes(bestGuessExt)) determinedContentType = 'image/webp';
+                  else if (['bmp'].includes(bestGuessExt)) determinedContentType = 'image/bmp';
+                  else determinedContentType = 'image/jpeg'; // Default image fallback
+              } else {
+                  determinedContentType = 'image/jpeg'; // Ultimate image fallback
+              }
           }
       }
       
-      // 2. Determine File Extension (from determinedContentType)
-      let fileExt = determinedContentType.split('/')[1];
-      if (fileExt === 'jpeg') fileExt = 'jpg'; // Normalize for consistency
+      // 2. Determine File Extension
+      let fileExt;
+      if (determinedContentType && determinedContentType.includes('/')) {
+          fileExt = determinedContentType.split('/')[1];
+          if (fileExt === 'jpeg') fileExt = 'jpg';
+          else if (fileExt === 'quicktime') fileExt = 'mov';
+          else if (fileExt === 'x-matroska') fileExt = 'mkv';
+          else if (fileExt === 'x-msvideo') fileExt = 'avi';
+          else if (fileExt === 'x-ms-wmv') fileExt = 'wmv';
+          // Add other normalizations if common, e.g., svg+xml -> svg
+      }
+
+      if (!fileExt || fileExt === 'octet-stream' || fileExt.length > 5) { // Check for generic or complex subtypes
+          if (asset.fileName && asset.fileName.includes('.')) {
+              const extFromFilename = asset.fileName.split('.').pop().toLowerCase();
+              if (extFromFilename.length > 0 && extFromFilename.length <= 4 && /^[a-z0-9]+$/.test(extFromFilename)) {
+                   fileExt = extFromFilename;
+              }
+          }
+      }
+      if (!fileExt) {
+          fileExt = isVideo ? 'mp4' : 'jpg'; // Final fallback extension
+      }
 
 
-      // 3. Determine Base Filename (primary source: asset.fileName, fallback to URI parsing)
+      // 3. Determine Base Filename
       let baseFileName;
       if (asset.fileName) {
           baseFileName = asset.fileName.includes('.') ? asset.fileName.substring(0, asset.fileName.lastIndexOf('.')) : asset.fileName;
       } else {
-          // Fallback to deriving from URI if asset.fileName is not available
           const uriPathName = uri.substring(uri.lastIndexOf('/') + 1);
           baseFileName = uriPathName.includes('.') ? uriPathName.substring(0, uriPathName.lastIndexOf('.')) : uriPathName;
       }
       const sanitizedBaseFileName = baseFileName.replace(/[^a-zA-Z0-9_-]/g, '_');
       
       const filePath = `public/${Date.now()}_${sanitizedBaseFileName}.${fileExt}`;
-
-      // Read the file content using expo-file-system as base64
-      const base64 = await FileSystem.readAsStringAsync(uri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-      
       const fileNameForFormData = `${sanitizedBaseFileName}.${fileExt}`;
 
-      // Use FormData for uploading in React Native
+      // FormData handles URI directly in React Native for network requests.
+      // No need to read file as base64.
       const formData = new FormData();
       formData.append('file', {
         uri: asset.uri,
@@ -104,31 +143,27 @@ export default function Contact() {
         type: determinedContentType,
       });
 
-      // console.log('Uploading with FormData. Path:', filePath, 'File details:', { uri: asset.uri, name: fileNameForFormData, type: determinedContentType });
-
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('requests')
+        .from('requests') // Same bucket for photos and videos
         .upload(filePath, formData, {
-          // contentType is automatically set to multipart/form-data when FormData is used
           upsert: false,
         });
 
       if (uploadError) {
         console.error("Supabase upload error:", uploadError);
-        Alert.alert("Upload Error", `Failed to upload image: ${uploadError.message}`);
+        Alert.alert("Upload Error", `Failed to upload media: ${uploadError.message}`);
         setIsUploading(false);
         setSelectedImageUri(null); 
         return null;
       }
 
-      // If upload was successful, get the public URL
       const { data: publicUrlData, error: getUrlError } = await supabase.storage
         .from('requests')
         .getPublicUrl(filePath);
 
       if (getUrlError) {
         console.error('Error getting public URL from Supabase:', getUrlError);
-        Alert.alert('Error', `Failed to get image URL after upload: ${getUrlError.message}`);
+        Alert.alert('Error', `Failed to get media URL after upload: ${getUrlError.message}`);
         setIsUploading(false);
         setSelectedImageUri(null); 
         return null;
@@ -136,13 +171,13 @@ export default function Contact() {
       
       if (!publicUrlData || !publicUrlData.publicUrl) {
         console.error('Error getting public URL from Supabase: No public URL in data.');
-        Alert.alert('Error', 'Failed to get image URL after upload.');
+        Alert.alert('Error', 'Failed to get media URL after upload.');
         setIsUploading(false);
         setSelectedImageUri(null);
         return null;
       }
 
-      console.log('Successfully uploaded image. Public URL:', publicUrlData.publicUrl);
+      console.log('Successfully uploaded media. Public URL:', publicUrlData.publicUrl);
       setUploadedFileUrl(publicUrlData.publicUrl);
       setIsUploading(false);
       return publicUrlData.publicUrl;
@@ -166,16 +201,17 @@ export default function Contact() {
     if (permissionResult.granted === false) {
       Alert.alert(
         "Permission Required",
-        "You've refused to allow this app to access your photos."
+        "You've refused to allow this app to access your photos/videos."
       );
       return;
     }
 
     const pickerResult = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1, // Quality 1 means no compression (highest quality)
+      mediaTypes: ImagePicker.MediaTypeOptions.All, // Allow both images and videos
+      allowsEditing: true, // Note: video editing might not be supported on all platforms or might be limited
+      aspect: [4, 3], // Aspect ratio might apply mainly to image cropping
+      quality: 1, 
+      // For videos, you might want to add videoExportPreset or videoQuality on iOS
     });
 
     if (pickerResult.canceled === true) {
@@ -184,8 +220,9 @@ export default function Contact() {
 
     if (pickerResult.assets && pickerResult.assets.length > 0) {
       const asset = pickerResult.assets[0];
-      setSelectedImageUri(asset.uri);
-      await uploadImage(asset);
+      // asset object contains 'mediaType' ('image' or 'video'), 'mimeType', 'uri', 'fileName', 'fileSize' etc.
+      setSelectedImageUri(asset.uri); // This URI will be used for preview (Image component might not show video thumbnail)
+      await uploadImage(asset); // Pass the full asset object
     }
   };
 
@@ -193,7 +230,7 @@ export default function Contact() {
     Keyboard.dismiss();
 
     if (isUploading) {
-        Alert.alert("Please wait", "Image is still uploading.");
+        Alert.alert("Please wait", "Media is still uploading.");
         return;
     }
 
@@ -211,7 +248,7 @@ export default function Contact() {
       reason: reason,
       priority: priority,
       description: message,
-      image: uploadedFileUrl,
+      image: uploadedFileUrl, // This field will now store URL for image or video
     };
 
     const { error } = await supabase.from("requests").insert([requestData]);
@@ -239,12 +276,10 @@ export default function Contact() {
     return selectedPriority ? selectedPriority.color : "#666";
   };
 
-  const removeSelectedImage = () => {
+  const removeSelectedImage = () => { // Name kept for simplicity, handles selected media
     setSelectedImageUri(null);
     setUploadedFileUrl(null);
     if (isUploading) {
-        // Note: Actual cancellation of an ongoing upload is complex and not implemented here.
-        // This just resets the UI state.
         setIsUploading(false); 
     }
   };
@@ -392,6 +427,9 @@ export default function Contact() {
 
           {selectedImageUri && (
             <View style={styles.imagePreviewContainer}>
+              {/* Image component might not display video previews. 
+                  For video previews, expo-av Video component would be needed.
+                  This will show image previews and potentially a placeholder/first frame for videos. */}
               <Image source={{ uri: selectedImageUri }} style={styles.imagePreview} />
               <TouchableOpacity onPress={removeSelectedImage} style={styles.removeImageButton}>
                 <Text style={styles.removeImageButtonText}>Remove</Text>
@@ -410,7 +448,7 @@ export default function Contact() {
                     <Text style={styles.attachButtonText}>Uploading...</Text>
                 </View>
             ) : (
-                <Text style={styles.attachButtonText}>📎 Attach Picture</Text>
+                <Text style={styles.attachButtonText}>📎 Attach Media</Text>
             )}
           </TouchableOpacity>
 
@@ -549,11 +587,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-  imagePreviewContainer: {
+  imagePreviewContainer: { // Name kept for simplicity
     alignItems: "center",
     marginBottom: 20,
   },
-  imagePreview: {
+  imagePreview: { // Name kept for simplicity
     width: 150,
     height: 150,
     borderRadius: 8,
@@ -561,7 +599,7 @@ const styles = StyleSheet.create({
     borderColor: "#ddd",
     marginBottom: 10,
   },
-  removeImageButton: {
+  removeImageButton: { // Name kept for simplicity
     backgroundColor: "#F44336",
     paddingVertical: 8,
     paddingHorizontal: 15,
@@ -575,3 +613,4 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
 });
+
