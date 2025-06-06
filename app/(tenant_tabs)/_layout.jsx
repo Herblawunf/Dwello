@@ -41,7 +41,7 @@ export default function TabLayout() {
         options={{
           title: "Expenses",
           tabBarIcon: ({ color }) => (
-            <MaterialIcons name="credit-card" size={28} color={color} />
+            <MaterialIcons name="percent" size={28} color={color} />
           ),
         }}
       />
