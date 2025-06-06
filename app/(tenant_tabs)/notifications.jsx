@@ -29,11 +29,24 @@ const NotificationItem = ({ item }) => (
             item.type === "receive" ? "will receive" : "owe"
           } £${item.amount.toFixed(2)}`}
     </Text>
-    <Text style={styles.notificationTime}>
-      {item.type === "rent"
-        ? `Amount: £${item.amount.toFixed(2)}`
-        : formatDate(item.date)}
-    </Text>
+    <View style={styles.notificationFooter}>
+      <Text style={styles.notificationTime}>
+        {item.type === "rent"
+          ? `Amount: £${item.amount.toFixed(2)}`
+          : formatDate(item.date)}
+      </Text>
+      <MaterialIcons
+        name={
+          item.type === "rent"
+            ? "home"
+            : item.type === "receive"
+            ? "arrow-downward"
+            : "arrow-upward"
+        }
+        size={20}
+        color="#757575"
+      />
+    </View>
   </View>
 );
 
@@ -297,6 +310,11 @@ const styles = StyleSheet.create({
   notificationTime: {
     fontSize: 12,
     color: "#999",
+  },
+  notificationFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   modalOverlay: {
     flex: 1,
