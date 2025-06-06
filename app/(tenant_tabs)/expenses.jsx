@@ -327,7 +327,7 @@ const ExpensesScreen = () => {
           style={styles.deleteButton}
           onPress={() => deleteExpense()}
         >
-          <Text style={styles.deleteButtonText}>🗑️</Text>
+          <Text style={styles.deleteButtonText}>×</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -893,7 +893,9 @@ const styles = StyleSheet.create({
     color: "#dc3545",
   },
   deleteButton: {
-    backgroundColor: "#dc3545",
+    backgroundColor: "#f8f9fa",
+    borderWidth: 1,
+    borderColor: "#e74c3c",
     paddingHorizontal: 8,
     paddingVertical: 6,
     borderRadius: 6,
@@ -902,8 +904,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   deleteButtonText: {
-    fontSize: 16,
-    color: "#fff",
+    fontSize: 18,
+    color: "#e74c3c",
+    fontWeight: "500",
+    lineHeight: 18,
   },
   noPastExpensesText: {
     fontSize: 14,
