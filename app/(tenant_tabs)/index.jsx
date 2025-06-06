@@ -21,67 +21,38 @@ const rentDue = async () => {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const { data: house_id } = await supabase
+  const { data: rent_info } = await supabase
     .from("tenants")
-    .select("house_id")
+    .select("*")
     .eq("tenant_id", user.id)
     .single();
 
-  if (!house_id) {
-    console.warn("No house_id found for user.");
+  console.log("Rent info:", rent_info);
+
+  if (!rent_info) {
+    console.warn("No house_info found for user:", user.id);
     return 0;
   }
 
-  const { data: house_info } = await supabase
-    .from("houses")
-    .select("*")
-    .eq("house_id", house_id.house_id)
-    .single();
-
-  if (!house_info) {
-    console.warn("No house_info found for house_id:", house_id.house_id);
-    return 0;
-  }
-
-  const next_payment = house_info.next_payment;
+  const next_payment = rent_info.next_payment;
   const rent_per_period =
-    house_info.monthly_rent * house_info.months_per_payment;
+    rent_info.monthly_rent * rent_info.months_per_payment;
 
   const today = new Date();
   const paymentDate = new Date(next_payment);
 
-  const housemates = await getHousemates();
-  const numHousemates = housemates.length + 1;
-  const split = 1.0 / numHousemates;
-
-  return paymentDate <= today ? rent_per_period * split : 0;
+  return paymentDate <= today ? rent_per_period : 0;
 };
 
 const daysToRent = async () => {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const { data: house_id } = await supabase
+  const { data: house_info } = await supabase
     .from("tenants")
-    .select("house_id")
+    .select("*")
     .eq("tenant_id", user.id)
     .single();
-
-  if (!house_id) {
-    console.warn("No house_id found for user.");
-    return -1;
-  }
-
-  const { data: house_info } = await supabase
-    .from("houses")
-    .select("*")
-    .eq("house_id", house_id.house_id)
-    .single();
-
-  if (!house_info) {
-    console.warn("No house_info found for house_id:", house_id.house_id);
-    return -1;
-  }
 
   const next_payment = house_info.next_payment;
   const today = new Date();
