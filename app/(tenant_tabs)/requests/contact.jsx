@@ -11,8 +11,10 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   ScrollView,
+  Image, // Added for displaying selected image (optional)
 } from "react-native";
 import { supabase } from "@/lib/supabase";
+import * as ImagePicker from "expo-image-picker"; // Import ImagePicker
 
 export default function Contact() {
   const [reason, setReason] = useState("");
@@ -21,6 +23,7 @@ export default function Contact() {
   const [attachments, setAttachments] = useState([]);
   const [showReasonDropdown, setShowReasonDropdown] = useState(false);
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null); // State for selected image URI
 
   const reasons = [
     { label: "General Inquiry", value: "general" },
@@ -46,12 +49,15 @@ export default function Contact() {
       reason: reason,
       priority: priority,
       description: message,
+      // You might want to include image information here if you upload it
     };
 
     const { error } = await supabase.from("requests").insert(requestData);
 
     if (error) {
       console.error("Error adding request:", error);
+      Alert.alert("Error", "Failed to send message.");
+      return;
     }
 
     // Clear form
@@ -59,12 +65,52 @@ export default function Contact() {
     setPriority(-1);
     setMessage("");
     setAttachments([]);
+    setSelectedImage(null); // Clear selected image
     Alert.alert("Success", "Message sent successfully!");
   };
 
-  const handleAttachPicture = () => {
+  const handleImage = (imageAsset) => {
+    // This function will receive the image asset.
+    // For now, it just logs the URI and sets it to state for display.
+    console.log("Selected image asset:", imageAsset);
+    if (imageAsset && imageAsset.uri) {
+      setSelectedImage(imageAsset.uri);
+      // Here you would typically prepare the image for upload or add it to your attachments array
+      // For example: setAttachments(prev => [...prev, imageAsset]);
+    }
+  };
+
+  const handleAttachPicture = async () => {
     Keyboard.dismiss();
-    Alert.alert("Info", "Picture attachment feature coming soon!");
+
+    // Request permission to access media library
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (permissionResult.granted === false) {
+      Alert.alert(
+        "Permission Required",
+        "You've refused to allow this app to access your photos."
+      );
+      return;
+    }
+
+    // Launch image library
+    const pickerResult = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images, // Only allow images
+      allowsEditing: true, // Optional: allow editing
+      aspect: [4, 3], // Optional: aspect ratio for editing
+      quality: 1, // Optional: image quality (0 to 1)
+    });
+
+    if (pickerResult.canceled === true) {
+      return;
+    }
+
+    // Pass the first selected asset to handleImage
+    if (pickerResult.assets && pickerResult.assets.length > 0) {
+      handleImage(pickerResult.assets[0]);
+    }
   };
 
   const dismissKeyboard = () => {
@@ -219,11 +265,20 @@ export default function Contact() {
             />
           </View>
 
+          {selectedImage && (
+            <View style={styles.imagePreviewContainer}>
+              <Image source={{ uri: selectedImage }} style={styles.imagePreview} />
+              <TouchableOpacity onPress={() => setSelectedImage(null)} style={styles.removeImageButton}>
+                <Text style={styles.removeImageButtonText}>Remove</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           <TouchableOpacity
             style={styles.attachButton}
             onPress={handleAttachPicture}
           >
-            <Text style={styles.attachButtonText}>📎 Attach Pictures</Text>
+            <Text style={styles.attachButtonText}>📎 Attach Picture</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
@@ -351,5 +406,27 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontSize: 16,
     fontWeight: "600",
+  },
+  imagePreviewContainer: {
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  imagePreview: {
+    width: 150,
+    height: 150,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    marginBottom: 10,
+  },
+  removeImageButton: {
+    backgroundColor: "#F44336",
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 5,
+  },
+  removeImageButtonText: {
+    color: "#fff",
+    fontSize: 14,
   },
 });
