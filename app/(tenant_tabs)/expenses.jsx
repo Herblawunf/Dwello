@@ -11,7 +11,6 @@ import {
   Animated,
   TouchableOpacity,
   Modal,
-  FlatList,
   Alert,
 } from "react-native";
 import { Context as AuthContext } from "@/context/AuthContext";
@@ -417,14 +416,11 @@ const ExpensesScreen = () => {
         <View style={styles.pastExpensesSection}>
           <Text style={styles.pastExpensesTitle}>Recent Activity</Text>
           {pastExpenses.length > 0 ? (
-            <FlatList
-              data={pastExpenses}
-              renderItem={renderPastExpenseItem}
-              keyExtractor={(item) => item.id}
-              style={styles.pastExpensesList}
-              contentContainerStyle={styles.pastExpensesListContent}
-              showsVerticalScrollIndicator={false}
-            />
+            <View style={styles.pastExpensesList}>
+              {pastExpenses.map((item) => (
+                <View key={item.id}>{renderPastExpenseItem({ item })}</View>
+              ))}
+            </View>
           ) : (
             <Text style={styles.noPastExpensesText}>
               No recent activity to show.
