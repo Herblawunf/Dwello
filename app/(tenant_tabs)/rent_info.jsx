@@ -41,13 +41,34 @@ const RentScreen = () => {
           p_tenant_id: userId,
         }
       );
-      if (error) {
-        throw error;
+      if (error) throw error;
+
+      // Get active rent extension if any
+      const { data: extensions } = await supabase.rpc("get_rent_extensions", {
+        p_user_id: userId,
+      });
+
+      let nextPayment = new Date(rentData["0"].next_payment);
+
+      // Check for accepted extensions with later dates
+      if (extensions && extensions.length > 0) {
+        const acceptedExtensions = extensions.filter(
+          (ext) => ext.status === "accepted"
+        );
+        const latestExtension = acceptedExtensions.reduce((latest, ext) => {
+          const extDate = new Date(ext.new_date);
+          return extDate > latest ? extDate : latest;
+        }, nextPayment);
+
+        nextPayment = latestExtension;
       }
+
       const newRentData = {
         ...rentData["0"],
-        isPastDue: new Date(rentData["0"].next_payment) <= new Date(),
+        next_payment: nextPayment.toISOString(),
+        isPastDue: nextPayment <= new Date(),
       };
+
       setRentInfo(newRentData);
       console.log(newRentData);
     } catch (error) {
@@ -246,7 +267,9 @@ const RentScreen = () => {
                 </TouchableOpacity>
               ))
             ) : (
-              <Text style={styles.noRequestsText}>No delay requests found.</Text>
+              <Text style={styles.noRequestsText}>
+                No delay requests found.
+              </Text>
             )}
           </View>
 
@@ -318,7 +341,10 @@ const RentScreen = () => {
                     <Text style={styles.reasonModalDetailLabel}>
                       Date Requested:
                     </Text>
-                    <Text> {formatDate(new Date(selectedRequest.created_at))}</Text>
+                    <Text>
+                      {" "}
+                      {formatDate(new Date(selectedRequest.created_at))}
+                    </Text>
                   </Text>
                   <Text style={styles.reasonModalDetail}>
                     <Text style={styles.reasonModalDetailLabel}>
