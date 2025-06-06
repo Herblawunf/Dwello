@@ -11,7 +11,7 @@ import {
   Alert,
   Keyboard,
   TouchableWithoutFeedback,
-  ScrollView, // Add this import
+  ScrollView,
 } from "react-native";
 import { Context as AuthContext } from "@/context/AuthContext";
 
@@ -104,7 +104,7 @@ const RentScreen = () => {
     setDelayReason("");
   };
 
-  const handleSubmitDelayRequest = () => {
+  const handleSubmitDelayRequest = async () => {
     if (!delayDays.trim() || !delayReason.trim()) {
       Alert.alert(
         "Validation Error",
@@ -112,16 +112,30 @@ const RentScreen = () => {
       );
       return;
     }
-    console.log(
-      `Rent delay requested for ${delayDays} days. Reason: ${delayReason}`
-    );
-    Alert.alert(
-      "Request Submitted",
-      `Your request for a ${delayDays}-day rent delay has been submitted.`
-    );
-    // Here you would typically add the new request to your state/backend
-    // For now, we just close the modal
-    handleCloseDelayModal();
+
+    try {
+      const { data, error } = await supabase.rpc("create_rent_extension", {
+        p_user_id: userId,
+        p_days: parseInt(delayDays),
+        p_reason: delayReason,
+      });
+
+      console.log(data);
+
+      if (error) throw error;
+
+      Alert.alert(
+        "Request Submitted",
+        `Your request for a ${delayDays}-day rent delay has been submitted.`
+      );
+      handleCloseDelayModal();
+    } catch (error) {
+      console.error("Error submitting delay request:", error);
+      Alert.alert(
+        "Error",
+        "Failed to submit rent delay request. Please try again."
+      );
+    }
   };
 
   const handleOpenReasonModal = (request) => {
