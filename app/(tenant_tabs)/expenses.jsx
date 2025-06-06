@@ -49,7 +49,6 @@ const ExpensesScreen = () => {
       if (error) {
         console.error("Error deleting expense:", error);
       } else {
-        // refresh list
         console.log("Deleted successfully");
         getPastExpenses();
         getBalances();
@@ -299,12 +298,14 @@ const ExpensesScreen = () => {
         >
           £{item.totalAmount.toFixed(2)}
         </Text>
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={() => handleDeletePress(item)}
-        >
-          <Text style={styles.deleteButtonText}>×</Text>
-        </TouchableOpacity>
+        {item.paidByCurrentUser && (
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={() => handleDeletePress(item)}
+          >
+            <Text style={styles.deleteButtonText}>×</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
