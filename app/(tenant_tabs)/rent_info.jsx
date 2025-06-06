@@ -103,6 +103,8 @@ const RentScreen = () => {
         }
     };
 
+    const paymentFrequency = 2; // Placeholder for payment frequency in months
+
     return (
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.container}>
@@ -117,6 +119,9 @@ const RentScreen = () => {
                     <Text style={styles.sectionTitle}>Next Rent Due</Text>
                     <Text style={[styles.dateText, isPastDue && styles.pastDueDate]}>
                         {formatDate(nextDueDate)}
+                    </Text>
+                    <Text style={styles.frequencyText}>
+                        Paid every {paymentFrequency} months
                     </Text>
                 </View>
 
@@ -216,13 +221,16 @@ const RentScreen = () => {
                             <View style={styles.reasonModalView}>
                                 <Text style={styles.reasonModalTitle}>Request Details</Text>
                                 <Text style={styles.reasonModalDetail}>
-                                    <Text style={styles.reasonModalDetailLabel}>Date Requested:</Text> {formatDate(selectedRequest.dateRequested)}
+                                    <Text style={styles.reasonModalDetailLabel}>Date Requested:</Text>
+                                    <Text> {formatDate(selectedRequest.dateRequested)}</Text>
                                 </Text>
                                 <Text style={styles.reasonModalDetail}>
-                                    <Text style={styles.reasonModalDetailLabel}>Days Requested:</Text> {selectedRequest.days}
+                                    <Text style={styles.reasonModalDetailLabel}>Days Requested:</Text>
+                                    <Text> {selectedRequest.days}</Text>
                                 </Text>
                                 <Text style={styles.reasonModalDetail}>
-                                    <Text style={styles.reasonModalDetailLabel}>Status:</Text> {selectedRequest.status.charAt(0).toUpperCase() + selectedRequest.status.slice(1)}
+                                    <Text style={styles.reasonModalDetailLabel}>Status:</Text>
+                                    <Text> {selectedRequest.status.charAt(0).toUpperCase() + selectedRequest.status.slice(1)}</Text>
                                 </Text>
                                 <Text style={styles.reasonModalDetailLabel}>Reason:</Text>
                                 <Text style={styles.reasonModalReasonText}>{selectedRequest.reason}</Text>
@@ -242,6 +250,11 @@ const RentScreen = () => {
 };
 
 const styles = StyleSheet.create({
+    frequencyText: {
+        fontSize: 14,
+        color: '#666',
+        marginTop: 8,
+    },
     safeArea: {
         flex: 1,
         backgroundColor: '#f8f9fa',
