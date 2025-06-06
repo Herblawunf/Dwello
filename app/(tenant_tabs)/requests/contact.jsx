@@ -12,10 +12,13 @@ import {
   Keyboard,
   ScrollView,
   Image,
-  ActivityIndicator, // Added for loading indicator
+  ActivityIndicator,
 } from "react-native";
 import { supabase } from "@/lib/supabase";
 import * as ImagePicker from "expo-image-picker";
+// FileSystem might not be needed if FormData handles URI directly
+import * as FileSystem from "expo-file-system";
+
 
 export default function Contact() {
   const [reason, setReason] = useState("");
@@ -23,9 +26,9 @@ export default function Contact() {
   const [message, setMessage] = useState("");
   const [showReasonDropdown, setShowReasonDropdown] = useState(false);
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
-  const [selectedImageUri, setSelectedImageUri] = useState(null); // URI for local preview
-  const [uploadedFileUrl, setUploadedFileUrl] = useState(null); // URL from Supabase storage for DB
-  const [isUploading, setIsUploading] = useState(false); // To show loading state
+  const [selectedImageUri, setSelectedImageUri] = useState(null);
+  const [uploadedFileUrl, setUploadedFileUrl] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const reasons = [
     { label: "General Inquiry", value: "general" },
@@ -43,62 +46,110 @@ export default function Contact() {
       Alert.alert("Error", "No image asset provided for upload.");
       return null;
     }
+
+    if (typeof asset.fileSize === 'number' && asset.fileSize === 0) {
+        Alert.alert("Upload Error", "The selected image file is empty.");
+        // No need to setIsUploading(true) if we return early
+        setSelectedImageUri(null); 
+        return null;
+    }
+
     setIsUploading(true);
-    setUploadedFileUrl(null); // Clear previous URL
+    setUploadedFileUrl(null);
 
     try {
       const uri = asset.uri;
-      // Extract filename and extension more robustly
-      const fileNameWithExtension = uri.substring(uri.lastIndexOf('/') + 1);
-      const fileExt = fileNameWithExtension.includes('.') ? fileNameWithExtension.split('.').pop().toLowerCase() : 'jpg'; // Default to jpg if no extension
-      const fileNameWithoutExtension = fileNameWithExtension.includes('.') ? fileNameWithExtension.substring(0, fileNameWithExtension.lastIndexOf('.')) : fileNameWithExtension;
+
+      // 1. Determine Content-Type (primary source: asset.mimeType)
+      let determinedContentType = asset.mimeType;
+      if (!determinedContentType || !determinedContentType.startsWith('image/')) {
+          const extensionFromUri = uri.includes('.') ? uri.split('.').pop().toLowerCase() : null;
+          if (extensionFromUri && ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extensionFromUri)) {
+              determinedContentType = `image/${extensionFromUri === 'jpeg' ? 'jpg' : extensionFromUri}`;
+          } else {
+              determinedContentType = 'image/jpeg'; // Ultimate fallback if type is unknown
+          }
+      }
       
-      // Sanitize filename (optional, but good practice)
-      const sanitizedFileName = fileNameWithoutExtension.replace(/[^a-zA-Z0-9_-]/g, '_');
+      // 2. Determine File Extension (from determinedContentType)
+      let fileExt = determinedContentType.split('/')[1];
+      if (fileExt === 'jpeg') fileExt = 'jpg'; // Normalize for consistency
 
-      const filePath = `public/${Date.now()}_${sanitizedFileName}.${fileExt}`;
 
-      // Fetch the image data as a blob
-      const response = await fetch(uri);
-      const blob = await response.blob();
+      // 3. Determine Base Filename (primary source: asset.fileName, fallback to URI parsing)
+      let baseFileName;
+      if (asset.fileName) {
+          baseFileName = asset.fileName.includes('.') ? asset.fileName.substring(0, asset.fileName.lastIndexOf('.')) : asset.fileName;
+      } else {
+          // Fallback to deriving from URI if asset.fileName is not available
+          const uriPathName = uri.substring(uri.lastIndexOf('/') + 1);
+          baseFileName = uriPathName.includes('.') ? uriPathName.substring(0, uriPathName.lastIndexOf('.')) : uriPathName;
+      }
+      const sanitizedBaseFileName = baseFileName.replace(/[^a-zA-Z0-9_-]/g, '_');
+      
+      const filePath = `public/${Date.now()}_${sanitizedBaseFileName}.${fileExt}`;
 
-      // Upload to Supabase Storage
+      // Read the file content using expo-file-system as base64
+      const base64 = await FileSystem.readAsStringAsync(uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      
+      const fileNameForFormData = `${sanitizedBaseFileName}.${fileExt}`;
+
+      // Use FormData for uploading in React Native
+      const formData = new FormData();
+      formData.append('file', {
+        uri: asset.uri,
+        name: fileNameForFormData,
+        type: determinedContentType,
+      });
+
+      // console.log('Uploading with FormData. Path:', filePath, 'File details:', { uri: asset.uri, name: fileNameForFormData, type: determinedContentType });
+
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('requests') // Your bucket name
-        .upload(filePath, blob, {
-          contentType: asset.mimeType || `image/${fileExt}`,
-          upsert: false, // Set to true if you want to overwrite
+        .from('requests')
+        .upload(filePath, formData, {
+          // contentType is automatically set to multipart/form-data when FormData is used
+          upsert: false,
         });
 
       if (uploadError) {
-        console.error('Error uploading image to Supabase:', uploadError);
-        Alert.alert('Upload Error', `Failed to upload image: ${uploadError.message}`);
+        console.error("Supabase upload error:", uploadError);
+        Alert.alert("Upload Error", `Failed to upload image: ${uploadError.message}`);
         setIsUploading(false);
-        setSelectedImageUri(null); // Clear preview if upload fails
+        setSelectedImageUri(null); 
         return null;
       }
 
-      // Get the public URL of the uploaded file
-      const { data: publicUrlData } = supabase.storage
+      // If upload was successful, get the public URL
+      const { data: publicUrlData, error: getUrlError } = await supabase.storage
         .from('requests')
         .getPublicUrl(filePath);
 
-      if (!publicUrlData || !publicUrlData.publicUrl) {
-        console.error('Error getting public URL from Supabase.');
-        Alert.alert('Error', 'Failed to get image URL after upload.');
+      if (getUrlError) {
+        console.error('Error getting public URL from Supabase:', getUrlError);
+        Alert.alert('Error', `Failed to get image URL after upload: ${getUrlError.message}`);
         setIsUploading(false);
-        setSelectedImageUri(null); // Clear preview
+        setSelectedImageUri(null); 
         return null;
       }
       
+      if (!publicUrlData || !publicUrlData.publicUrl) {
+        console.error('Error getting public URL from Supabase: No public URL in data.');
+        Alert.alert('Error', 'Failed to get image URL after upload.');
+        setIsUploading(false);
+        setSelectedImageUri(null);
+        return null;
+      }
+
       console.log('Successfully uploaded image. Public URL:', publicUrlData.publicUrl);
-      setUploadedFileUrl(publicUrlData.publicUrl); // Store the public URL
+      setUploadedFileUrl(publicUrlData.publicUrl);
       setIsUploading(false);
       return publicUrlData.publicUrl;
 
     } catch (e) {
       console.error("Upload process error:", e);
-      Alert.alert("Upload Error", "An unexpected error occurred during upload.");
+      Alert.alert("Upload Error", `An unexpected error occurred during upload: ${e.message}`);
       setSelectedImageUri(null); 
       setUploadedFileUrl(null);
       setIsUploading(false);
@@ -124,7 +175,7 @@ export default function Contact() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
-      quality: 1,
+      quality: 1, // Quality 1 means no compression (highest quality)
     });
 
     if (pickerResult.canceled === true) {
@@ -133,8 +184,8 @@ export default function Contact() {
 
     if (pickerResult.assets && pickerResult.assets.length > 0) {
       const asset = pickerResult.assets[0];
-      setSelectedImageUri(asset.uri); // Set for preview immediately
-      await uploadImage(asset); // Upload and set uploadedFileUrl
+      setSelectedImageUri(asset.uri);
+      await uploadImage(asset);
     }
   };
 
@@ -160,10 +211,10 @@ export default function Contact() {
       reason: reason,
       priority: priority,
       description: message,
-      image: uploadedFileUrl, // Use the URL from Supabase storage
+      image: uploadedFileUrl,
     };
 
-    const { error } = await supabase.from("requests").insert([requestData]); // insert expects an array
+    const { error } = await supabase.from("requests").insert([requestData]);
 
     if (error) {
       console.error("Error adding request:", error);
@@ -190,11 +241,11 @@ export default function Contact() {
 
   const removeSelectedImage = () => {
     setSelectedImageUri(null);
-    setUploadedFileUrl(null); // Also clear the uploaded URL
-    // If there was an ongoing upload, you might want to cancel it
-    // For simplicity, we're not implementing cancellation here
+    setUploadedFileUrl(null);
     if (isUploading) {
-        setIsUploading(false); // Reset uploading state if image is removed
+        // Note: Actual cancellation of an ongoing upload is complex and not implemented here.
+        // This just resets the UI state.
+        setIsUploading(false); 
     }
   };
 
@@ -253,7 +304,6 @@ export default function Contact() {
             </TouchableOpacity>
           </View>
 
-          {/* Reason Dropdown Modal */}
           <Modal
             visible={showReasonDropdown}
             transparent={true}
@@ -284,7 +334,6 @@ export default function Contact() {
             </TouchableOpacity>
           </Modal>
 
-          {/* Priority Dropdown Modal */}
           <Modal
             visible={showPriorityDropdown}
             transparent={true}
@@ -366,9 +415,9 @@ export default function Contact() {
           </TouchableOpacity>
 
           <TouchableOpacity 
-            style={[styles.sendButton, isUploading && styles.disabledButton]} 
+            style={[styles.sendButton, (isUploading || !reason || priority < 0 || !message.trim()) && styles.disabledButton]} 
             onPress={handleSend}
-            disabled={isUploading}
+            disabled={isUploading || !reason || priority < 0 || !message.trim()}
           >
             <Text style={styles.sendButtonText}>Send</Text>
           </TouchableOpacity>
@@ -387,9 +436,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 20, // Changed from 'padding: 20'
+    paddingHorizontal: 20,
     paddingTop: 60,
-    paddingBottom: 60, // Increased paddingBottom
+    paddingBottom: 60,
   },
   title: {
     fontSize: 24,
@@ -523,7 +572,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   disabledButton: {
-    opacity: 0.7, // Style for disabled buttons
+    opacity: 0.7,
   },
 });
-
