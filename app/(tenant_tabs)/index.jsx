@@ -156,6 +156,10 @@ export default function HomeScreen() {
     router.push("/chats");
   };
 
+  const handleRentInfoPress = () => {
+    router.push("/rent_info"); 
+  };
+
   return (
     <View style={styles.container}>
       {/* HEADER WITH TITLE + CHAT ICON */}
@@ -181,10 +185,12 @@ export default function HomeScreen() {
       {/* Notifications Section */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Notifications</Text>
-        <Text style={styles.notificationText}>
-          Rent payment due{" "}
-          {dueIn > 0 ? `in ${dueIn} days` : dueIn === 0 ? "today" : "now"}
-        </Text>
+        <TouchableOpacity onPress={handleRentInfoPress}>
+          <Text style={styles.notificationText}>
+            Rent payment due{" "}
+            {dueIn > 0 ? `in ${dueIn} days` : dueIn === 0 ? "today" : "now"}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Quick Actions Section */}
@@ -286,3 +292,4 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 });
+

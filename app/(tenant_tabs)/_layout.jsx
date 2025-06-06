@@ -72,6 +72,18 @@ export default function TabLayout() {
           ),
         }}
       />
+      {/* Add the rent_info screen as a modal */}
+      <Tabs.Screen
+        name="rent_info"
+        options={{
+          presentation: "modal",
+          // Href null will hide it from the tab bar
+          href: null,
+          // You can set a title for the modal header if needed
+          // title: "Rent Info",
+          // headerShown: true, // Modals usually have headers
+        }}
+      />
     </Tabs>
   );
 }
