@@ -71,4 +71,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: android-build
-          path: "android-build.tar.gz"
+          path: "**/*.apk"
