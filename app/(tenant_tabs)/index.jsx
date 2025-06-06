@@ -1,10 +1,5 @@
 import React, { useState, useEffect, useCallback, useContext } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-} from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
 import { getHousemates } from "../../context/utils";
@@ -145,7 +140,7 @@ export default function HomeScreen() {
   }, [userId]);
 
   const handleReportRepair = () => {
-    router.push("/contact");
+    router.push("/requests");
   };
 
   const handleAddExpenses = () => {
@@ -236,7 +231,7 @@ const styles = StyleSheet.create({
   header: {
     fontSize: 28,
     fontWeight: "300",
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: "#333",
   },
   chatButton: {
