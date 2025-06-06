@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   Modal,
   FlatList, // Import FlatList
+  Alert,
 } from "react-native";
 import { Context as AuthContext } from "@/context/AuthContext";
 import { getHousemates } from "@/context/utils";
@@ -33,13 +34,28 @@ const ExpensesScreen = () => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showPaidByDropdown, setShowPaidByDropdown] = useState(false);
   const [showSplitDropdown, setShowSplitDropdown] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [expenseToDelete, setExpenseToDelete] = useState(null);
 
   // State for past expenses
   const [pastExpenses, setPastExpenses] = useState([]);
 
-  const deleteExpense = () => {
+  const deleteExpense = (expenseId) => {
     // Empty function to be implemented later
-    console.log("Deleting expense");
+    console.log("Deleting expense:", expenseId);
+  };
+
+  const handleDeletePress = (expense) => {
+    setExpenseToDelete(expense);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirmation = (confirmed) => {
+    setShowDeleteModal(false);
+    if (confirmed && expenseToDelete) {
+      deleteExpense(expenseToDelete.id);
+    }
+    setExpenseToDelete(null);
   };
 
   const getBalances = useCallback(async () => {
@@ -325,7 +341,7 @@ const ExpensesScreen = () => {
         </Text>
         <TouchableOpacity
           style={styles.deleteButton}
-          onPress={() => deleteExpense()}
+          onPress={() => handleDeletePress(item)}
         >
           <Text style={styles.deleteButtonText}>×</Text>
         </TouchableOpacity>
@@ -496,6 +512,43 @@ const ExpensesScreen = () => {
                     onPress={() =>
                       handlePaymentConfirmation(false, selectedHousemate?.id)
                     }
+                  >
+                    <Text style={styles.modalButtonText}>No</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </Modal>
+
+          {/* Delete Confirmation Modal */}
+          <Modal
+            visible={showDeleteModal}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setShowDeleteModal(false)}
+          >
+            <TouchableOpacity
+              style={styles.modalOverlay}
+              onPress={() => setShowDeleteModal(false)}
+              activeOpacity={1}
+            >
+              <View style={styles.dropdownModal}>
+                <Text style={styles.modalText}>
+                  Are you sure you want to delete this expense?
+                </Text>
+                <Text style={styles.modalSubText}>
+                  {expenseToDelete?.description} - £{expenseToDelete?.totalAmount.toFixed(2)}
+                </Text>
+                <View style={styles.modalButtonContainer}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.confirmButton]}
+                    onPress={() => handleDeleteConfirmation(true)}
+                  >
+                    <Text style={styles.modalButtonText}>Yes</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.cancelButton]}
+                    onPress={() => handleDeleteConfirmation(false)}
                   >
                     <Text style={styles.modalButtonText}>No</Text>
                   </TouchableOpacity>
@@ -803,6 +856,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 24,
     lineHeight: 24,
+  },
+  modalSubText: {
+    fontSize: 14,
+    color: "#666",
+    textAlign: "center",
+    marginBottom: 20,
+    fontStyle: "italic",
   },
   modalButtonContainer: {
     flexDirection: "row",
