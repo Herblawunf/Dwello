@@ -74,7 +74,7 @@ function AuthRouter() {
     if (!hasAttemptedLocalLogin) return;
 
     const route = isSignedIn
-      ? landlord
+      ? !!landlord
         ? "/(landlord_tabs)"
         : "/(tenant_tabs)"
       : "/(auth)";

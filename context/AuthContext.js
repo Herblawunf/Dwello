@@ -52,11 +52,6 @@ const login =
         return;
       }
 
-      const { data: allUsers, derror } = await supabase
-        .from("users")
-        .select("*");
-      console.log("All users in table:", allUsers);
-
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -71,6 +66,15 @@ const login =
 
       const accessToken = data.session.access_token;
       await AsyncStorage.setItem("accessToken", accessToken);
+      // Store landlord and tenant flags as strings
+      await AsyncStorage.setItem(
+        "landlord",
+        JSON.stringify(userInfo?.landlord || false)
+      );
+      await AsyncStorage.setItem(
+        "tenant",
+        JSON.stringify(userInfo?.tenant || false)
+      );
 
       dispatch({ type: "login", payload: accessToken, userInfo });
     } catch (err) {
@@ -81,6 +85,8 @@ const login =
 const signout = (dispatch) => async () => {
   await supabase.auth.signOut();
   await AsyncStorage.removeItem("accessToken");
+  await AsyncStorage.removeItem("tenant");
+  await AsyncStorage.removeItem("landlord");
 
   dispatch({ type: "signout" });
 };
@@ -90,10 +96,16 @@ const clearErrorMessage = (dispatch) => () => {
 };
 
 const tryLocalLogin = (dispatch) => async () => {
-  // AsyncStorage.clear();
   const accessToken = await AsyncStorage.getItem("accessToken");
   if (accessToken) {
-    dispatch({ type: "login", payload: accessToken });
+    // Restore landlord and tenant from AsyncStorage
+    const landlordStr = await AsyncStorage.getItem("landlord");
+    const tenantStr = await AsyncStorage.getItem("tenant");
+    const userInfo = {
+      landlord: landlordStr ? JSON.parse(landlordStr) : false,
+      tenant: tenantStr ? JSON.parse(tenantStr) : false,
+    };
+    dispatch({ type: "login", payload: accessToken, userInfo });
   }
 
   dispatch({ type: "attempted_local" });
