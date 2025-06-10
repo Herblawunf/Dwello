@@ -91,10 +91,29 @@ export default function Requests() {
       });
       console.log(status);
       if (error) throw error;
-      getHouseRequests();
+      getRequests();
     } catch (error) {
       console.error("Error updating status:", error);
       return { error: error.message };
+    }
+  };
+
+  const getStatusAction = (currentStatus) => {
+    switch (currentStatus) {
+      case "sent":
+        return {
+          action: "seen",
+          text: "Mark as seen",
+          icon: "visibility",
+        };
+      case "seen":
+        return {
+          action: "contractor sent",
+          text: "Send to contractor",
+          icon: "engineering",
+        };
+      default:
+        return null;
     }
   };
 
@@ -124,27 +143,20 @@ export default function Requests() {
           <MaterialIcons name="comment" size={20} color="#757575" />
           <Text style={styles.footerButtonText}>View thread</Text>
         </TouchableOpacity>
-        {item.status === "contractor sent" || item.status === "completed" ? (
+        {getStatusAction(item.status) ? (
           <TouchableOpacity
             style={styles.footerButton}
             onPress={() =>
-              setStatus(
-                item.request_id,
-                item.status === "contractor sent"
-                  ? "completed"
-                  : "contractor sent"
-              )
+              setStatus(item.request_id, getStatusAction(item.status).action)
             }
           >
             <MaterialIcons
-              name={item.status === "contractor sent" ? "check" : "undo"}
+              name={getStatusAction(item.status).icon}
               size={20}
               color="#757575"
             />
             <Text style={styles.footerButtonText}>
-              {item.status === "contractor sent"
-                ? "Mark completed"
-                : "Mark incomplete"}
+              {getStatusAction(item.status).text}
             </Text>
           </TouchableOpacity>
         ) : (
