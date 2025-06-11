@@ -26,7 +26,10 @@ const formatMessageTime = (timestamp) => {
   if (diffMinutes < 60) return `${diffMinutes}m ago`;
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays === 0)
-    return messageDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return messageDate.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   if (diffDays === 1) return "Yesterday";
   if (diffDays < 7) return `${diffDays} days ago`;
   return messageDate.toLocaleDateString();
@@ -62,8 +65,20 @@ export default function ChatScreen() {
 
   const sendMessage = async () => {
     if (!message.trim()) return;
-    // TODO: Implement sending message to backend
+    try {
+      const { data, error } = await supabase.rpc("add_request_message", {
+        p_request_id: requestId,
+        p_user_id: userId,
+        p_message: message,
+      });
+      if (error) {
+        console.error(error);
+      }
+    } catch (error) {
+      console.error(error);
+    }
     setMessage("");
+    getMessages();
   };
 
   return (

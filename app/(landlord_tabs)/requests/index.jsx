@@ -116,12 +116,6 @@ export default function Requests() {
     }
   };
 
-  const getMessages = async (requestId) => {
-    // TODO: Implement message fetching logic
-    // This function should fetch messages for a specific request
-    return [];
-  };
-
   const renderRequest = ({ item }) => (
     <View style={styles.requestItem}>
       <View style={styles.requestHeader}>
@@ -292,20 +286,6 @@ export default function Requests() {
         style={styles.list}
         contentContainerStyle={styles.listContent}
       />
-
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={[
-            styles.addButton,
-            {
-              marginBottom: Platform.OS == "android" ? 0 : tabBarHeight,
-            },
-          ]}
-          onPress={() => router.push("/(tenant_tabs)/requests/contact")}
-        >
-          <Text style={styles.addButtonText}>Add maintenance request</Text>
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 }
@@ -404,18 +384,6 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     color: "#757575",
     fontSize: 14,
-  },
-  addButton: {
-    backgroundColor: "#2196F3",
-    padding: 16,
-    margin: 16,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  addButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "500",
   },
   modalOverlay: {
     flex: 1,
