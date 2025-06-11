@@ -1,9 +1,9 @@
 import { Tabs } from "expo-router";
 import React from "react";
 import { Platform } from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
 
 import { HapticTab } from "@/components/HapticTab";
-import { IconSymbol } from "@/components/ui/IconSymbol";
 import TabBarBackground from "@/components/ui/TabBarBackground";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
@@ -33,24 +33,28 @@ export default function TabLayout() {
           title: "Home",
           headerShown: false,
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="house.fill" color={color} />
+            <MaterialIcons name="home" size={28} color={color} />
           ),
         }}
       />
-      { <Tabs.Screen
-        name="notifications"
+      <Tabs.Screen
+        name="requests"
         options={{
-          title: 'Notifications',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: "Requests",
+          tabBarIcon: ({ color }) => (
+            <MaterialIcons name="build" size={28} color={color} />
+          ),
         }}
-      /> },
-      { <Tabs.Screen
-        name="chat"
+      />
+      <Tabs.Screen
+        name="settings"
         options={{
-          title: 'Chat',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="chat.bubble.fill" color={color} />,
+          title: "Settings",
+          tabBarIcon: ({ color }) => (
+            <MaterialIcons name="settings" size={28} color={color} />
+          ),
         }}
-      /> },
+      />
     </Tabs>
   );
 }

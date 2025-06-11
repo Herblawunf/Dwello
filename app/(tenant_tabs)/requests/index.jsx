@@ -38,7 +38,6 @@ export default function Requests() {
       });
       if (data) {
         setRequests(data);
-        console.log(data);
         return;
       }
       console.error(error);
@@ -121,7 +120,19 @@ export default function Requests() {
         </Text>
       </View>
       <View style={styles.requestFooter}>
-        <TouchableOpacity style={styles.footerButton} onPress={() => {}}>
+        <TouchableOpacity
+          style={styles.footerButton}
+          onPress={() =>
+            router.push({
+              pathname: "/request_screens/",
+              params: {
+                requestId: item.request_id,
+                description: item.description,
+                tenant: `${item.poster_first_name} ${item.poster_last_name}`,
+              },
+            })
+          }
+        >
           <MaterialIcons name="comment" size={20} color="#757575" />
           <Text style={styles.footerButtonText}>View thread</Text>
         </TouchableOpacity>
