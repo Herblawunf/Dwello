@@ -142,7 +142,7 @@ export default function Requests() {
           style={styles.footerButton}
           onPress={() =>
             router.push({
-              pathname: "/requests/chat",
+              pathname: "/request_screens/",
               params: {
                 requestId: item.request_id,
                 description: item.description,
