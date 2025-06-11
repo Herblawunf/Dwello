@@ -14,6 +14,24 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { Context as AuthContext } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 
+const formatMessageTime = (timestamp) => {
+  const messageDate = new Date(timestamp);
+  const now = new Date();
+  const diffTime = Math.abs(now - messageDate);
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+  const diffMinutes = Math.floor(diffTime / (1000 * 60));
+
+  if (diffMinutes < 1) return "Just now";
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays === 0)
+    return messageDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return `${diffDays} days ago`;
+  return messageDate.toLocaleDateString();
+};
+
 export default function ChatScreen() {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
@@ -72,18 +90,46 @@ export default function ChatScreen() {
         data={messages}
         style={styles.messageList}
         renderItem={({ item }) => (
-          <View
-            style={[
-              styles.messageBubble,
-              item.sender_id === userId
-                ? styles.sentMessage
-                : styles.receivedMessage,
-            ]}
-          >
-            <Text style={styles.messageText}>{item.message}</Text>
-            <Text style={styles.messageTime}>
-              {new Date(item.created_at).toLocaleTimeString()}
+          <View style={styles.messageContainer}>
+            <Text
+              style={[
+                styles.senderName,
+                item.sender_id === userId
+                  ? styles.sentSenderName
+                  : styles.receivedSenderName,
+              ]}
+            >
+              {`${item.user_first_name} ${item.user_last_name}`}
             </Text>
+            <View
+              style={[
+                styles.messageBubble,
+                item.sender_id === userId
+                  ? styles.sentMessage
+                  : styles.receivedMessage,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.messageText,
+                  item.sender_id === userId
+                    ? styles.sentMessageText
+                    : styles.receivedMessageText,
+                ]}
+              >
+                {item.message}
+              </Text>
+              <Text
+                style={[
+                  styles.messageTime,
+                  item.sender_id === userId
+                    ? styles.sentMessageTime
+                    : styles.receivedMessageTime,
+                ]}
+              >
+                {formatMessageTime(item.created_at)}
+              </Text>
+            </View>
           </View>
         )}
         keyExtractor={(item) => item.message_id.toString()}
@@ -145,6 +191,9 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
   },
+  messageContainer: {
+    marginBottom: 16,
+  },
   messageBubble: {
     maxWidth: "80%",
     padding: 12,
@@ -159,14 +208,38 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     backgroundColor: "#E0E0E0",
   },
+  senderName: {
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  sentSenderName: {
+    textAlign: "right",
+    color: "#2196F3",
+  },
+  receivedSenderName: {
+    textAlign: "left",
+    color: "#757575",
+  },
   messageText: {
     color: "#fff",
+  },
+  sentMessageText: {
+    color: "#fff",
+  },
+  receivedMessageText: {
+    color: "#000",
   },
   messageTime: {
     fontSize: 10,
     color: "rgba(255,255,255,0.7)",
     alignSelf: "flex-end",
     marginTop: 4,
+  },
+  sentMessageTime: {
+    color: "rgba(255,255,255,0.7)",
+  },
+  receivedMessageTime: {
+    color: "rgba(0,0,0,0.5)",
   },
   inputContainer: {
     flexDirection: "row",
