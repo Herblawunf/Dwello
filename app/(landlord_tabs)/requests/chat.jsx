@@ -8,7 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useRef } from "react";
 import { useLocalSearchParams, router } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Context as AuthContext } from "@/context/AuthContext";
@@ -38,6 +38,7 @@ const formatMessageTime = (timestamp) => {
 export default function ChatScreen() {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
+  const flatListRef = useRef(null);
   const { requestId, description, tenant } = useLocalSearchParams();
   const {
     state: { userId },
@@ -47,6 +48,12 @@ export default function ChatScreen() {
     // Load initial messages
     getMessages();
   }, []);
+
+  useEffect(() => {
+    if (flatListRef.current && messages.length > 0) {
+      flatListRef.current.scrollToEnd({ animated: true });
+    }
+  }, [messages]);
 
   const getMessages = async () => {
     try {
@@ -102,8 +109,11 @@ export default function ChatScreen() {
       </View>
 
       <FlatList
+        ref={flatListRef}
         data={messages}
         style={styles.messageList}
+        onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
+        onLayout={() => flatListRef.current?.scrollToEnd()}
         renderItem={({ item }) => (
           <View style={styles.messageContainer}>
             <Text
