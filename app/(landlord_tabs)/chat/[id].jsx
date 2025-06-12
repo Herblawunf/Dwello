@@ -234,7 +234,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#eee',
     backgroundColor: '#fff',
-    paddingBottom: 54, // Account for tab bar
   },
   attachButton: {
     padding: 8,
