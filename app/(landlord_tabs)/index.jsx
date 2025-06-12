@@ -32,7 +32,7 @@ export default function LandlordDashboardScreen() {
     // }, []);
 
     const handleGoToChat = () => {
-        router.push("/chats"); // Adjust route if necessary
+        router.push("/chat"); // Changed from "/chats" to "/chat" to match the folder structure
     };
 
     const handleGoToAnalytics = () => {
