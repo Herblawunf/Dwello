@@ -1,10 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import FinancialBarChart from "./data_analytics";
-
-// import { supabase } from "@/lib/supabase"; // Uncomment if you need to fetch data
 
 export default function LandlordDashboardScreen() {
     const router = useRouter();
@@ -14,29 +12,24 @@ export default function LandlordDashboardScreen() {
     const [expenses, setExpenses] = useState(1105.30);
     const [rentDue, setRentDue] = useState(850.00);
 
-    // Sample monthly incomes for the bar chart
-    const [monthlyIncomes, setMonthlyIncomes] = useState([800, 950, 1100, 1200, 1300, 1700]);
-
-    // Example data fetching function (replace with your actual logic)
-    // useEffect(() => {
-    //   const fetchDashboardData = async () => {
-    //     try {
-    //       // const { data: incomeData } = await supabase.rpc('get_total_income');
-    //       // setIncome(incomeData.total_income);
-    //       // similarly fetch expenses, rentDue, and monthlyIncomes
-    //     } catch (error) {
-    //       console.error("Failed to fetch dashboard data:", error);
-    //     }
-    //   };
-    //   fetchDashboardData();
-    // }, []);
+    // Sample monthly stats for the stacked bar chart
+    const [monthlyStats] = useState([
+        { net: 1000, util: 400 }, // Jan
+        { net: 1000, util: 550 }, // Feb
+        { net: 900,  util: 300 }, // Mar
+        { net: 1000, util: 350 }, // Apr
+        { net: 700, util: 200 }, // May
+        { net: 600, util: 200 }, // Jun
+        { net: 900, util: 300 }, // Jul
+    ]);
+    const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul"];
 
     const handleGoToChat = () => {
-        router.push("/chats"); // Adjust route if necessary
+        router.push("/chats");
     };
 
     const handleGoToAnalytics = () => {
-        router.push("/analytics"); // Route for analytics page
+        router.push("/analytics");
     };
 
     return (
@@ -71,12 +64,12 @@ export default function LandlordDashboardScreen() {
                 </ScrollView>
             </View>
 
-            {/* Financial Overview Section with Bar Chart */}
+            {/* Financial Overview Section */}
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Financial Overview</Text>
                 <FinancialBarChart
-                    data={monthlyIncomes}
-                    labels={["Jan", "Feb", "Mar", "Apr", "May", "Jun"]}
+                    data={monthlyStats}
+                    labels={monthLabels}
                     suffix="£"
                 />
                 <TouchableOpacity
@@ -86,27 +79,6 @@ export default function LandlordDashboardScreen() {
                     <Text style={styles.moreAnalyticsText}>View detailed analytics</Text>
                 </TouchableOpacity>
             </View>
-
-            {/* Optional: Quick Actions for Landlord */}
-            {/*
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Quick Actions</Text>
-                <View style={styles.quickActionsContainer}>
-                    <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/landlord/properties')}>
-                        <Ionicons name="business-outline" size={24} color="#666" />
-                        <Text style={styles.actionText}>Properties</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/landlord/tenants')}>
-                        <Ionicons name="people-outline" size={24} color="#666" />
-                        <Text style={styles.actionText}>Tenants</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/landlord/maintenance')}>
-                        <Ionicons name="build-outline" size={24} color="#666" />
-                        <Text style={styles.actionText}>Maintenance</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
-            */}
         </View>
     );
 }
@@ -177,32 +149,5 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: "500",
         color: "#007AFF",
-    },
-    quickActionsContainer: {
-        flexDirection: "row",
-        justifyContent: "space-around",
-        flexWrap: "wrap",
-    },
-    actionButton: {
-        width: "30%",
-        aspectRatio: 1.1,
-        backgroundColor: "#F8F9FA",
-        borderRadius: 12,
-        justifyContent: "center",
-        alignItems: "center",
-        marginBottom: 10,
-        padding: 10,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 2,
-    },
-    actionText: {
-        fontSize: 12,
-        color: "#555",
-        textAlign: "center",
-        marginTop: 8,
-        fontWeight: "500",
     },
 });
