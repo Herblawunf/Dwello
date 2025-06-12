@@ -55,20 +55,19 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: 'Chat',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="chat.bubble.fill" color={color} />,
-          presentation: "modal",
-          // // Href null will hide it from the tab bar
-          href: null,
-        }}
-      /> },
       { <Tabs.Screen
         name="ChatWindow"
         options={{
           title: 'ChatWindow',
+          presentation: "modal",
+          // Href null will hide it from the tab bar
+          href: null,
+        }}
+      /> },
+      { <Tabs.Screen
+        name="chat"
+        options={{
+          title: 'Chat',
           presentation: "modal",
           // Href null will hide it from the tab bar
           href: null,
