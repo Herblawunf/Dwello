@@ -9,12 +9,16 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
+  Image,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Context as AuthContext } from '@/context/AuthContext';
 import { useContext } from 'react';
+import * as ImagePicker from 'expo-image-picker';
 
 // Placeholder data - replace with actual API calls
 const MOCK_MESSAGES = [
@@ -39,9 +43,17 @@ const MOCK_MESSAGES = [
 const MessageBubble = ({ message, isOwnMessage }) => {
   return (
     <View style={[styles.messageBubble, isOwnMessage ? styles.ownMessage : styles.otherMessage]}>
-      <Text style={[styles.messageText, isOwnMessage ? styles.ownMessageText : styles.otherMessageText]}>
-        {message.content}
-      </Text>
+      {message.attachment ? (
+        <Image 
+          source={{ uri: message.attachment }} 
+          style={styles.messageImage}
+          resizeMode="cover"
+        />
+      ) : (
+        <Text style={[styles.messageText, isOwnMessage ? styles.ownMessageText : styles.otherMessageText]}>
+          {message.content}
+        </Text>
+      )}
       <Text style={[styles.messageTime, isOwnMessage ? styles.ownMessageTime : styles.otherMessageTime]}>
         {new Date(message.sent).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
       </Text>
@@ -68,12 +80,12 @@ const ChatHeader = ({ group }) => {
   );
 };
 
-const InputArea = ({ onSend, onAttach }) => {
+const InputArea = ({ onSend, onAttach, selectedImage, onRemoveImage, isUploading }) => {
   const [message, setMessage] = useState('');
 
   const handleSend = () => {
-    if (message.trim()) {
-      onSend(message);
+    if (message.trim() || selectedImage) {
+      onSend(message, selectedImage);
       setMessage('');
     }
   };
@@ -91,12 +103,24 @@ const InputArea = ({ onSend, onAttach }) => {
         multiline
         maxLength={1000}
       />
+      {selectedImage && (
+        <View style={styles.imagePreviewContainer}>
+          <Image source={{ uri: selectedImage }} style={styles.imagePreview} />
+          <TouchableOpacity onPress={onRemoveImage} style={styles.removeImageButton}>
+            <Ionicons name="close-circle" size={24} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      )}
       <TouchableOpacity 
         onPress={handleSend}
-        style={[styles.sendButton, !message.trim() && styles.sendButtonDisabled]}
-        disabled={!message.trim()}
+        style={[styles.sendButton, (!message.trim() && !selectedImage) && styles.sendButtonDisabled]}
+        disabled={!message.trim() && !selectedImage || isUploading}
       >
-        <Ionicons name="send" size={24} color={message.trim() ? "#007AFF" : "#999"} />
+        {isUploading ? (
+          <ActivityIndicator size="small" color="#007AFF" />
+        ) : (
+          <Ionicons name="send" size={24} color={(message.trim() || selectedImage) ? "#007AFF" : "#999"} />
+        )}
       </TouchableOpacity>
     </View>
   );
@@ -110,6 +134,8 @@ export default function ChatWindow() {
   const flatListRef = useRef(null);
   const { state: authState } = useContext(AuthContext);
   const userId = authState.userId;
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const fetchMessages = useCallback(async () => {
     try {
@@ -165,29 +191,95 @@ export default function ChatWindow() {
     fetchMessages();
   }, [fetchGroupInfo, fetchMessages]);
 
-  const handleSend = async (content) => {
+  const uploadImage = async (asset) => {
+    if (!asset || !asset.uri) {
+      Alert.alert("Error", "No image selected");
+      return null;
+    }
+
+    setIsUploading(true);
+
     try {
+      const uri = asset.uri;
+      const fileExt = uri.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `chats/${fileName}`;
+
+      const formData = new FormData();
+      formData.append('file', {
+        uri: asset.uri,
+        name: fileName,
+        type: `image/${fileExt}`,
+      });
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('chats')
+        .upload(filePath, formData, {
+          upsert: false,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: publicUrlData } = await supabase.storage
+        .from('chats')
+        .getPublicUrl(filePath);
+
+      setIsUploading(false);
+      return publicUrlData.publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      Alert.alert('Error', 'Failed to upload image');
+      setIsUploading(false);
+      return null;
+    }
+  };
+
+  const handleAttach = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (permissionResult.granted === false) {
+      Alert.alert('Permission Required', 'Please allow access to your photos');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setSelectedImage(result.assets[0].uri);
+    }
+  };
+
+  const handleSend = async (content, imageUri) => {
+    try {
+      let imageUrl = null;
+      if (imageUri) {
+        imageUrl = await uploadImage({ uri: imageUri });
+        if (!imageUrl) return;
+      }
+
       const { error } = await supabase
         .from('messages')
         .insert({
           group_id: id,
           sender: userId,
           content: content,
+          attachment: imageUrl,
           sent: new Date().toISOString()
         });
 
       if (error) throw error;
       
-      // Refresh messages after sending
+      setSelectedImage(null);
       fetchMessages();
     } catch (error) {
       console.error('Error sending message:', error);
+      Alert.alert('Error', 'Failed to send message');
     }
-  };
-
-  const handleAttach = () => {
-    // Implement file attachment logic
-    console.log('Attach file');
   };
 
   const renderMessage = useCallback(({ item }) => {
@@ -221,7 +313,13 @@ export default function ChatWindow() {
           inverted
           contentContainerStyle={styles.messageList}
         />
-        <InputArea onSend={handleSend} onAttach={handleAttach} />
+        <InputArea 
+          onSend={handleSend} 
+          onAttach={handleAttach} 
+          selectedImage={selectedImage}
+          onRemoveImage={() => setSelectedImage(null)}
+          isUploading={isUploading}
+        />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -328,5 +426,27 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     opacity: 0.5,
+  },
+  messageImage: {
+    width: 200,
+    height: 200,
+    borderRadius: 12,
+    marginBottom: 4,
+  },
+  imagePreviewContainer: {
+    position: 'relative',
+    marginHorizontal: 8,
+  },
+  imagePreview: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 12,
   },
 }); 
