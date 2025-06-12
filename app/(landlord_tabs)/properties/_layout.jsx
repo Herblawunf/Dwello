@@ -10,7 +10,7 @@ export default function RequestsLayout() {
         }}
       />
       <Stack.Screen
-        name="property"
+        name="property_details"
         options={{
           presentation: "modal",
           headerShown: false,

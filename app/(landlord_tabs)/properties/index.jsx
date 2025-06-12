@@ -48,7 +48,7 @@ export default function Properties() {
     <TouchableOpacity
       onPress={() =>
         router.push({
-          pathname: "/properties/propertyDetails",
+          pathname: "/properties/property_details",
           params: { houseId: item.house_id },
         })
       }
