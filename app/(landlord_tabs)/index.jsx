@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import FinancialBarChart from "./data_analytics";
 
 // import { supabase } from "@/lib/supabase"; // Uncomment if you need to fetch data
 
@@ -13,17 +14,16 @@ export default function LandlordDashboardScreen() {
     const [expenses, setExpenses] = useState(1105.30);
     const [rentDue, setRentDue] = useState(850.00);
 
+    // Sample monthly incomes for the bar chart
+    const [monthlyIncomes, setMonthlyIncomes] = useState([800, 950, 1100, 1200, 1300, 1700]);
+
     // Example data fetching function (replace with your actual logic)
     // useEffect(() => {
     //   const fetchDashboardData = async () => {
     //     try {
-    //       // const { data: incomeData, error: incomeError } = await supabase.rpc('get_total_income');
-    //       // const { data: expensesData, error: expensesError } = await supabase.rpc('get_total_expenses');
-    //       // const { data: rentDueData, error: rentDueError } = await supabase.rpc('get_total_rent_due');
-    //       // if (incomeData) setIncome(incomeData.total_income);
-    //       // if (expensesData) setExpenses(expensesData.total_expenses);
-    //       // if (rentDueData) setRentDue(rentDueData.total_rent_due);
-    //       // Handle errors as needed
+    //       // const { data: incomeData } = await supabase.rpc('get_total_income');
+    //       // setIncome(incomeData.total_income);
+    //       // similarly fetch expenses, rentDue, and monthlyIncomes
     //     } catch (error) {
     //       console.error("Failed to fetch dashboard data:", error);
     //     }
@@ -71,15 +71,19 @@ export default function LandlordDashboardScreen() {
                 </ScrollView>
             </View>
 
-            {/* Bar Chart Placeholder Section */}
+            {/* Financial Overview Section with Bar Chart */}
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Financial Overview</Text>
+                <FinancialBarChart
+                    data={monthlyIncomes}
+                    labels={["Jan", "Feb", "Mar", "Apr", "May", "Jun"]}
+                    suffix="£"
+                />
                 <TouchableOpacity
-                    style={styles.barChartPlaceholder}
+                    style={styles.moreAnalyticsButton}
                     onPress={handleGoToAnalytics}
                 >
-                    <Ionicons name="bar-chart-outline" size={60} color="#E0E0E0" />
-                    <Text style={styles.barChartText}>Tap to view detailed analytics</Text>
+                    <Text style={styles.moreAnalyticsText}>View detailed analytics</Text>
                 </TouchableOpacity>
             </View>
 
@@ -112,23 +116,21 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: "#FFFFFF",
         paddingHorizontal: 20,
-        paddingTop: 40, 
+        paddingTop: 40,
     },
     topBar: {
         flexDirection: "row",
-        marginTop: 20,
         alignItems: "center",
         justifyContent: "space-between",
         marginBottom: 25,
     },
     header: {
         fontSize: 28,
-        fontWeight: "300", // Matching tenant style
-        fontWeight: "bold", // Matching tenant style (this will likely take precedence)
+        fontWeight: "bold",
         color: "#333",
     },
     chatButton: {
-        padding: 10, 
+        padding: 10,
     },
     section: {
         marginBottom: 25,
@@ -140,58 +142,50 @@ const styles = StyleSheet.create({
         marginBottom: 15,
     },
     scrollViewContent: {
-        paddingVertical: 5, 
+        paddingVertical: 5,
     },
     summaryBox: {
-        backgroundColor: "#F8F9FA", 
-        borderRadius: 12, 
+        backgroundColor: "#F8F9FA",
+        borderRadius: 12,
         padding: 20,
         marginRight: 15,
-        width: 160, 
+        width: 160,
         height: 110,
         justifyContent: "space-between",
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.05,
         shadowRadius: 2,
-        elevation: 2, 
+        elevation: 2,
     },
     summaryBoxTitle: {
         fontSize: 14,
         fontWeight: "500",
-        color: "#555", 
+        color: "#555",
     },
     summaryBoxAmount: {
         fontSize: 22,
         fontWeight: "bold",
         color: "#333",
-        textAlign: "left", 
         marginTop: 8,
     },
-    barChartPlaceholder: {
-        backgroundColor: "#F8F9FA",
-        borderRadius: 12,
-        padding: 20,
-        height: 220,
-        justifyContent: "center",
-        alignItems: "center",
-        borderWidth: 1,
-        borderColor: "#EDEDED", 
+    moreAnalyticsButton: {
+        marginTop: 10,
+        alignSelf: "center",
     },
-    barChartText: {
-        marginTop: 15,
-        fontSize: 16,
-        color: "#666",
+    moreAnalyticsText: {
+        fontSize: 14,
         fontWeight: "500",
+        color: "#007AFF",
     },
     quickActionsContainer: {
         flexDirection: "row",
-        justifyContent: "space-around", 
+        justifyContent: "space-around",
         flexWrap: "wrap",
     },
     actionButton: {
-        width: "30%", 
-        aspectRatio: 1.1, 
+        width: "30%",
+        aspectRatio: 1.1,
         backgroundColor: "#F8F9FA",
         borderRadius: 12,
         justifyContent: "center",
