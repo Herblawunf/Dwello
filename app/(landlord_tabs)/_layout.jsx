@@ -1,6 +1,7 @@
 import { Tabs } from "expo-router";
 import React from "react";
 import { Platform } from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
 
 import { HapticTab } from "@/components/HapticTab";
 import { IconSymbol } from "@/components/ui/IconSymbol";
@@ -63,6 +64,17 @@ export default function TabLayout() {
           href: null,
         }}
       /> },
+      {
+        <Tabs.Screen
+        name="settings"
+        options={{
+          title: "Settings",
+          tabBarIcon: ({ color }) => (
+            <MaterialIcons name="settings" size={28} color={color} />
+          ),
+        }}
+      />
+      },
     </Tabs>
   );
 }
