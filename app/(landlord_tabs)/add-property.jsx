@@ -17,15 +17,40 @@ export default function AddPropertyScreen() {
 
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      // First try to get the current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      console.log('Current user:', user);
       
+      if (userError) {
+        console.error('Error getting user:', userError);
+        throw userError;
+      }
+
+      if (!user) {
+        // If no user, try to get the session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        console.log('Session:', session);
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          throw sessionError;
+        }
+        
+        if (!session?.user) {
+          throw new Error('No user logged in');
+        }
+      }
+
+      const userId = user?.id || session?.user?.id;
+      console.log('Using user ID:', userId);
+
       const { error } = await supabase
-        .from('properties')
+        .from('houses')
         .insert([
           {
             street_address: streetAddress,
             postcode: postcode,
-            landlord_id: user.id
+            landlord_id: userId
           }
         ]);
 
@@ -34,6 +59,7 @@ export default function AddPropertyScreen() {
       alert('Property added successfully!');
       router.back();
     } catch (error) {
+      console.error('Full error:', error);
       alert('Error adding property: ' + error.message);
     } finally {
       setLoading(false);
