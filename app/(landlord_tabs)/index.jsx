@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-nati
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import FinancialBarChart from "./data_analytics";
+import { TouchableOpacity as RNTouchableOpacity } from "react-native";
 
 export default function LandlordDashboardScreen() {
     const router = useRouter();
@@ -21,8 +22,13 @@ export default function LandlordDashboardScreen() {
         { net: 700, util: 200 }, // May
         { net: 600, util: 200 }, // Jun
         { net: 900, util: 300 }, // Jul
+        { net: 1100, util: 400 }, // Aug
+        { net: 950, util: 350 }, // Sep
+        { net: 1050, util: 500 }, // Oct
+        { net: 1200, util: 600 }, // Nov
+        { net: 1150, util: 450 }, // Dec
     ]);
-    const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul"];
+    const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
     const handleGoToChat = () => {
         router.push("/chats");
@@ -67,11 +73,13 @@ export default function LandlordDashboardScreen() {
             {/* Financial Overview Section */}
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Financial Overview</Text>
-                <FinancialBarChart
+                <View style={{ alignItems: 'center', width: '100%' }}>
+                  <FinancialBarChart
                     data={monthlyStats}
                     labels={monthLabels}
                     suffix="£"
-                />
+                  />
+                </View>
                 <TouchableOpacity
                     style={styles.moreAnalyticsButton}
                     onPress={handleGoToAnalytics}

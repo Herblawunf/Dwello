@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, View, Text, Dimensions } from "react-native";
+import { StyleSheet, View, Text, Dimensions, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 const screenWidth = Dimensions.get("window").width - 40; // account for parent padding
@@ -34,10 +34,12 @@ export default function FinancialBarChart({ data, labels, suffix = "" }) {
     Math.round((maxTotal - tickInterval * i) / roundTo) * roundTo
   ); // descending
 
-  // Calculate bar width so all bars fit with margins between them only
+  // Calculate bar width for a natural scrollable look (show ~6 bars at a time)
   const barCount = data.length;
-  const totalBarMargins = barMargin * (barCount - 1);
-  const barWidth = (chartWidth - totalBarMargins) / barCount;
+  const barsVisible = 6;
+  const totalBarMargins = barMargin * (barsVisible - 1);
+  const barWidth = (chartWidth - totalBarMargins) / barsVisible;
+  const sidePadding = (screenWidth - chartWidth) / 2;
 
   return (
     <View style={styles.wrapper}>
@@ -57,7 +59,7 @@ export default function FinancialBarChart({ data, labels, suffix = "" }) {
       </View>
 
       {/* Chart Area */}
-      <View style={[styles.chartArea, { height: chartHeight, marginTop: 12, position: 'relative' }]}>  
+      <View style={[styles.chartArea, { height: chartHeight, marginTop: 12, position: 'relative', width: '100%' }]}>  
         {/* Y-axis labels */}
         <View style={styles.yAxis}>  
           {ticks.map((t, idx) => (
@@ -92,39 +94,45 @@ export default function FinancialBarChart({ data, labels, suffix = "" }) {
         </View>
 
         {/* Bars and X-axis labels */}
-        <View style={styles.chartContainer}>
-          {data.map((item, idx) => {
-            const utilHeight = (item.util / maxTotal) * chartHeight;
-            const netHeight = (item.net / maxTotal) * chartHeight;
-            return (
-              <View key={idx} style={styles.barWrapper}>
-                <View style={{ flex: 1, justifyContent: 'flex-end', width: '100%' }}>
-                  {/* Utilities on top */}
-                  <View
-                    style={{
-                      width: '100%',
-                      height: utilHeight,
-                      backgroundColor: '#A0A0A0',
-                      borderTopLeftRadius: 8,
-                      borderTopRightRadius: 8,
-                    }}
-                  />
-                  {/* Net Income below */}
-                  <View
-                    style={{
-                      width: '100%',
-                      height: netHeight,
-                      backgroundColor: '#303030',
-                      borderBottomLeftRadius: 8,
-                      borderBottomRightRadius: 8,
-                    }}
-                  />
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingLeft: sidePadding, paddingRight: sidePadding }}
+        >
+          <View style={styles.chartContainer}>
+            {data.map((item, idx) => {
+              const utilHeight = (item.util / maxTotal) * chartHeight;
+              const netHeight = (item.net / maxTotal) * chartHeight;
+              return (
+                <View key={idx} style={[styles.barWrapper, { width: barWidth, marginHorizontal: barMargin / 2 }]}> {/* Set width and margin */}
+                  <View style={{ flex: 1, justifyContent: 'flex-end', width: '100%' }}>
+                    {/* Utilities on top */}
+                    <View
+                      style={{
+                        width: '100%',
+                        height: utilHeight,
+                        backgroundColor: '#A0A0A0',
+                        borderTopLeftRadius: 8,
+                        borderTopRightRadius: 8,
+                      }}
+                    />
+                    {/* Net Income below */}
+                    <View
+                      style={{
+                        width: '100%',
+                        height: netHeight,
+                        backgroundColor: '#303030',
+                        borderBottomLeftRadius: 8,
+                        borderBottomRightRadius: 8,
+                      }}
+                    />
+                  </View>
+                  {labels && <Text style={styles.barLabel}>{labels[idx]}</Text>}
                 </View>
-                {labels && <Text style={styles.barLabel}>{labels[idx]}</Text>}
-              </View>
-            );
-          })}
-        </View>
+              );
+            })}
+          </View>
+        </ScrollView>
       </View>
     </View>
   );
