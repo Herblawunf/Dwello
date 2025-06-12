@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useLocalSearchParams, useRouter } from 'expo-router';
+import { supabase } from '@/lib/supabase';
+import { Context as AuthContext } from '@/context/AuthContext';
+import { useContext } from 'react';
 
 // Placeholder data - replace with actual API calls
 const MOCK_MESSAGES = [
@@ -40,7 +43,7 @@ const MessageBubble = ({ message, isOwnMessage }) => {
         {message.content}
       </Text>
       <Text style={[styles.messageTime, isOwnMessage ? styles.ownMessageTime : styles.otherMessageTime]}>
-        {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        {new Date(message.sent).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
       </Text>
     </View>
   );
@@ -56,7 +59,7 @@ const ChatHeader = ({ group }) => {
       </TouchableOpacity>
       <View style={styles.headerInfo}>
         <Text style={styles.groupName}>{group.name}</Text>
-        <Text style={styles.memberCount}>{group.members.length} members</Text>
+        <Text style={styles.memberCount}>{group.members?.length || 0} members</Text>
       </View>
       <TouchableOpacity style={styles.settingsButton}>
         <Ionicons name="settings-outline" size={24} color="black" />
@@ -102,26 +105,84 @@ const InputArea = ({ onSend, onAttach }) => {
 export default function ChatWindow() {
   const navigation = useNavigation();
   const { id } = useLocalSearchParams();
-  const [messages, setMessages] = useState(MOCK_MESSAGES);
+  const [messages, setMessages] = useState([]);
+  const [group, setGroup] = useState(null);
   const flatListRef = useRef(null);
+  const { state: authState } = useContext(AuthContext);
+  const userId = authState.userId;
 
-  // In a real app, you would fetch the group data based on the id
-  const group = {
-    id,
-    name: '123 Main Street',
-    members: ['user1', 'user2', 'user3'],
-  };
+  const fetchMessages = useCallback(async () => {
+    try {
+      const { data: messagesData, error: messagesError } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('group_id', id)
+        .order('sent', { ascending: false });
 
-  const handleSend = (content) => {
-    const newMessage = {
-      id: Date.now().toString(),
-      senderId: 'user1', // Replace with actual user ID
-      content,
-      type: 'text',
-      timestamp: new Date(),
-      readBy: ['user1'],
-    };
-    setMessages(prev => [newMessage, ...prev]);
+      if (messagesError) throw messagesError;
+      setMessages(messagesData || []);
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+    }
+  }, [id]);
+
+  const fetchGroupInfo = useCallback(async () => {
+    try {
+      const { data: groupData, error: groupError } = await supabase
+        .from('chats')
+        .select(`
+          *,
+          houses (
+            street_address,
+            postcode
+          )
+        `)
+        .eq('group_id', id)
+        .single();
+
+      if (groupError) throw groupError;
+      
+      // Get members of the chat
+      const { data: membersData, error: membersError } = await supabase
+        .from('tenants')
+        .select('tenant_id')
+        .eq('house_id', groupData.house_id);
+
+      if (membersError) throw membersError;
+
+      setGroup({
+        ...groupData,
+        name: groupData.houses?.street_address || 'Chat',
+        members: membersData?.map(m => m.tenant_id) || []
+      });
+    } catch (error) {
+      console.error('Error fetching group info:', error);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    fetchGroupInfo();
+    fetchMessages();
+  }, [fetchGroupInfo, fetchMessages]);
+
+  const handleSend = async (content) => {
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .insert({
+          group_id: id,
+          sender: userId,
+          content: content,
+          sent: new Date().toISOString()
+        });
+
+      if (error) throw error;
+      
+      // Refresh messages after sending
+      fetchMessages();
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
   };
 
   const handleAttach = () => {
@@ -130,9 +191,19 @@ export default function ChatWindow() {
   };
 
   const renderMessage = useCallback(({ item }) => {
-    const isOwnMessage = item.senderId === 'user1'; // Replace with actual user ID
+    const isOwnMessage = item.sender === userId;
     return <MessageBubble message={item} isOwnMessage={isOwnMessage} />;
-  }, []);
+  }, [userId]);
+
+  if (!group) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text>Loading chat...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -146,7 +217,7 @@ export default function ChatWindow() {
           ref={flatListRef}
           data={messages}
           renderItem={renderMessage}
-          keyExtractor={item => item.id}
+          keyExtractor={item => item.message_id}
           inverted
           contentContainerStyle={styles.messageList}
         />
@@ -160,6 +231,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   keyboardAvoidingView: {
     flex: 1,

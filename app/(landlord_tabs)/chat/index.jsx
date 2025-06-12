@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useContext } from 'react';
 import {
   View,
   Text,
@@ -9,59 +9,24 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-
-// Placeholder data - replace with actual API calls
-const MOCK_GROUPS = [
-  {
-    id: 'group1',
-    propertyId: 'property1',
-    name: '123 Main Street',
-    members: ['user1', 'user2', 'user3'],
-    lastMessage: {
-      content: 'Sure, what would you like to know?',
-      timestamp: new Date(),
-    },
-    unreadCount: 2,
-  },
-  {
-    id: 'group2',
-    propertyId: 'property2',
-    name: '456 Oak Avenue',
-    members: ['user1', 'user4', 'user5'],
-    lastMessage: {
-      content: 'The maintenance request has been approved',
-      timestamp: new Date(Date.now() - 3600000),
-    },
-    unreadCount: 0,
-  },
-  {
-    id: 'group3',
-    propertyId: 'property3',
-    name: '789 Pine Road',
-    members: ['user1', 'user6', 'user7'],
-    lastMessage: {
-      content: 'New tenant has been assigned',
-      timestamp: new Date(Date.now() - 86400000),
-    },
-    unreadCount: 5,
-  },
-];
+import { supabase } from '@/lib/supabase';
+import { Context as AuthContext } from '@/context/AuthContext';
 
 const GroupChatItem = ({ group, onPress }) => {
   return (
     <TouchableOpacity style={styles.groupItem} onPress={onPress}>
       <View style={styles.groupInfo}>
         <View style={styles.groupHeader}>
-          <Text style={styles.groupName}>{group.name}</Text>
+          <Text style={styles.groupName}>{group.street_address}</Text>
           <Text style={styles.timestamp}>
-            {new Date(group.lastMessage.timestamp).toLocaleDateString([], {
+            {group.lastMessage ? new Date(group.lastMessage.sent).toLocaleDateString([], {
               month: 'short',
               day: 'numeric',
-            })}
+            }) : ''}
           </Text>
         </View>
         <Text style={styles.lastMessage} numberOfLines={1}>
-          {group.lastMessage.content}
+          {group.lastMessage?.content || 'No messages yet'}
         </Text>
       </View>
       {group.unreadCount > 0 && (
@@ -86,10 +51,79 @@ const ChatListHeader = () => {
 
 export default function ChatScreen() {
   const router = useRouter();
-  const [groups, setGroups] = useState(MOCK_GROUPS);
+  const [groups, setGroups] = useState([]);
+  const { state: authState } = useContext(AuthContext);
+  const userId = authState.userId;
+
+  const fetchChats = useCallback(async () => {
+    try {
+      // Get all houses owned by the landlord
+      const { data: houses, error: housesError } = await supabase
+        .from('houses')
+        .select('*')
+        .eq('landlord_id', userId);
+
+      if (housesError) throw housesError;
+
+      // For each house, get or create a chat group and get its last message
+      const groupsWithMessages = await Promise.all(
+        houses.map(async (house) => {
+          // Get existing chat for this house
+          let { data: chat, error: chatError } = await supabase
+            .from('chats')
+            .select('*')
+            .eq('house_id', house.house_id)
+            .single();
+
+          // If no chat exists, create one
+          if (!chat) {
+            const { data: newChat, error: createError } = await supabase
+              .from('chats')
+              .insert({
+                house_id: house.house_id,
+                tenants_only: false
+              })
+              .select()
+              .single();
+
+            if (createError) throw createError;
+            chat = newChat;
+          }
+
+          // Get the last message for this chat
+          const { data: lastMessage, error: messageError } = await supabase
+            .from('messages')
+            .select('*')
+            .eq('group_id', chat.group_id)
+            .order('sent', { ascending: false })
+            .limit(1)
+            .single();
+
+          if (messageError && messageError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+            console.error('Error fetching last message:', messageError);
+          }
+
+          return {
+            ...house,
+            group_id: chat.group_id,
+            lastMessage: lastMessage || null,
+            unreadCount: 0 // You can implement unread count logic later
+          };
+        })
+      );
+
+      setGroups(groupsWithMessages);
+    } catch (error) {
+      console.error('Error fetching chats:', error);
+    }
+  }, [userId]);
+
+  React.useEffect(() => {
+    fetchChats();
+  }, [fetchChats]);
 
   const handleGroupPress = (group) => {
-    router.push(`/chat/${group.id}`);
+    router.push(`/chat/${group.group_id}`);
   };
 
   const renderGroupItem = useCallback(({ item }) => (
@@ -102,7 +136,7 @@ export default function ChatScreen() {
       <FlatList
         data={groups}
         renderItem={renderGroupItem}
-        keyExtractor={item => item.id}
+        keyExtractor={item => item.group_id}
         contentContainerStyle={styles.listContent}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
       />
