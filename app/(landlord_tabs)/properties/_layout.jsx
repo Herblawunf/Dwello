@@ -16,6 +16,13 @@ export default function RequestsLayout() {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name="tenant_details"
+        options={{
+          presentation: "modal",
+          headerShown: false,
+        }}
+      />
     </Stack>
   );
 }
