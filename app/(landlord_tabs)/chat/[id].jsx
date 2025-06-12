@@ -43,13 +43,14 @@ const MOCK_MESSAGES = [
 const MessageBubble = ({ message, isOwnMessage }) => {
   return (
     <View style={[styles.messageBubble, isOwnMessage ? styles.ownMessage : styles.otherMessage]}>
-      {message.attachment ? (
+      {message.attachment && (
         <Image 
           source={{ uri: message.attachment }} 
           style={styles.messageImage}
           resizeMode="cover"
         />
-      ) : (
+      )}
+      {message.content && (
         <Text style={[styles.messageText, isOwnMessage ? styles.ownMessageText : styles.otherMessageText]}>
           {message.content}
         </Text>
@@ -384,6 +385,7 @@ const styles = StyleSheet.create({
   },
   messageText: {
     fontSize: 16,
+    marginBottom: 4,
   },
   ownMessageText: {
     color: '#fff',
@@ -431,7 +433,7 @@ const styles = StyleSheet.create({
     width: 200,
     height: 200,
     borderRadius: 12,
-    marginBottom: 4,
+    marginBottom: 8,
   },
   imagePreviewContainer: {
     position: 'relative',
