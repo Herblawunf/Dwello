@@ -7,13 +7,17 @@ import {
   SafeAreaView,
   RefreshControl,
   TouchableOpacity,
+  Platform,
+  StatusBar,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Context as AuthContext } from "@/context/AuthContext";
 import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "@/lib/supabase";
 
 export default function Properties() {
+  const insets = useSafeAreaInsets();
   const [properties, setProperties] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const {
@@ -61,7 +65,15 @@ export default function Properties() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        {
+          paddingTop:
+            Platform.OS === "android" ? StatusBar.currentHeight : insets.top,
+        },
+      ]}
+    >
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Properties</Text>
       </View>
