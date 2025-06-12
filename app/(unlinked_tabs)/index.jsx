@@ -1,12 +1,55 @@
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFeedback, Keyboard } from "react-native";
-import { useState } from "react";
+import React, { useState, useContext } from "react";
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFeedback, Keyboard, ActivityIndicator, Alert } from "react-native";
+import { Context as AuthContext } from "../../context/AuthContext";
+import { useRouter } from "expo-router";
+import { supabase } from "../../lib/supabase";
 
 export default function UnlinkedHome() {
   const [code, setCode] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const { state } = useContext(AuthContext);
+  const router = useRouter();
 
-  const handleSubmit = () => {
-    // TODO: Implement code submission logic
-    console.log("Submitted code:", code);
+  const handleSubmit = async () => {
+    if (!code || code.length !== 6) {
+      Alert.alert("Error", "Please enter a valid 6-digit code");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // First, find the house with the matching code
+      const { data: house, error: houseError } = await supabase
+        .from('houses')
+        .select('house_id')
+        .eq('code', parseInt(code))
+        .single();
+
+      if (houseError || !house) {
+        throw new Error('Invalid house code');
+      }
+
+      // Update the tenant record with the house_id and has_house
+      const { error: updateError } = await supabase
+        .from('tenants')
+        .update({
+          house_id: house.house_id,
+          has_house: true
+        })
+        .eq('tenant_id', state.userId);
+
+      if (updateError) {
+        throw new Error('Failed to link tenant to house');
+      }
+
+      // If successful, redirect to tenant tabs
+      router.replace('/(tenant_tabs)');
+    } catch (error) {
+      Alert.alert("Error", error.message || "Failed to verify code. Please try again.");
+    } finally {
+      setIsLoading(false);
+      setCode(""); // Clear the input field
+    }
   };
 
   return (
@@ -21,12 +64,18 @@ export default function UnlinkedHome() {
           maxLength={6}
           placeholder="Enter 6-digit code"
           placeholderTextColor="#999"
+          editable={!isLoading}
         />
         <TouchableOpacity 
-          style={styles.button}
+          style={[styles.button, isLoading && styles.buttonDisabled]}
           onPress={handleSubmit}
+          disabled={isLoading}
         >
-          <Text style={styles.buttonText}>Submit</Text>
+          {isLoading ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <Text style={styles.buttonText}>Submit</Text>
+          )}
         </TouchableOpacity>
       </View>
     </TouchableWithoutFeedback>
@@ -66,6 +115,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     width: "80%",
     alignItems: "center",
+  },
+  buttonDisabled: {
+    backgroundColor: "#999",
   },
   buttonText: {
     color: "white",
