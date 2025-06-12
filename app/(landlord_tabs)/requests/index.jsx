@@ -89,7 +89,6 @@ export default function Requests() {
         p_request_id: request_id,
         p_new_status: status,
       });
-      console.log(status);
       if (error) throw error;
       getRequests();
     } catch (error) {
@@ -139,7 +138,19 @@ export default function Requests() {
         </Text>
       </View>
       <View style={styles.requestFooter}>
-        <TouchableOpacity style={styles.footerButton} onPress={() => {}}>
+        <TouchableOpacity
+          style={styles.footerButton}
+          onPress={() =>
+            router.push({
+              pathname: "/request_screens/",
+              params: {
+                requestId: item.request_id,
+                description: item.description,
+                tenant: `${item.poster_first_name} ${item.poster_last_name}`,
+              },
+            })
+          }
+        >
           <MaterialIcons name="comment" size={20} color="#757575" />
           <Text style={styles.footerButtonText}>View thread</Text>
         </TouchableOpacity>
@@ -275,20 +286,6 @@ export default function Requests() {
         style={styles.list}
         contentContainerStyle={styles.listContent}
       />
-
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={[
-            styles.addButton,
-            {
-              marginBottom: Platform.OS == "android" ? 0 : tabBarHeight,
-            },
-          ]}
-          onPress={() => router.push("/(tenant_tabs)/requests/contact")}
-        >
-          <Text style={styles.addButtonText}>Add maintenance request</Text>
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 }
@@ -387,18 +384,6 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     color: "#757575",
     fontSize: 14,
-  },
-  addButton: {
-    backgroundColor: "#2196F3",
-    padding: 16,
-    margin: 16,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  addButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "500",
   },
   modalOverlay: {
     flex: 1,
