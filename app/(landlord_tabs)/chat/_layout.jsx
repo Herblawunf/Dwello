@@ -13,6 +13,8 @@ export default function ChatLayout() {
         name="[id]"
         options={{
           headerShown: false,
+          presentation: "modal",
+          animation: "slide_from_bottom",
         }}
       />
     </Stack>
