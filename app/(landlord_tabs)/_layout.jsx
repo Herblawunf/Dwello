@@ -55,26 +55,31 @@ export default function TabLayout() {
           ),
         }}
       />
-      { <Tabs.Screen
+      <Tabs.Screen
+        name="add-property"
+        options={{
+          title: "Add Property",
+          presentation: "modal",
+          href: null,
+        }}
+      />
+      <Tabs.Screen
         name="ChatWindow"
         options={{
           title: 'ChatWindow',
           presentation: "modal",
-          // Href null will hide it from the tab bar
           href: null,
         }}
-      /> },
-      { <Tabs.Screen
+      />
+      <Tabs.Screen
         name="chat"
         options={{
           title: 'Chat',
           presentation: "modal",
-          // Href null will hide it from the tab bar
           href: null,
         }}
-      /> },
-      {
-        <Tabs.Screen
+      />
+      <Tabs.Screen
         name="settings"
         options={{
           title: "Settings",
@@ -83,7 +88,6 @@ export default function TabLayout() {
           ),
         }}
       />
-      },
     </Tabs>
   );
 }
