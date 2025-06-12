@@ -24,6 +24,9 @@ export default function Requests() {
   const [sortBy, setSortBy] = useState("time");
   const [sortMenuVisible, setSortMenuVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [properties, setProperties] = useState([]);
+  const [selectedProperty, setSelectedProperty] = useState(null);
+  const [propertyMenuVisible, setPropertyMenuVisible] = useState(false);
   const insets = useSafeAreaInsets();
   const [requests, setRequests] = useState([]);
   const {
@@ -46,10 +49,27 @@ export default function Requests() {
     }
   }, [userId]);
 
+  const getProperties = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.rpc("get_landlord_houses", {
+        p_landlord_id: userId,
+      });
+      if (data) {
+        setProperties(data);
+        console.log(data);
+        return;
+      }
+      console.error(error);
+    } catch (error) {
+      console.error("Error fetching properties:", error);
+    }
+  }, [userId]);
+
   useFocusEffect(
     useCallback(() => {
       getRequests();
-    }, [getRequests])
+      getProperties();
+    }, [getRequests, getProperties])
   );
 
   const getPriorityText = (priority) => {
@@ -78,9 +98,13 @@ export default function Requests() {
 
   const filterRequests = (requestsToFilter) => {
     const query = searchQuery.toLowerCase();
-    return requestsToFilter.filter((r) =>
-      r.description.toLowerCase().includes(query)
-    );
+    return requestsToFilter.filter((r) => {
+      const matchesSearch = r.description.toLowerCase().includes(query);
+      const matchesProperty = selectedProperty
+        ? r.house_id === selectedProperty.house_id
+        : true;
+      return matchesSearch && matchesProperty;
+    });
   };
 
   const setStatus = async (request_id, status) => {
@@ -263,15 +287,68 @@ export default function Requests() {
         </TouchableOpacity>
       </Modal>
 
-      <View style={styles.searchContainer}>
-        <MaterialIcons name="search" size={20} color="#757575" />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search requests..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
+      <View style={styles.filterContainer}>
+        <View style={styles.searchContainer}>
+          <MaterialIcons name="search" size={20} color="#757575" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search requests..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
+
+        <TouchableOpacity
+          style={styles.propertyButton}
+          onPress={() => setPropertyMenuVisible(true)}
+        >
+          <MaterialIcons name="home" size={20} color="#757575" />
+          <Text style={styles.propertyButtonText}>
+            {selectedProperty
+              ? selectedProperty.street_address
+              : "All Properties"}
+          </Text>
+        </TouchableOpacity>
       </View>
+
+      <Modal
+        visible={propertyMenuVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setPropertyMenuVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setPropertyMenuVisible(false)}
+        >
+          <View style={[styles.sortMenu, styles.propertyMenu]}>
+            <TouchableOpacity
+              style={styles.sortMenuItem}
+              onPress={() => {
+                setSelectedProperty(null);
+                setPropertyMenuVisible(false);
+              }}
+            >
+              <Text style={styles.sortMenuText}>All Properties</Text>
+            </TouchableOpacity>
+            {properties.map((property) => (
+              <TouchableOpacity
+                key={property.house_id}
+                style={styles.sortMenuItem}
+                onPress={() => {
+                  setSelectedProperty(property);
+                  setPropertyMenuVisible(false);
+                }}
+              >
+                <Text style={styles.sortMenuText}>
+                  {property.street_address}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       <FlatList
         data={sortRequests(
@@ -427,5 +504,26 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 16,
     color: "#212121",
+  },
+  filterContainer: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  propertyButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+    padding: 8,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  propertyButtonText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: "#212121",
+  },
+  propertyMenu: {
+    maxHeight: "50%",
   },
 });
