@@ -153,7 +153,7 @@ export default function ChatWindow() {
       setGroup({
         ...groupData,
         name: groupData.houses?.street_address || 'Chat',
-        members: membersData?.map(m => m.tenant_id) || []
+        members: [...(membersData?.map(m => m.tenant_id) || []), userId]
       });
     } catch (error) {
       console.error('Error fetching group info:', error);

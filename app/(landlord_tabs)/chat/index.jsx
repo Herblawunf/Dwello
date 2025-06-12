@@ -91,22 +91,23 @@ export default function ChatScreen() {
           }
 
           // Get the last message for this chat
-          const { data: lastMessage, error: messageError } = await supabase
+          const { data: messages, error: messageError } = await supabase
             .from('messages')
             .select('*')
             .eq('group_id', chat.group_id)
             .order('sent', { ascending: false })
-            .limit(1)
-            .single();
+            .limit(1);
 
-          if (messageError && messageError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+          if (messageError) {
             console.error('Error fetching last message:', messageError);
           }
+
+          const lastMessage = messages?.[0] || null;
 
           return {
             ...house,
             group_id: chat.group_id,
-            lastMessage: lastMessage || null,
+            lastMessage,
             unreadCount: 0 // You can implement unread count logic later
           };
         })
