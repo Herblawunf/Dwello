@@ -37,6 +37,20 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="detailed_analytics"
+        options={{
+          title: 'Insights',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="chart.bar.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="data_analytics_"
+        options={{
+          presentation: 'modal',
+          href: null,
+        }}
+      />
       { <Tabs.Screen
         name="notifications"
         options={{

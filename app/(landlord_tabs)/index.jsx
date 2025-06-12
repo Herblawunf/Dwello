@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, TouchableWithoutFeedback, Dimensions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import FinancialBarChart from "./data_analytics";
+import FinancialBarChart from "./data_analytics_";
 import { TouchableOpacity as RNTouchableOpacity } from "react-native";
 
 export default function LandlordDashboardScreen() {
@@ -35,7 +35,7 @@ export default function LandlordDashboardScreen() {
     };
 
     const handleGoToAnalytics = () => {
-        router.push("/analytics");
+        router.push("/(landlord_tabs)/detailed_analytics");
     };
 
     return (
