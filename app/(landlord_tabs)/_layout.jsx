@@ -54,6 +54,15 @@ export default function TabLayout() {
           // href: null,
         }}
       /> },
+      { <Tabs.Screen
+        name="ChatWindow"
+        options={{
+          title: 'ChatWindow',
+          presentation: "modal",
+          // Href null will hide it from the tab bar
+          href: null,
+        }}
+      /> },
     </Tabs>
   );
 }

@@ -11,7 +11,7 @@ import {
   TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useLocalSearchParams } from 'expo-router';
+import { useNavigation, useLocalSearchParams, useRouter } from 'expo-router';
 
 // Placeholder data - replace with actual API calls
 const MOCK_MESSAGES = [
@@ -47,11 +47,11 @@ const MessageBubble = ({ message, isOwnMessage }) => {
 };
 
 const ChatHeader = ({ group }) => {
-  const navigation = useNavigation();
+  const router = useRouter();
   
   return (
     <View style={styles.header}>
-      <TouchableOpacity onPress={() => navigation.back()} style={styles.backButton}>
+      <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
         <Ionicons name="arrow-back" size={24} color="black" />
       </TouchableOpacity>
       <View style={styles.headerInfo}>
