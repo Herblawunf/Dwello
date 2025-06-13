@@ -1,11 +1,17 @@
 import { useContext } from "react";
 import { supabase } from "../../lib/supabase";
-import { TouchableOpacity, Text, SafeAreaView, View, StyleSheet } from "react-native";
+import {
+  TouchableOpacity,
+  Text,
+  SafeAreaView,
+  View,
+  StyleSheet,
+} from "react-native";
 import { Context as AuthContext } from "@/context/AuthContext";
 
 export default function SettingsScreen() {
   const { state: authState, signout } = useContext(AuthContext);
-  
+
   const handleSignout = async () => {
     await supabase.auth.signOut();
     signout();
@@ -18,21 +24,21 @@ export default function SettingsScreen() {
       items: [
         { label: "Profile", onPress: () => {} },
         { label: "Privacy", onPress: () => {} },
-      ]
+      ],
     },
     {
       title: "App",
       items: [
         { label: "Notifications", onPress: () => {} },
         { label: "About", onPress: () => {} },
-      ]
+      ],
     },
     {
       title: "Account",
       items: [
         { label: "Sign Out", onPress: handleSignout, isDestructive: true },
-      ]
-    }
+      ],
+    },
   ];
 
   return (
@@ -46,14 +52,16 @@ export default function SettingsScreen() {
                 key={itemIndex}
                 style={[
                   styles.item,
-                  itemIndex === section.items.length - 1 && styles.lastItem
+                  itemIndex === section.items.length - 1 && styles.lastItem,
                 ]}
                 onPress={item.onPress}
               >
-                <Text style={[
-                  styles.itemText,
-                  item.isDestructive && styles.destructiveText
-                ]}>
+                <Text
+                  style={[
+                    styles.itemText,
+                    item.isDestructive && styles.destructiveText,
+                  ]}
+                >
                   {item.label}
                 </Text>
               </TouchableOpacity>
@@ -68,7 +76,7 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     paddingHorizontal: 16,
   },
   section: {
@@ -76,17 +84,17 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#8E8E93',
+    fontWeight: "600",
+    color: "#8E8E93",
     marginBottom: 8,
     marginLeft: 16,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   itemContainer: {
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     borderRadius: 10,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
@@ -96,16 +104,16 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 16,
     borderBottomWidth: 0.5,
-    borderBottomColor: '#E5E5EA',
+    borderBottomColor: "#E5E5EA",
   },
   lastItem: {
     borderBottomWidth: 0,
   },
   itemText: {
     fontSize: 17,
-    color: '#000000',
+    color: "#000000",
   },
   destructiveText: {
-    color: '#FF3B30',
+    color: "#FF3B30",
   },
 });
