@@ -45,26 +45,33 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="upkeep"
+        options={{
+          title: 'Upkeep',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="calendar" color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="data_analytics_"
         options={{
           presentation: 'modal',
           href: null,
         }}
       />
-      { <Tabs.Screen
+      <Tabs.Screen
         name="notifications"
         options={{
           title: 'Notifications',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
         }}
-      /> },
-      { <Tabs.Screen
+      />
+      <Tabs.Screen
         name="chat"
         options={{
           title: 'Chat',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="chat.bubble.fill" color={color} />,
         }}
-      /> },
+      />
     </Tabs>
   );
 }
