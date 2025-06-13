@@ -18,6 +18,7 @@ const authReducer = (state, action) => {
         isSignedIn: true,
         tenant: action.userInfo?.tenant || false,
         landlord: action.userInfo?.landlord || false,
+        hasHouse: action.userInfo?.hasHouse || false,
       };
     case "set_error_message":
       return { ...state, errorMessage: action.payload };
@@ -30,6 +31,7 @@ const authReducer = (state, action) => {
         isSignedIn: false,
         tenant: false,
         landlord: false,
+        hasHouse: false,
       };
     case "attempted_local":
       return { ...state, hasAttemptedLocalLogin: true };
@@ -64,6 +66,15 @@ const login =
       console.log(user.id);
       console.log("User Info:", userInfo);
 
+      // Check if user has a house
+      const { data: tenantInfo, error: tenantError } = await supabase
+        .from("tenants")
+        .select("has_house")
+        .eq("tenant_id", user.id)
+        .single();
+
+      const hasHouse = tenantInfo?.has_house || false;
+
       const accessToken = data.session.access_token;
       await AsyncStorage.setItem("accessToken", accessToken);
       // Store landlord and tenant flags as strings
@@ -75,8 +86,13 @@ const login =
         "tenant",
         JSON.stringify(userInfo?.tenant || false)
       );
+      await AsyncStorage.setItem("hasHouse", JSON.stringify(hasHouse));
 
-      dispatch({ type: "login", payload: accessToken, userInfo });
+      dispatch({ 
+        type: "login", 
+        payload: accessToken, 
+        userInfo: { ...userInfo, hasHouse } 
+      });
     } catch (err) {
       console.log(err);
     }
@@ -87,6 +103,7 @@ const signout = (dispatch) => async () => {
   await AsyncStorage.removeItem("accessToken");
   await AsyncStorage.removeItem("tenant");
   await AsyncStorage.removeItem("landlord");
+  await AsyncStorage.removeItem("hasHouse");
 
   dispatch({ type: "signout" });
 };
@@ -101,9 +118,11 @@ const tryLocalLogin = (dispatch) => async () => {
     // Restore landlord and tenant from AsyncStorage
     const landlordStr = await AsyncStorage.getItem("landlord");
     const tenantStr = await AsyncStorage.getItem("tenant");
+    const hasHouseStr = await AsyncStorage.getItem("hasHouse");
     const userInfo = {
       landlord: landlordStr ? JSON.parse(landlordStr) : false,
       tenant: tenantStr ? JSON.parse(tenantStr) : false,
+      hasHouse: hasHouseStr ? JSON.parse(hasHouseStr) : false,
     };
     dispatch({ type: "login", payload: accessToken, userInfo });
   }
@@ -122,5 +141,6 @@ export const { Provider, Context } = createDataContext(
     isSignedIn: false,
     landlord: false,
     tenant: false,
+    hasHouse: false,
   }
 );

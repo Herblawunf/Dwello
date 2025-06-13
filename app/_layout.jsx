@@ -34,6 +34,12 @@ const Stacks = {
       <Stack.Screen name="+not-found" />
     </Stack>
   ),
+  Unlinked: () => (
+    <Stack>
+      <Stack.Screen name="(unlinked_tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="+not-found" />
+    </Stack>
+  ),
 };
 
 const LoadingScreen = () => (
@@ -62,7 +68,7 @@ export default function RootLayout() {
 function AuthRouter() {
   const router = useRouter();
   const { state, tryLocalLogin } = useContext(AuthContext);
-  const { isSignedIn, landlord, hasAttemptedLocalLogin } = state;
+  const { isSignedIn, landlord, hasAttemptedLocalLogin, hasHouse } = state;
 
   // Attempt silent login on mount
   useEffect(() => {
@@ -76,11 +82,13 @@ function AuthRouter() {
     const route = isSignedIn
       ? !!landlord
         ? "/(landlord_tabs)"
-        : "/(tenant_tabs)"
+        : hasHouse
+        ? "/(tenant_tabs)"
+        : "/(unlinked_tabs)"
       : "/(auth)";
 
     router.replace(route);
-  }, [isSignedIn, landlord, hasAttemptedLocalLogin, router]);
+  }, [isSignedIn, landlord, hasAttemptedLocalLogin, hasHouse, router]);
 
   if (!hasAttemptedLocalLogin) return <LoadingScreen />;
 
@@ -89,8 +97,10 @@ function AuthRouter() {
       {isSignedIn ? (
         landlord ? (
           <Stacks.Landlord />
-        ) : (
+        ) : hasHouse ? (
           <Stacks.Tenant />
+        ) : (
+          <Stacks.Unlinked />
         )
       ) : (
         <Stacks.Auth />

@@ -2,25 +2,16 @@ import { useContext } from "react";
 import { supabase } from "../../lib/supabase";
 import { TouchableOpacity, Text, SafeAreaView, View, StyleSheet } from "react-native";
 import { Context as AuthContext } from "@/context/AuthContext";
-import { useRouter } from "expo-router";
 
 export default function SettingsScreen() {
   const { state: authState, signout } = useContext(AuthContext);
-  const router = useRouter();
   
   const handleSignout = async () => {
     await supabase.auth.signOut();
     signout();
-    console.log(authState.isSignedIn);
   };
 
   const settingsItems = [
-    {
-      title: "Properties",
-      items: [
-        { label: "Add Property", onPress: () => router.push("/(landlord_tabs)/add-property") },
-      ]
-    },
     {
       title: "Account",
       items: [
@@ -76,44 +67,39 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 16,
+    backgroundColor: "#fff",
   },
   section: {
-    marginTop: 32,
+    marginBottom: 20,
   },
   sectionTitle: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#8E8E93',
-    marginBottom: 8,
-    marginLeft: 16,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontWeight: "600",
+    color: "#666",
+    marginLeft: 15,
+    marginBottom: 5,
+    textTransform: "uppercase",
   },
   itemContainer: {
-    backgroundColor: '#ffffff',
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: "#fff",
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: "#e0e0e0",
   },
   item: {
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#E5E5EA',
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
   },
   lastItem: {
     borderBottomWidth: 0,
   },
   itemText: {
-    fontSize: 17,
-    color: '#000000',
+    fontSize: 16,
+    color: "#333",
   },
   destructiveText: {
-    color: '#FF3B30',
+    color: "#ff3b30",
   },
-});
+}); 
