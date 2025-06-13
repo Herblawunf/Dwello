@@ -37,7 +37,15 @@ export default function PropertyDetails() {
 
       const { data: tenantData, error: tenantError } = await supabase
         .from("tenants")
-        .select("tenant_id, users(first_name, last_name, email)")
+        .select(`
+          tenant_id, 
+          users(first_name, last_name, email),
+          rent_extensions(
+            id,
+            status,
+            created_at
+          )
+        `)
         .eq("house_id", houseId);
 
       if (tenantError) throw tenantError;
@@ -53,25 +61,36 @@ export default function PropertyDetails() {
     getPropertyDetails();
   }, []);
 
-  const renderTenant = ({ item }) => (
-    <TouchableOpacity
-      onPress={() =>
-        router.push({
-          pathname: "/properties/tenant_details",
-          params: { tenantId: item.tenant_id },
-        })
-      }
-      style={styles.tenantCard}
-    >
-      <View style={styles.tenantInfo}>
-        <Text style={styles.tenantName}>
-          {item.users.first_name} {item.users.last_name}
-        </Text>
-        <Text style={styles.tenantEmail}>{item.users.email}</Text>
-      </View>
-      <MaterialIcons name="chevron-right" size={24} color="#666" />
-    </TouchableOpacity>
-  );
+  const renderTenant = ({ item }) => {
+    const hasOpenExtension = item.rent_extensions?.some(
+      (extension) => extension.status === "open"
+    );
+
+    return (
+      <TouchableOpacity
+        onPress={() =>
+          router.push({
+            pathname: "/properties/tenant_details",
+            params: { tenantId: item.tenant_id },
+          })
+        }
+        style={styles.tenantCard}
+      >
+        <View style={styles.tenantInfo}>
+          <View style={styles.nameContainer}>
+            <Text style={styles.tenantName}>
+              {item.users.first_name} {item.users.last_name}
+            </Text>
+            {hasOpenExtension && (
+              <Text style={styles.extensionIndicator}>- open rent extension request</Text>
+            )}
+          </View>
+          <Text style={styles.tenantEmail}>{item.users.email}</Text>
+        </View>
+        <MaterialIcons name="chevron-right" size={24} color="#666" />
+      </TouchableOpacity>
+    );
+  };
 
   if (!property) return null;
 
@@ -201,5 +220,15 @@ const styles = StyleSheet.create({
   tenantEmail: {
     fontSize: 14,
     color: "#666",
+  },
+  nameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  extensionIndicator: {
+    color: '#FFA500',
+    fontSize: 12,
+    fontWeight: '500',
   },
 });
