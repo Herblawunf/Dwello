@@ -27,6 +27,8 @@ export default function Requests() {
   const [properties, setProperties] = useState([]);
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [propertyMenuVisible, setPropertyMenuVisible] = useState(false);
+  const [statusInfoVisible, setStatusInfoVisible] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState(null);
   const insets = useSafeAreaInsets();
   const [requests, setRequests] = useState([]);
   const {
@@ -75,11 +77,11 @@ export default function Requests() {
   const getPriorityText = (priority) => {
     switch (priority) {
       case 0:
-        return { text: "Low Priority", color: "#4CAF50" };
+        return { text: "Minor", color: "#4CAF50" };
       case 1:
-        return { text: "Medium Priority", color: "#FFC107" };
+        return { text: "Routine", color: "#FFC107" };
       case 2:
-        return { text: "High Priority", color: "#F44336" };
+        return { text: "Urgent", color: "#F44336" };
       default:
         return { text: "Unknown Priority", color: "#9E9E9E" };
     }
@@ -121,22 +123,52 @@ export default function Requests() {
     }
   };
 
-  const getStatusAction = (currentStatus) => {
-    switch (currentStatus) {
+  const statusWorkflow = [
+    {
+      status: "sent",
+      label: "Request Sent",
+      description: "Tenant has submitted a new maintenance request",
+    },
+    {
+      status: "seen",
+      label: "Request Seen",
+      description: "Landlord has acknowledged the request",
+    },
+    {
+      status: "contractor sent",
+      label: "Sent to Contractor",
+      description: "Request has been forwarded to a contractor",
+    },
+    {
+      status: "completed",
+      label: "Completed",
+      description: "The maintenance request has been resolved",
+    },
+  ];
+
+  const getStatusIndex = (status) => {
+    return statusWorkflow.findIndex((item) => item.status === status);
+  };
+
+  const getNextStatus = (currentStatus) => {
+    const currentIndex = getStatusIndex(currentStatus);
+    return currentIndex < statusWorkflow.length - 1
+      ? statusWorkflow[currentIndex + 1].status
+      : null;
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
       case "sent":
-        return {
-          action: "seen",
-          text: "Mark as seen",
-          icon: "visibility",
-        };
+        return "send";
       case "seen":
-        return {
-          action: "contractor sent",
-          text: "Send to contractor",
-          icon: "engineering",
-        };
+        return "visibility";
+      case "contractor sent":
+        return "engineering";
+      case "completed":
+        return "check-circle";
       default:
-        return null;
+        return "info";
     }
   };
 
@@ -160,6 +192,7 @@ export default function Requests() {
         <Text style={styles.requestInfo}>
           By: {item.poster_first_name} {item.poster_last_name}
         </Text>
+        <Text style={styles.requestInfo}>{item.street_address}</Text>
       </View>
       <View style={styles.requestFooter}>
         <TouchableOpacity
@@ -176,30 +209,22 @@ export default function Requests() {
           }
         >
           <MaterialIcons name="comment" size={20} color="#757575" />
-          <Text style={styles.footerButtonText}>View thread</Text>
+          <Text style={styles.footerButtonText}>View discussion</Text>
         </TouchableOpacity>
-        {getStatusAction(item.status) ? (
-          <TouchableOpacity
-            style={styles.footerButton}
-            onPress={() =>
-              setStatus(item.request_id, getStatusAction(item.status).action)
-            }
-          >
-            <MaterialIcons
-              name={getStatusAction(item.status).icon}
-              size={20}
-              color="#757575"
-            />
-            <Text style={styles.footerButtonText}>
-              {getStatusAction(item.status).text}
-            </Text>
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.footerButton}>
-            <MaterialIcons name="info" size={20} color="#757575" />
-            <Text style={styles.footerButtonText}>{item.status}</Text>
-          </View>
-        )}
+        <TouchableOpacity
+          style={styles.footerButton}
+          onPress={() => {
+            setSelectedStatus(item.status);
+            setStatusInfoVisible(true);
+          }}
+        >
+          <MaterialIcons
+            name={getStatusIcon(item.status)}
+            size={20}
+            color="#757575"
+          />
+          <Text style={styles.footerButtonText}>{item.status}</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -350,6 +375,67 @@ export default function Requests() {
         </TouchableOpacity>
       </Modal>
 
+      <Modal
+        visible={statusInfoVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setStatusInfoVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setStatusInfoVisible(false)}
+        >
+          <View style={styles.statusInfoContainer}>
+            <Text style={styles.statusInfoTitle}>Request Status Workflow</Text>
+            {statusWorkflow.map((status, index) => {
+              const currentStatusIndex = getStatusIndex(selectedStatus);
+              const isNext = currentStatusIndex + 1 === index;
+              const isClickable = isNext && status.status !== "completed";
+              const shouldHighlight = isNext && status.status !== "completed";
+
+              return (
+                <TouchableOpacity
+                  key={status.status}
+                  style={[
+                    styles.statusInfoItem,
+                    selectedStatus === status.status &&
+                      styles.statusInfoItemActive,
+                    shouldHighlight && styles.statusInfoItemNext,
+                  ]}
+                  onPress={() => {
+                    if (isClickable) {
+                      setStatus(
+                        requests.find((r) => r.status === selectedStatus)
+                          .request_id,
+                        status.status
+                      );
+                      setStatusInfoVisible(false);
+                    }
+                  }}
+                  disabled={!isClickable}
+                >
+                  <View style={styles.statusInfoHeader}>
+                    <Text style={styles.statusInfoLabel}>{status.label}</Text>
+                    {index < statusWorkflow.length - 1 &&
+                    index < currentStatusIndex ? (
+                      <MaterialIcons
+                        name="arrow-downward"
+                        size={20}
+                        color="#757575"
+                      />
+                    ) : null}
+                  </View>
+                  <Text style={styles.statusInfoDescription}>
+                    {status.description}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       <FlatList
         data={sortRequests(
           filterRequests(
@@ -457,6 +543,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 4,
   },
+  footerIconButton: {
+    padding: 4,
+  },
   footerButtonText: {
     marginLeft: 4,
     color: "#757575",
@@ -525,5 +614,78 @@ const styles = StyleSheet.create({
   },
   propertyMenu: {
     maxHeight: "50%",
+  },
+  statusInfoContainer: {
+    backgroundColor: "white",
+    margin: 16,
+    padding: 16,
+    borderRadius: 8,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  statusInfoTitle: {
+    fontSize: 18,
+    fontWeight: "500",
+    marginBottom: 16,
+    color: "#212121",
+  },
+  statusInfoItem: {
+    marginBottom: 16,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: "#f5f5f5",
+  },
+  statusInfoItemActive: {
+    backgroundColor: "#e3f2fd",
+    borderColor: "#2196F3",
+    borderWidth: 1,
+  },
+  statusInfoItemNext: {
+    backgroundColor: "#e8f5e9",
+    borderColor: "#4CAF50",
+    borderWidth: 1,
+  },
+  statusInfoHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  statusInfoLabel: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#212121",
+  },
+  statusInfoDescription: {
+    fontSize: 14,
+    color: "#757575",
+  },
+  statusInfoItemActive: {
+    backgroundColor: "#e3f2fd",
+    borderColor: "#2196F3",
+    borderWidth: 1,
+  },
+  statusInfoItemNext: {
+    backgroundColor: "#e8f5e9",
+    borderColor: "#4CAF50",
+    borderWidth: 1,
+  },
+  statusInfoHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  statusInfoLabel: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#212121",
+  },
+  statusInfoDescription: {
+    fontSize: 14,
+    color: "#757575",
   },
 });
