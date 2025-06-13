@@ -192,6 +192,7 @@ export default function Requests() {
         <Text style={styles.requestInfo}>
           By: {item.poster_first_name} {item.poster_last_name}
         </Text>
+        <Text style={styles.requestInfo}>{item.street_address}</Text>
       </View>
       <View style={styles.requestFooter}>
         <TouchableOpacity
