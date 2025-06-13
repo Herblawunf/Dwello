@@ -157,6 +157,21 @@ export default function Requests() {
       : null;
   };
 
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case "sent":
+        return "send";
+      case "seen":
+        return "visibility";
+      case "contractor sent":
+        return "engineering";
+      case "completed":
+        return "check-circle";
+      default:
+        return "info";
+    }
+  };
+
   const renderRequest = ({ item }) => (
     <View style={styles.requestItem}>
       <View style={styles.requestHeader}>
@@ -202,7 +217,7 @@ export default function Requests() {
             setStatusInfoVisible(true);
           }}
         >
-          <MaterialIcons name="info" size={20} color="#757575" />
+          <MaterialIcons name={getStatusIcon(item.status)} size={20} color="#757575" />
           <Text style={styles.footerButtonText}>{item.status}</Text>
         </TouchableOpacity>
       </View>
