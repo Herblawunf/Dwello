@@ -37,7 +37,7 @@ export default function TenantDetails() {
         console.log(data);
         setTenant(data[0]);
       }
-      
+
       // Fetch rent extensions
       const { data: extensionsData, error: extensionsError } = await supabase
         .from("rent_extensions")
@@ -76,13 +76,13 @@ export default function TenantDetails() {
 
   const handleDenyExtension = async () => {
     if (!denyReason.trim()) return;
-    
+
     try {
       const { error } = await supabase
         .from("rent_extensions")
-        .update({ 
+        .update({
           status: "denied",
-          reason: denyReason 
+          reason: denyReason,
         })
         .eq("id", selectedExtension.id);
 
@@ -104,15 +104,23 @@ export default function TenantDetails() {
     <View key={extension.id} style={styles.extensionCard}>
       <View style={styles.extensionHeader}>
         <Text style={styles.extensionTitle}>Rent Extension Request</Text>
-        <Text style={[
-          styles.extensionStatus,
-          { color: extension.status === "open" ? "#FFA500" : 
-                  extension.status === "accepted" ? "#4CAF50" : "#FF3B30" }
-        ]}>
+        <Text
+          style={[
+            styles.extensionStatus,
+            {
+              color:
+                extension.status === "open"
+                  ? "#FFA500"
+                  : extension.status === "accepted"
+                  ? "#4CAF50"
+                  : "#FF3B30",
+            },
+          ]}
+        >
           {extension.status.charAt(0).toUpperCase() + extension.status.slice(1)}
         </Text>
       </View>
-      
+
       <View style={styles.extensionDetails}>
         <Text style={styles.extensionDetail}>
           Requested on: {formatDate(extension.created_at)}
@@ -123,9 +131,7 @@ export default function TenantDetails() {
         <Text style={styles.extensionDetail}>
           New date: {formatDate(extension.new_date)}
         </Text>
-        <Text style={styles.extensionDetail}>
-          Reason: {extension.reason}
-        </Text>
+        <Text style={styles.extensionDetail}>Reason: {extension.reason}</Text>
         {extension.status === "denied" && (
           <Text style={[styles.extensionDetail, styles.deniedReason]}>
             Denial reason: {extension.reason}
@@ -178,24 +184,42 @@ export default function TenantDetails() {
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        <View style={styles.tenantInfo}>
-          <Text style={styles.tenantName}>
-            {tenant.first_name} {tenant.last_name}
-          </Text>
+      <ScrollView style={styles.tenantInfo}>
+        <Text style={styles.tenantName}>
+          {tenant.first_name} {tenant.last_name}
+        </Text>
+        <View style={styles.infoRow}>
           <Text style={styles.tenantDetail}>Email: {tenant.email}</Text>
-          <View style={styles.rentInfo}>
-            <Text style={styles.rentTitle}>Rent Information</Text>
+          <TouchableOpacity>
+            <MaterialIcons name="edit" size={20} color="#666" />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.rentInfo}>
+          <Text style={styles.rentTitle}>Rent Information</Text>
+          <View style={styles.infoRow}>
             <Text style={styles.tenantDetail}>
               Monthly Rent: £{tenant.monthly_rent.toFixed(2)}
             </Text>
+            <TouchableOpacity>
+              <MaterialIcons name="edit" size={20} color="#666" />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.infoRow}>
             <Text style={styles.tenantDetail}>
               Payment Schedule: Every {tenant.months_per_payment} month
               {tenant.months_per_payment > 1 ? "s" : ""}
             </Text>
+            <TouchableOpacity>
+              <MaterialIcons name="edit" size={20} color="#666" />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.infoRow}>
             <Text style={styles.tenantDetail}>
               Next Payment: {formatDate(tenant.next_payment)}
             </Text>
+            <TouchableOpacity>
+              <MaterialIcons name="edit" size={20} color="#666" />
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -229,7 +253,9 @@ export default function TenantDetails() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Deny Extension Request</Text>
-            <Text style={styles.modalSubtitle}>Please provide a reason for denying this request:</Text>
+            <Text style={styles.modalSubtitle}>
+              Please provide a reason for denying this request:
+            </Text>
             <TextInput
               style={styles.reasonInput}
               multiline
@@ -270,7 +296,9 @@ export default function TenantDetails() {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Accept Extension Request</Text>
             <Text style={styles.modalSubtitle}>
-              Are you sure you want to accept this rent extension request? This will extend the payment date to {selectedExtension && formatDate(selectedExtension.new_date)}.
+              Are you sure you want to accept this rent extension request? This
+              will extend the payment date to{" "}
+              {selectedExtension && formatDate(selectedExtension.new_date)}.
             </Text>
             <View style={styles.modalActions}>
               <TouchableOpacity
@@ -363,6 +391,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     color: "#333",
+    marginBottom: 8,
+  },
+  infoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 8,
   },
   extensionsSection: {
