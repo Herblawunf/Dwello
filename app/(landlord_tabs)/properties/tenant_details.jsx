@@ -64,19 +64,39 @@ export default function TenantDetails() {
         <Text style={styles.tenantName}>
           {tenant.first_name} {tenant.last_name}
         </Text>
-        <Text style={styles.tenantDetail}>Email: {tenant.email}</Text>
+        <View style={styles.infoRow}>
+          <Text style={styles.tenantDetail}>Email: {tenant.email}</Text>
+          <TouchableOpacity>
+            <MaterialIcons name="edit" size={20} color="#666" />
+          </TouchableOpacity>
+        </View>
         <View style={styles.rentInfo}>
           <Text style={styles.rentTitle}>Rent Information</Text>
-          <Text style={styles.tenantDetail}>
-            Monthly Rent: £{tenant.monthly_rent.toFixed(2)}
-          </Text>
-          <Text style={styles.tenantDetail}>
-            Payment Schedule: Every {tenant.months_per_payment} month
-            {tenant.months_per_payment > 1 ? "s" : ""}
-          </Text>
-          <Text style={styles.tenantDetail}>
-            Next Payment: {formatDate(tenant.next_payment)}
-          </Text>
+          <View style={styles.infoRow}>
+            <Text style={styles.tenantDetail}>
+              Monthly Rent: £{tenant.monthly_rent.toFixed(2)}
+            </Text>
+            <TouchableOpacity>
+              <MaterialIcons name="edit" size={20} color="#666" />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.tenantDetail}>
+              Payment Schedule: Every {tenant.months_per_payment} month
+              {tenant.months_per_payment > 1 ? "s" : ""}
+            </Text>
+            <TouchableOpacity>
+              <MaterialIcons name="edit" size={20} color="#666" />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.tenantDetail}>
+              Next Payment: {formatDate(tenant.next_payment)}
+            </Text>
+            <TouchableOpacity>
+              <MaterialIcons name="edit" size={20} color="#666" />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
@@ -163,6 +183,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     color: "#333",
+    marginBottom: 8,
+  },
+  infoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 8,
   },
 });
