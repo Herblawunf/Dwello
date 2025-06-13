@@ -16,9 +16,9 @@ import {
 } from "react-native";
 import { supabase } from "@/lib/supabase";
 import * as ImagePicker from "expo-image-picker";
+import { MaterialIcons } from "@expo/vector-icons";
 // FileSystem is no longer needed as FormData handles URI directly for uploads
 // import * as FileSystem from "expo-file-system";
-
 
 export default function Contact() {
   const [reason, setReason] = useState("");
@@ -29,6 +29,7 @@ export default function Contact() {
   const [selectedImageUri, setSelectedImageUri] = useState(null); // URI for selected image or video
   const [uploadedFileUrl, setUploadedFileUrl] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [showPriorityInfo, setShowPriorityInfo] = useState(false); // New state for info modal
 
   const reasons = [
     { label: "General Inquiry", value: "general" },
@@ -36,21 +37,55 @@ export default function Contact() {
   ];
 
   const priorities = [
-    { label: "Low", value: 0, color: "#4CAF50" },
-    { label: "Medium", value: 1, color: "#FF9800" },
-    { label: "High", value: 2, color: "#F44336" },
+    { label: "Minor", value: 0, color: "#4CAF50" },
+    { label: "Routine", value: 1, color: "#FF9800" },
+    { label: "Urgent", value: 2, color: "#F44336" },
   ];
 
-  const uploadImage = async (asset) => { // Renaming to uploadMedia might be more accurate but keeping for consistency
+  const priorityExamples = [
+    {
+      level: "Urgent",
+      color: "#F44336",
+      examples: [
+        "No heat in winter",
+        "Major water leaks",
+        "No electricity",
+        "Security/safety concerns",
+      ],
+    },
+    {
+      level: "Routine",
+      color: "#FF9800",
+      examples: [
+        "Appliance not working properly",
+        "Minor leaks",
+        "Broken blinds/curtains",
+        "Non-emergency electrical issues",
+      ],
+    },
+    {
+      level: "Minor",
+      color: "#4CAF50",
+      examples: [
+        "Cosmetic repairs",
+        "Small paint touch-ups",
+        "Cabinet hardware replacement",
+        "Light bulb replacement",
+      ],
+    },
+  ];
+
+  const uploadImage = async (asset) => {
+    // Renaming to uploadMedia might be more accurate but keeping for consistency
     if (!asset || !asset.uri) {
       Alert.alert("Error", "No media asset provided for upload.");
       return null;
     }
 
-    if (typeof asset.fileSize === 'number' && asset.fileSize === 0) {
-        Alert.alert("Upload Error", "The selected file is empty.");
-        setSelectedImageUri(null);
-        return null;
+    if (typeof asset.fileSize === "number" && asset.fileSize === 0) {
+      Alert.alert("Upload Error", "The selected file is empty.");
+      setSelectedImageUri(null);
+      return null;
     }
 
     setIsUploading(true);
@@ -58,134 +93,177 @@ export default function Contact() {
 
     try {
       const uri = asset.uri;
-      const isVideo = asset.mediaType === 'video';
+      const isVideo = asset.mediaType === "video";
 
       // 1. Determine Content-Type
       let determinedContentType = asset.mimeType;
-      if (!determinedContentType || 
-          determinedContentType === 'application/octet-stream' ||
-          (!determinedContentType.startsWith('image/') && !determinedContentType.startsWith('video/'))) {
-          
-          const extensionFromUri = uri.includes('.') ? uri.split('.').pop().toLowerCase() : null;
-          const fileNameExt = asset.fileName && asset.fileName.includes('.') ? asset.fileName.split('.').pop().toLowerCase() : null;
-          const bestGuessExt = extensionFromUri || fileNameExt;
+      if (
+        !determinedContentType ||
+        determinedContentType === "application/octet-stream" ||
+        (!determinedContentType.startsWith("image/") &&
+          !determinedContentType.startsWith("video/"))
+      ) {
+        const extensionFromUri = uri.includes(".")
+          ? uri.split(".").pop().toLowerCase()
+          : null;
+        const fileNameExt =
+          asset.fileName && asset.fileName.includes(".")
+            ? asset.fileName.split(".").pop().toLowerCase()
+            : null;
+        const bestGuessExt = extensionFromUri || fileNameExt;
 
-          if (isVideo) {
-              if (bestGuessExt) {
-                  if (['mp4', 'm4v'].includes(bestGuessExt)) determinedContentType = 'video/mp4';
-                  else if (['mov', 'qt'].includes(bestGuessExt)) determinedContentType = 'video/quicktime';
-                  else if (['avi'].includes(bestGuessExt)) determinedContentType = 'video/x-msvideo';
-                  else if (['wmv'].includes(bestGuessExt)) determinedContentType = 'video/x-ms-wmv';
-                  else if (['mkv'].includes(bestGuessExt)) determinedContentType = 'video/x-matroska';
-                  else if (['webm'].includes(bestGuessExt)) determinedContentType = 'video/webm';
-                  else determinedContentType = 'video/mp4'; // Default video fallback
-              } else {
-                  determinedContentType = 'video/mp4'; // Ultimate video fallback
-              }
-          } else { // It's an image
-              if (bestGuessExt) {
-                  if (['jpg', 'jpeg'].includes(bestGuessExt)) determinedContentType = 'image/jpeg';
-                  else if (['png'].includes(bestGuessExt)) determinedContentType = 'image/png';
-                  else if (['gif'].includes(bestGuessExt)) determinedContentType = 'image/gif';
-                  else if (['webp'].includes(bestGuessExt)) determinedContentType = 'image/webp';
-                  else if (['bmp'].includes(bestGuessExt)) determinedContentType = 'image/bmp';
-                  else determinedContentType = 'image/jpeg'; // Default image fallback
-              } else {
-                  determinedContentType = 'image/jpeg'; // Ultimate image fallback
-              }
+        if (isVideo) {
+          if (bestGuessExt) {
+            if (["mp4", "m4v"].includes(bestGuessExt))
+              determinedContentType = "video/mp4";
+            else if (["mov", "qt"].includes(bestGuessExt))
+              determinedContentType = "video/quicktime";
+            else if (["avi"].includes(bestGuessExt))
+              determinedContentType = "video/x-msvideo";
+            else if (["wmv"].includes(bestGuessExt))
+              determinedContentType = "video/x-ms-wmv";
+            else if (["mkv"].includes(bestGuessExt))
+              determinedContentType = "video/x-matroska";
+            else if (["webm"].includes(bestGuessExt))
+              determinedContentType = "video/webm";
+            else determinedContentType = "video/mp4"; // Default video fallback
+          } else {
+            determinedContentType = "video/mp4"; // Ultimate video fallback
           }
+        } else {
+          // It's an image
+          if (bestGuessExt) {
+            if (["jpg", "jpeg"].includes(bestGuessExt))
+              determinedContentType = "image/jpeg";
+            else if (["png"].includes(bestGuessExt))
+              determinedContentType = "image/png";
+            else if (["gif"].includes(bestGuessExt))
+              determinedContentType = "image/gif";
+            else if (["webp"].includes(bestGuessExt))
+              determinedContentType = "image/webp";
+            else if (["bmp"].includes(bestGuessExt))
+              determinedContentType = "image/bmp";
+            else determinedContentType = "image/jpeg"; // Default image fallback
+          } else {
+            determinedContentType = "image/jpeg"; // Ultimate image fallback
+          }
+        }
       }
-      
+
       // 2. Determine File Extension
       let fileExt;
-      if (determinedContentType && determinedContentType.includes('/')) {
-          fileExt = determinedContentType.split('/')[1];
-          if (fileExt === 'jpeg') fileExt = 'jpg';
-          else if (fileExt === 'quicktime') fileExt = 'mov';
-          else if (fileExt === 'x-matroska') fileExt = 'mkv';
-          else if (fileExt === 'x-msvideo') fileExt = 'avi';
-          else if (fileExt === 'x-ms-wmv') fileExt = 'wmv';
-          // Add other normalizations if common, e.g., svg+xml -> svg
+      if (determinedContentType && determinedContentType.includes("/")) {
+        fileExt = determinedContentType.split("/")[1];
+        if (fileExt === "jpeg") fileExt = "jpg";
+        else if (fileExt === "quicktime") fileExt = "mov";
+        else if (fileExt === "x-matroska") fileExt = "mkv";
+        else if (fileExt === "x-msvideo") fileExt = "avi";
+        else if (fileExt === "x-ms-wmv") fileExt = "wmv";
+        // Add other normalizations if common, e.g., svg+xml -> svg
       }
 
-      if (!fileExt || fileExt === 'octet-stream' || fileExt.length > 5) { // Check for generic or complex subtypes
-          if (asset.fileName && asset.fileName.includes('.')) {
-              const extFromFilename = asset.fileName.split('.').pop().toLowerCase();
-              if (extFromFilename.length > 0 && extFromFilename.length <= 4 && /^[a-z0-9]+$/.test(extFromFilename)) {
-                   fileExt = extFromFilename;
-              }
+      if (!fileExt || fileExt === "octet-stream" || fileExt.length > 5) {
+        // Check for generic or complex subtypes
+        if (asset.fileName && asset.fileName.includes(".")) {
+          const extFromFilename = asset.fileName.split(".").pop().toLowerCase();
+          if (
+            extFromFilename.length > 0 &&
+            extFromFilename.length <= 4 &&
+            /^[a-z0-9]+$/.test(extFromFilename)
+          ) {
+            fileExt = extFromFilename;
           }
+        }
       }
       if (!fileExt) {
-          fileExt = isVideo ? 'mp4' : 'jpg'; // Final fallback extension
+        fileExt = isVideo ? "mp4" : "jpg"; // Final fallback extension
       }
-
 
       // 3. Determine Base Filename
       let baseFileName;
       if (asset.fileName) {
-          baseFileName = asset.fileName.includes('.') ? asset.fileName.substring(0, asset.fileName.lastIndexOf('.')) : asset.fileName;
+        baseFileName = asset.fileName.includes(".")
+          ? asset.fileName.substring(0, asset.fileName.lastIndexOf("."))
+          : asset.fileName;
       } else {
-          const uriPathName = uri.substring(uri.lastIndexOf('/') + 1);
-          baseFileName = uriPathName.includes('.') ? uriPathName.substring(0, uriPathName.lastIndexOf('.')) : uriPathName;
+        const uriPathName = uri.substring(uri.lastIndexOf("/") + 1);
+        baseFileName = uriPathName.includes(".")
+          ? uriPathName.substring(0, uriPathName.lastIndexOf("."))
+          : uriPathName;
       }
-      const sanitizedBaseFileName = baseFileName.replace(/[^a-zA-Z0-9_-]/g, '_');
-      
+      const sanitizedBaseFileName = baseFileName.replace(
+        /[^a-zA-Z0-9_-]/g,
+        "_"
+      );
+
       const filePath = `public/${Date.now()}_${sanitizedBaseFileName}.${fileExt}`;
       const fileNameForFormData = `${sanitizedBaseFileName}.${fileExt}`;
 
       // FormData handles URI directly in React Native for network requests.
       // No need to read file as base64.
       const formData = new FormData();
-      formData.append('file', {
+      formData.append("file", {
         uri: asset.uri,
         name: fileNameForFormData,
         type: determinedContentType,
       });
 
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('requests') // Same bucket for photos and videos
+        .from("requests") // Same bucket for photos and videos
         .upload(filePath, formData, {
           upsert: false,
         });
 
       if (uploadError) {
         console.error("Supabase upload error:", uploadError);
-        Alert.alert("Upload Error", `Failed to upload media: ${uploadError.message}`);
-        setIsUploading(false);
-        setSelectedImageUri(null); 
-        return null;
-      }
-
-      const { data: publicUrlData, error: getUrlError } = await supabase.storage
-        .from('requests')
-        .getPublicUrl(filePath);
-
-      if (getUrlError) {
-        console.error('Error getting public URL from Supabase:', getUrlError);
-        Alert.alert('Error', `Failed to get media URL after upload: ${getUrlError.message}`);
-        setIsUploading(false);
-        setSelectedImageUri(null); 
-        return null;
-      }
-      
-      if (!publicUrlData || !publicUrlData.publicUrl) {
-        console.error('Error getting public URL from Supabase: No public URL in data.');
-        Alert.alert('Error', 'Failed to get media URL after upload.');
+        Alert.alert(
+          "Upload Error",
+          `Failed to upload media: ${uploadError.message}`
+        );
         setIsUploading(false);
         setSelectedImageUri(null);
         return null;
       }
 
-      console.log('Successfully uploaded media. Public URL:', publicUrlData.publicUrl);
+      const { data: publicUrlData, error: getUrlError } = await supabase.storage
+        .from("requests")
+        .getPublicUrl(filePath);
+
+      if (getUrlError) {
+        console.error("Error getting public URL from Supabase:", getUrlError);
+        Alert.alert(
+          "Error",
+          `Failed to get media URL after upload: ${getUrlError.message}`
+        );
+        setIsUploading(false);
+        setSelectedImageUri(null);
+        return null;
+      }
+
+      if (!publicUrlData || !publicUrlData.publicUrl) {
+        console.error(
+          "Error getting public URL from Supabase: No public URL in data."
+        );
+        Alert.alert("Error", "Failed to get media URL after upload.");
+        setIsUploading(false);
+        setSelectedImageUri(null);
+        return null;
+      }
+
+      console.log(
+        "Successfully uploaded media. Public URL:",
+        publicUrlData.publicUrl
+      );
       setUploadedFileUrl(publicUrlData.publicUrl);
       setIsUploading(false);
       return publicUrlData.publicUrl;
-
     } catch (e) {
       console.error("Upload process error:", e);
-      Alert.alert("Upload Error", `An unexpected error occurred during upload: ${e.message}`);
-      setSelectedImageUri(null); 
+      Alert.alert(
+        "Upload Error",
+        `An unexpected error occurred during upload: ${e.message}`
+      );
+      setSelectedImageUri(null);
       setUploadedFileUrl(null);
       setIsUploading(false);
       return null;
@@ -210,7 +288,7 @@ export default function Contact() {
       mediaTypes: ImagePicker.MediaTypeOptions.All, // Allow both images and videos
       allowsEditing: true, // Note: video editing might not be supported on all platforms or might be limited
       aspect: [4, 3], // Aspect ratio might apply mainly to image cropping
-      quality: 1, 
+      quality: 1,
       // For videos, you might want to add videoExportPreset or videoQuality on iOS
     });
 
@@ -230,8 +308,8 @@ export default function Contact() {
     Keyboard.dismiss();
 
     if (isUploading) {
-        Alert.alert("Please wait", "Media is still uploading.");
-        return;
+      Alert.alert("Please wait", "Media is still uploading.");
+      return;
     }
 
     const {
@@ -239,8 +317,11 @@ export default function Contact() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-        Alert.alert("Authentication Error", "Could not find user. Please log in again.");
-        return;
+      Alert.alert(
+        "Authentication Error",
+        "Could not find user. Please log in again."
+      );
+      return;
     }
 
     const requestData = {
@@ -276,11 +357,12 @@ export default function Contact() {
     return selectedPriority ? selectedPriority.color : "#666";
   };
 
-  const removeSelectedImage = () => { // Name kept for simplicity, handles selected media
+  const removeSelectedImage = () => {
+    // Name kept for simplicity, handles selected media
     setSelectedImageUri(null);
     setUploadedFileUrl(null);
     if (isUploading) {
-        setIsUploading(false); 
+      setIsUploading(false);
     }
   };
 
@@ -312,7 +394,15 @@ export default function Contact() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.label}>Priority Level</Text>
+            <View style={styles.labelRow}>
+              <Text style={styles.label}>Priority Level</Text>
+              <TouchableOpacity
+                onPress={() => setShowPriorityInfo(true)}
+                style={styles.infoButton}
+              >
+                <MaterialIcons name="info" size={20} color="#666" />
+              </TouchableOpacity>
+            </View>
             <TouchableOpacity
               style={styles.dropdownButton}
               onPress={() => {
@@ -409,6 +499,48 @@ export default function Contact() {
             </TouchableOpacity>
           </Modal>
 
+          {/* Add the priority info modal */}
+          <Modal
+            visible={showPriorityInfo}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setShowPriorityInfo(false)}
+          >
+            <TouchableOpacity
+              style={styles.modalOverlay}
+              activeOpacity={1}
+              onPress={() => setShowPriorityInfo(false)}
+            >
+              <View style={styles.priorityInfoModal}>
+                <Text style={styles.priorityInfoTitle}>
+                  Priority Levels Guide
+                </Text>
+                {priorityExamples.map((priority) => (
+                  <View key={priority.level} style={styles.priorityInfoSection}>
+                    <View style={styles.priorityInfoHeader}>
+                      <View
+                        style={[
+                          styles.priorityDot,
+                          { backgroundColor: priority.color },
+                        ]}
+                      />
+                      <Text style={styles.priorityInfoLevel}>
+                        {priority.level}
+                      </Text>
+                    </View>
+                    <View style={styles.examplesList}>
+                      {priority.examples.map((example, index) => (
+                        <Text key={index} style={styles.exampleItem}>
+                          • {example}
+                        </Text>
+                      ))}
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </TouchableOpacity>
+          </Modal>
+
           <View style={styles.section}>
             <Text style={styles.label}>Message</Text>
             <TextInput
@@ -430,8 +562,14 @@ export default function Contact() {
               {/* Image component might not display video previews. 
                   For video previews, expo-av Video component would be needed.
                   This will show image previews and potentially a placeholder/first frame for videos. */}
-              <Image source={{ uri: selectedImageUri }} style={styles.imagePreview} />
-              <TouchableOpacity onPress={removeSelectedImage} style={styles.removeImageButton}>
+              <Image
+                source={{ uri: selectedImageUri }}
+                style={styles.imagePreview}
+              />
+              <TouchableOpacity
+                onPress={removeSelectedImage}
+                style={styles.removeImageButton}
+              >
                 <Text style={styles.removeImageButtonText}>Remove</Text>
               </TouchableOpacity>
             </View>
@@ -443,17 +581,25 @@ export default function Contact() {
             disabled={isUploading}
           >
             {isUploading ? (
-                <View style={styles.attachButtonContent}>
-                    <ActivityIndicator size="small" color="#666" style={{marginRight: 8}} />
-                    <Text style={styles.attachButtonText}>Uploading...</Text>
-                </View>
+              <View style={styles.attachButtonContent}>
+                <ActivityIndicator
+                  size="small"
+                  color="#666"
+                  style={{ marginRight: 8 }}
+                />
+                <Text style={styles.attachButtonText}>Uploading...</Text>
+              </View>
             ) : (
-                <Text style={styles.attachButtonText}>📎 Attach Media</Text>
+              <Text style={styles.attachButtonText}>📎 Attach Media</Text>
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={[styles.sendButton, (isUploading || !reason || priority < 0 || !message.trim()) && styles.disabledButton]} 
+          <TouchableOpacity
+            style={[
+              styles.sendButton,
+              (isUploading || !reason || priority < 0 || !message.trim()) &&
+                styles.disabledButton,
+            ]}
             onPress={handleSend}
             disabled={isUploading || !reason || priority < 0 || !message.trim()}
           >
@@ -569,8 +715,8 @@ const styles = StyleSheet.create({
     borderColor: "#ddd",
   },
   attachButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   attachButtonText: {
     fontSize: 16,
@@ -587,11 +733,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-  imagePreviewContainer: { // Name kept for simplicity
+  imagePreviewContainer: {
+    // Name kept for simplicity
     alignItems: "center",
     marginBottom: 20,
   },
-  imagePreview: { // Name kept for simplicity
+  imagePreview: {
+    // Name kept for simplicity
     width: 150,
     height: 150,
     borderRadius: 8,
@@ -599,7 +747,8 @@ const styles = StyleSheet.create({
     borderColor: "#ddd",
     marginBottom: 10,
   },
-  removeImageButton: { // Name kept for simplicity
+  removeImageButton: {
+    // Name kept for simplicity
     backgroundColor: "#F44336",
     paddingVertical: 8,
     paddingHorizontal: 15,
@@ -612,5 +761,65 @@ const styles = StyleSheet.create({
   disabledButton: {
     opacity: 0.7,
   },
+  labelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  infoButton: {
+    marginLeft: 4,
+    marginBottom: 5, // Adjust vertical alignment
+    padding: 0, // Remove padding to better align with text
+  },
+  priorityInfoModal: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    width: "90%",
+    maxHeight: "80%",
+    padding: 20,
+  },
+  priorityInfoTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  priorityInfoSection: {
+    marginBottom: 20,
+  },
+  priorityInfoHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  priorityInfoLevel: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginLeft: 8,
+  },
+  examplesList: {
+    paddingLeft: 20,
+  },
+  exampleItem: {
+    fontSize: 16,
+    color: "#666",
+    marginBottom: 4,
+  },
+  closeButton: {
+    backgroundColor: "#000",
+    padding: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  closeButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  closeButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
 });
-
