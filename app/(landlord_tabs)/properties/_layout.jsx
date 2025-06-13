@@ -23,6 +23,13 @@ export default function RequestsLayout() {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name="secure_documents"
+        options={{
+          presentation: "modal",
+          headerShown: false,
+        }}
+      />
     </Stack>
   );
 }
