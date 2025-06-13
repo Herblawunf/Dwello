@@ -24,6 +24,9 @@ export default function Requests() {
   const [sortBy, setSortBy] = useState("time");
   const [sortMenuVisible, setSortMenuVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [properties, setProperties] = useState([]);
+  const [selectedProperty, setSelectedProperty] = useState(null);
+  const [propertyMenuVisible, setPropertyMenuVisible] = useState(false);
   const [statusInfoVisible, setStatusInfoVisible] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState(null);
   const insets = useSafeAreaInsets();
@@ -33,10 +36,10 @@ export default function Requests() {
   } = useContext(AuthContext);
   const tabBarHeight = useBottomTabBarHeight();
 
-  const getHouseRequests = useCallback(async () => {
+  const getRequests = useCallback(async () => {
     try {
-      const { data, error } = await supabase.rpc("get_house_requests", {
-        p_tenant_id: userId,
+      const { data, error } = await supabase.rpc("get_landlord_requests", {
+        p_landlord_id: userId,
       });
       if (data) {
         setRequests(data);
@@ -48,10 +51,27 @@ export default function Requests() {
     }
   }, [userId]);
 
+  const getProperties = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.rpc("get_landlord_houses", {
+        p_landlord_id: userId,
+      });
+      if (data) {
+        setProperties(data);
+        console.log(data);
+        return;
+      }
+      console.error(error);
+    } catch (error) {
+      console.error("Error fetching properties:", error);
+    }
+  }, [userId]);
+
   useFocusEffect(
     useCallback(() => {
-      getHouseRequests();
-    }, [getHouseRequests])
+      getRequests();
+      getProperties();
+    }, [getRequests, getProperties])
   );
 
   const getPriorityText = (priority) => {
@@ -80,9 +100,13 @@ export default function Requests() {
 
   const filterRequests = (requestsToFilter) => {
     const query = searchQuery.toLowerCase();
-    return requestsToFilter.filter((r) =>
-      r.description.toLowerCase().includes(query)
-    );
+    return requestsToFilter.filter((r) => {
+      const matchesSearch = r.description.toLowerCase().includes(query);
+      const matchesProperty = selectedProperty
+        ? r.house_id === selectedProperty.house_id
+        : true;
+      return matchesSearch && matchesProperty;
+    });
   };
 
   const setStatus = async (request_id, status) => {
@@ -91,9 +115,8 @@ export default function Requests() {
         p_request_id: request_id,
         p_new_status: status,
       });
-      console.log(status);
       if (error) throw error;
-      getHouseRequests();
+      getRequests();
     } catch (error) {
       console.error("Error updating status:", error);
       return { error: error.message };
@@ -104,7 +127,7 @@ export default function Requests() {
     {
       status: "sent",
       label: "Request Sent",
-      description: "Request has been submitted to landlord",
+      description: "Tenant has submitted a new maintenance request",
     },
     {
       status: "seen",
@@ -125,6 +148,13 @@ export default function Requests() {
 
   const getStatusIndex = (status) => {
     return statusWorkflow.findIndex((item) => item.status === status);
+  };
+
+  const getNextStatus = (currentStatus) => {
+    const currentIndex = getStatusIndex(currentStatus);
+    return currentIndex < statusWorkflow.length - 1
+      ? statusWorkflow[currentIndex + 1].status
+      : null;
   };
 
   const getStatusIcon = (status) => {
@@ -162,6 +192,7 @@ export default function Requests() {
         <Text style={styles.requestInfo}>
           By: {item.poster_first_name} {item.poster_last_name}
         </Text>
+        <Text style={styles.requestInfo}>{item.street_address}</Text>
       </View>
       <View style={styles.requestFooter}>
         <TouchableOpacity
@@ -281,6 +312,69 @@ export default function Requests() {
         </TouchableOpacity>
       </Modal>
 
+      <View style={styles.filterContainer}>
+        <View style={styles.searchContainer}>
+          <MaterialIcons name="search" size={20} color="#757575" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search requests..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
+
+        <TouchableOpacity
+          style={styles.propertyButton}
+          onPress={() => setPropertyMenuVisible(true)}
+        >
+          <MaterialIcons name="home" size={20} color="#757575" />
+          <Text style={styles.propertyButtonText}>
+            {selectedProperty
+              ? selectedProperty.street_address
+              : "All Properties"}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <Modal
+        visible={propertyMenuVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setPropertyMenuVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setPropertyMenuVisible(false)}
+        >
+          <View style={[styles.sortMenu, styles.propertyMenu]}>
+            <TouchableOpacity
+              style={styles.sortMenuItem}
+              onPress={() => {
+                setSelectedProperty(null);
+                setPropertyMenuVisible(false);
+              }}
+            >
+              <Text style={styles.sortMenuText}>All Properties</Text>
+            </TouchableOpacity>
+            {properties.map((property) => (
+              <TouchableOpacity
+                key={property.house_id}
+                style={styles.sortMenuItem}
+                onPress={() => {
+                  setSelectedProperty(property);
+                  setPropertyMenuVisible(false);
+                }}
+              >
+                <Text style={styles.sortMenuText}>
+                  {property.street_address}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       <Modal
         visible={statusInfoVisible}
         transparent={true}
@@ -295,31 +389,22 @@ export default function Requests() {
           <View style={styles.statusInfoContainer}>
             <Text style={styles.statusInfoTitle}>Request Status Workflow</Text>
             {statusWorkflow.map((status, index) => {
-              const isContractorOrCompleted =
-                status.status === "contractor sent" ||
-                status.status === "completed";
-              const isCurrentStatus = selectedStatus === status.status;
-              const canToggle =
-                isContractorOrCompleted &&
-                ((selectedStatus === "contractor sent" &&
-                  status.status === "completed") ||
-                  (selectedStatus === "completed" &&
-                    status.status === "contractor sent"));
               const currentStatusIndex = getStatusIndex(selectedStatus);
-              const showArrow =
-                index < statusWorkflow.length - 1 &&
-                index <= currentStatusIndex;
+              const isNext = currentStatusIndex + 1 === index;
+              const isClickable = isNext && status.status !== "completed";
+              const shouldHighlight = isNext && status.status !== "completed";
 
               return (
                 <TouchableOpacity
                   key={status.status}
                   style={[
                     styles.statusInfoItem,
-                    isCurrentStatus && styles.statusInfoItemActive,
-                    !isCurrentStatus && canToggle && styles.statusInfoItemNext,
+                    selectedStatus === status.status &&
+                      styles.statusInfoItemActive,
+                    shouldHighlight && styles.statusInfoItemNext,
                   ]}
                   onPress={() => {
-                    if (canToggle) {
+                    if (isClickable) {
                       setStatus(
                         requests.find((r) => r.status === selectedStatus)
                           .request_id,
@@ -328,17 +413,18 @@ export default function Requests() {
                       setStatusInfoVisible(false);
                     }
                   }}
-                  disabled={!canToggle}
+                  disabled={!isClickable}
                 >
                   <View style={styles.statusInfoHeader}>
                     <Text style={styles.statusInfoLabel}>{status.label}</Text>
-                    {showArrow && (
+                    {index < statusWorkflow.length - 1 &&
+                    index < currentStatusIndex ? (
                       <MaterialIcons
                         name="arrow-downward"
                         size={20}
                         color="#757575"
                       />
-                    )}
+                    ) : null}
                   </View>
                   <Text style={styles.statusInfoDescription}>
                     {status.description}
@@ -349,16 +435,6 @@ export default function Requests() {
           </View>
         </TouchableOpacity>
       </Modal>
-
-      <View style={styles.searchContainer}>
-        <MaterialIcons name="search" size={20} color="#757575" />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search requests..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-      </View>
 
       <FlatList
         data={sortRequests(
@@ -373,20 +449,6 @@ export default function Requests() {
         style={styles.list}
         contentContainerStyle={styles.listContent}
       />
-
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={[
-            styles.addButton,
-            {
-              marginBottom: Platform.OS == "android" ? 0 : tabBarHeight,
-            },
-          ]}
-          onPress={() => router.push("/(tenant_tabs)/requests/contact")}
-        >
-          <Text style={styles.addButtonText}>Add maintenance request</Text>
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 }
@@ -481,27 +543,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 4,
   },
+  footerIconButton: {
+    padding: 4,
+  },
   footerButtonText: {
     marginLeft: 4,
     color: "#757575",
     fontSize: 14,
   },
-  addButton: {
-    backgroundColor: "#2196F3",
-    padding: 16,
-    margin: 16,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  addButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "500",
-  },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-start",
+    justifyContent: "center",
+    alignItems: "center",
   },
   sortMenu: {
     position: "absolute",
@@ -541,6 +595,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#212121",
   },
+  filterContainer: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  propertyButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+    padding: 8,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  propertyButtonText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: "#212121",
+  },
+  propertyMenu: {
+    maxHeight: "50%",
+  },
   statusInfoContainer: {
     backgroundColor: "white",
     margin: 16,
@@ -551,6 +626,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
+    width: "90%",
+    maxWidth: 400,
   },
   statusInfoTitle: {
     fontSize: 18,

@@ -1,21 +1,14 @@
 import { useContext } from "react";
 import { supabase } from "../../lib/supabase";
-import {
-  TouchableOpacity,
-  Text,
-  SafeAreaView,
-  View,
-  StyleSheet,
-} from "react-native";
+import { TouchableOpacity, Text, SafeAreaView, View, StyleSheet } from "react-native";
 import { Context as AuthContext } from "@/context/AuthContext";
 
 export default function SettingsScreen() {
   const { state: authState, signout } = useContext(AuthContext);
-
+  
   const handleSignout = async () => {
     await supabase.auth.signOut();
     signout();
-    console.log(authState.isSignedIn);
   };
 
   const settingsItems = [
@@ -24,21 +17,21 @@ export default function SettingsScreen() {
       items: [
         { label: "Profile", onPress: () => {} },
         { label: "Privacy", onPress: () => {} },
-      ],
+      ]
     },
     {
       title: "App",
       items: [
         { label: "Notifications", onPress: () => {} },
         { label: "About", onPress: () => {} },
-      ],
+      ]
     },
     {
       title: "Account",
       items: [
         { label: "Sign Out", onPress: handleSignout, isDestructive: true },
-      ],
-    },
+      ]
+    }
   ];
 
   return (
@@ -52,16 +45,14 @@ export default function SettingsScreen() {
                 key={itemIndex}
                 style={[
                   styles.item,
-                  itemIndex === section.items.length - 1 && styles.lastItem,
+                  itemIndex === section.items.length - 1 && styles.lastItem
                 ]}
                 onPress={item.onPress}
               >
-                <Text
-                  style={[
-                    styles.itemText,
-                    item.isDestructive && styles.destructiveText,
-                  ]}
-                >
+                <Text style={[
+                  styles.itemText,
+                  item.isDestructive && styles.destructiveText
+                ]}>
                   {item.label}
                 </Text>
               </TouchableOpacity>
@@ -76,44 +67,39 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#ffffff",
-    paddingHorizontal: 16,
+    backgroundColor: "#fff",
   },
   section: {
-    marginTop: 32,
+    marginBottom: 20,
   },
   sectionTitle: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#8E8E93",
-    marginBottom: 8,
-    marginLeft: 16,
+    color: "#666",
+    marginLeft: 15,
+    marginBottom: 5,
     textTransform: "uppercase",
-    letterSpacing: 0.5,
   },
   itemContainer: {
-    backgroundColor: "#ffffff",
-    borderRadius: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: "#fff",
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: "#e0e0e0",
   },
   item: {
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#E5E5EA",
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
   },
   lastItem: {
     borderBottomWidth: 0,
   },
   itemText: {
-    fontSize: 17,
-    color: "#000000",
+    fontSize: 16,
+    color: "#333",
   },
   destructiveText: {
-    color: "#FF3B30",
+    color: "#ff3b30",
   },
-});
+}); 

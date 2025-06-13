@@ -24,6 +24,17 @@ const RentScreen = () => {
 
   const [isReasonModalVisible, setIsReasonModalVisible] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
+  const [isContractTermsExpanded, setIsContractTermsExpanded] = useState(false);
+  const [lateFees, setLateFees] = useState({
+    dailyRate: 0,
+    gracePeriod: 0,
+    maxFee: 0
+  });
+  const [escalationClause, setEscalationClause] = useState({
+    annualIncrease: 0,
+    nextReviewDate: null
+  });
+
   const {
     state: { userId },
   } = useContext(AuthContext);
@@ -31,6 +42,7 @@ const RentScreen = () => {
   useEffect(() => {
     getRentInfo();
     getRentExtensions();
+    getContractDetails();
   }, []);
 
   const getRentInfo = async () => {
@@ -78,14 +90,71 @@ const RentScreen = () => {
 
   const getRentExtensions = async () => {
     try {
-      const { data, error } = await supabase.rpc("get_rent_extensions", {
-        p_user_id: userId,
-      });
-      if (error) throw error;
-      console.log(data);
+      const { data, error } = await supabase
+        .from("rent_extensions")
+        .select("*")
+        .eq("tenant_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error in getRentExtensions:", error);
+        throw error;
+      }
+      
+      console.log("Rent extensions data:", data);
       setRentExtensions(data || []);
     } catch (error) {
       console.error("Error fetching rent extensions:", error);
+      Alert.alert(
+        "Error",
+        "Failed to fetch rent extension history. Please try again later."
+      );
+    }
+  };
+
+  const getContractDetails = async () => {
+    try {
+      // Sample data for contract terms
+      const sampleData = {
+        late_fee_daily_rate: 15.00,
+        late_fee_grace_period: 3,
+        late_fee_max: 150.00,
+        annual_rent_increase: 3.5,
+        next_rent_review_date: new Date(new Date().setMonth(new Date().getMonth() + 6)).toISOString() // 6 months from now
+      };
+      
+      setLateFees({
+        dailyRate: sampleData.late_fee_daily_rate,
+        gracePeriod: sampleData.late_fee_grace_period,
+        maxFee: sampleData.late_fee_max
+      });
+      
+      setEscalationClause({
+        annualIncrease: sampleData.annual_rent_increase,
+        nextReviewDate: sampleData.next_rent_review_date
+      });
+
+      // Comment out the actual database call for now
+      /*
+      const { data, error } = await supabase.rpc("get_tenant_contract_details", {
+        p_tenant_id: userId,
+      });
+      if (error) throw error;
+      
+      if (data) {
+        setLateFees({
+          dailyRate: data.late_fee_daily_rate || 0,
+          gracePeriod: data.late_fee_grace_period || 0,
+          maxFee: data.late_fee_max || 0
+        });
+        setEscalationClause({
+          annualIncrease: data.annual_rent_increase || 0,
+          nextReviewDate: data.next_rent_review_date
+        });
+      }
+      */
+    } catch (error) {
+      console.error("Error fetching contract details:", error);
     }
   };
 
@@ -198,7 +267,7 @@ const RentScreen = () => {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container}>
         <View style={styles.contentContainer}>
-          <Text style={styles.title}>Rent</Text>
+          <Text style={styles.title}>Rent Information</Text>
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Rent Balance Owed</Text>
@@ -226,6 +295,55 @@ const RentScreen = () => {
                 ? "month"
                 : rentInfo.months_per_payment + " months"}
             </Text>
+          </View>
+
+          {/* Collapsible Contract Terms Section */}
+          <View style={styles.section}>
+            <TouchableOpacity 
+              style={styles.contractHeader}
+              onPress={() => setIsContractTermsExpanded(!isContractTermsExpanded)}
+            >
+              <Text style={styles.sectionTitle}>Contract Terms</Text>
+              <Text style={styles.expandIcon}>
+                {isContractTermsExpanded ? '▼' : '▶'}
+              </Text>
+            </TouchableOpacity>
+            
+            {isContractTermsExpanded && (
+              <>
+                {/* Late Fees Section */}
+                <View style={styles.contractSubsection}>
+                  <Text style={styles.subsectionTitle}>Late Payment Fees</Text>
+                  <View style={styles.contractDetailRow}>
+                    <Text style={styles.contractDetailLabel}>Daily Rate:</Text>
+                    <Text style={styles.contractDetailValue}>£{lateFees.dailyRate.toFixed(2)}</Text>
+                  </View>
+                  <View style={styles.contractDetailRow}>
+                    <Text style={styles.contractDetailLabel}>Grace Period:</Text>
+                    <Text style={styles.contractDetailValue}>{lateFees.gracePeriod} days</Text>
+                  </View>
+                  <View style={styles.contractDetailRow}>
+                    <Text style={styles.contractDetailLabel}>Maximum Fee:</Text>
+                    <Text style={styles.contractDetailValue}>£{lateFees.maxFee.toFixed(2)}</Text>
+                  </View>
+                </View>
+
+                {/* Escalation Clause Section */}
+                <View style={styles.contractSubsection}>
+                  <Text style={styles.subsectionTitle}>Rent Review</Text>
+                  <View style={styles.contractDetailRow}>
+                    <Text style={styles.contractDetailLabel}>Annual Increase:</Text>
+                    <Text style={styles.contractDetailValue}>{escalationClause.annualIncrease}%</Text>
+                  </View>
+                  <View style={styles.contractDetailRow}>
+                    <Text style={styles.contractDetailLabel}>Next Review:</Text>
+                    <Text style={styles.contractDetailValue}>
+                      {escalationClause.nextReviewDate ? formatDate(new Date(escalationClause.nextReviewDate)) : 'Not scheduled'}
+                    </Text>
+                  </View>
+                </View>
+              </>
+            )}
           </View>
 
           {!rentInfo.isPaid && (
@@ -658,6 +776,43 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     marginTop: 10,
+  },
+  contractSubsection: {
+    marginTop: 15,
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  subsectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2c3e50',
+    marginBottom: 12,
+  },
+  contractDetailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  contractDetailLabel: {
+    fontSize: 14,
+    color: '#666',
+  },
+  contractDetailValue: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#2c3e50',
+  },
+  contractHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 5,
+  },
+  expandIcon: {
+    fontSize: 16,
+    color: '#666',
   },
 });
 
