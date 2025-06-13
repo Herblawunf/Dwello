@@ -7,76 +7,61 @@ import {
   TouchableOpacity,
   Platform,
   StatusBar,
-  FlatList,
   ActivityIndicator,
-  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useGlobalSearchParams } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { MaterialIcons } from "@expo/vector-icons";
-import * as WebBrowser from 'expo-web-browser';
 
 export default function SecureDocuments() {
   const insets = useSafeAreaInsets();
   const { tenantId } = useGlobalSearchParams();
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const getDocuments = async () => {
+  const fetchDocuments = async () => {
     if (!tenantId) return;
     try {
       const { data, error } = await supabase.storage
-        .from('documents')
+        .from("documents")
         .list(tenantId);
 
-      if (error) {
-        console.error('Error fetching documents:', error);
-        Alert.alert('Error', 'Failed to fetch documents');
-        return;
-      }
+      if (error) throw error;
 
       // Filter for PDF files only
       const pdfFiles = data.filter(file => file.name.toLowerCase().endsWith('.pdf'));
-      setDocuments(pdfFiles);
+      setDocuments(pdfFiles || []);
     } catch (error) {
-      console.error('Error:', error);
-      Alert.alert('Error', 'An unexpected error occurred');
+      console.error("Error fetching documents:", error);
+      setError("Failed to load documents. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    getDocuments();
-  }, [tenantId]);
-
-  const handleDocumentPress = async (document) => {
-    try {
-      const { data, error } = await supabase.storage
-        .from('documents')
-        .createSignedUrl(`${tenantId}/${document.name}`, 60); // URL valid for 60 seconds
-
-      if (error) throw error;
-
-      // Open the PDF in the device's browser
-      await WebBrowser.openBrowserAsync(data.signedUrl);
-    } catch (error) {
-      console.error('Error opening document:', error);
-      Alert.alert('Error', 'Failed to open document');
-    }
+  const handleDocumentPress = (document) => {
+    router.push({
+      pathname: "/(landlord_tabs)/properties/pdf_viewer",
+      params: { tenantId, documentName: document.name }
+    });
   };
 
-  const renderDocument = ({ item }) => (
-    <TouchableOpacity
-      style={styles.documentItem}
-      onPress={() => handleDocumentPress(item)}
-    >
-      <MaterialIcons name="description" size={24} color="#007AFF" />
-      <Text style={styles.documentName}>{item.name}</Text>
-      <MaterialIcons name="chevron-right" size={24} color="#666" />
-    </TouchableOpacity>
-  );
+  useEffect(() => {
+    fetchDocuments();
+  }, [tenantId]);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : insets.top }]}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>Loading documents...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView
@@ -96,22 +81,42 @@ export default function SecureDocuments() {
         <View style={{ width: 24 }} />
       </View>
 
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+      {error ? (
+        <View style={styles.errorContainer}>
+          <MaterialIcons name="error-outline" size={48} color="#FF3B30" />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => {
+              setError(null);
+              setLoading(true);
+              fetchDocuments();
+            }}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
         </View>
       ) : documents.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <MaterialIcons name="folder-open" size={48} color="#666" />
+          <MaterialIcons name="folder-open" size={48} color="#999" />
           <Text style={styles.emptyText}>No documents found</Text>
         </View>
       ) : (
-        <FlatList
-          data={documents}
-          renderItem={renderDocument}
-          keyExtractor={(item) => item.name}
-          contentContainerStyle={styles.listContainer}
-        />
+        <View style={styles.documentList}>
+          {documents.map((doc) => (
+            <TouchableOpacity
+              key={doc.name}
+              style={styles.documentItem}
+              onPress={() => handleDocumentPress(doc)}
+            >
+              <View style={styles.documentInfo}>
+                <MaterialIcons name="description" size={24} color="#007AFF" />
+                <Text style={styles.documentName}>{doc.name}</Text>
+              </View>
+              <MaterialIcons name="chevron-right" size={24} color="#999" />
+            </TouchableOpacity>
+          ))}
+        </View>
       )}
     </SafeAreaView>
   );
@@ -142,23 +147,52 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  emptyContainer: {
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: "#666",
+  },
+  errorContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
+  },
+  errorText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+  },
+  retryButton: {
+    marginTop: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: "#007AFF",
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   emptyText: {
     marginTop: 12,
     fontSize: 16,
     color: "#666",
   },
-  listContainer: {
-    padding: 20,
+  documentList: {
+    padding: 16,
   },
   documentItem: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     backgroundColor: "#fff",
     padding: 16,
     borderRadius: 12,
@@ -169,10 +203,15 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  documentName: {
+  documentInfo: {
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
+  },
+  documentName: {
     marginLeft: 12,
     fontSize: 16,
     color: "#333",
+    flex: 1,
   },
 }); 
