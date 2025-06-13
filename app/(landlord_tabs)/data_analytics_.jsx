@@ -57,11 +57,14 @@ export default function FinancialBarChart({ data, labels, suffix = "" }) {
       <View style={[styles.chartArea, { height: chartHeight, marginTop: 12, position: 'relative', width: '100%' }]}>  
         {/* Y-axis labels */}
         <View style={styles.yAxis}>  
-          {ticks.map((t, idx) => (
-            <Text key={idx} style={styles.yAxisLabel}>
-              {t}{suffix}
-            </Text>
-          ))}
+          {ticks.map((t, idx) => {
+            const label = `${t}${suffix}`;
+            return (
+              <Text key={idx} style={styles.yAxisLabel}>
+                {label}
+              </Text>
+            );
+          })}
         </View>
         {/* Grid Lines */}
         <View style={{ position: 'absolute', left: 40, top: 0, right: 0, bottom: 0, width: '100%', height: '100%' }} pointerEvents="none">
@@ -97,7 +100,7 @@ export default function FinancialBarChart({ data, labels, suffix = "" }) {
               const utilHeight = (item.util / maxTotal) * chartHeight;
               const netHeight = (item.net / maxTotal) * chartHeight;
               return (
-                <View key={idx} style={[styles.barWrapper, { width: barWidth, marginHorizontal: barMargin / 2 }]}> {/* Set width and margin */}
+                <View key={idx} style={[styles.barWrapper, { width: barWidth, marginHorizontal: barMargin / 2 }]}>
                   <View style={{ flex: 1, justifyContent: 'flex-end', width: '100%' }}>
                     {/* Utilities on top */}
                     <View

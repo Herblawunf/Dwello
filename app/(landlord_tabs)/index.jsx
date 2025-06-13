@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, TouchableWithoutFeedback, Dimensions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import FinancialBarChart from "./data_analytics_";
+import FinancialBarChart from "./data_analytics_.jsx";
 import { TouchableOpacity as RNTouchableOpacity } from "react-native";
 
 export default function LandlordDashboardScreen() {
