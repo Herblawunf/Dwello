@@ -20,23 +20,46 @@ export default function TabLayout() {
         tabBarBackground: TabBarBackground,
         tabBarStyle: Platform.select({
           ios: {
-            // Use a transparent background on iOS to show the blur effect
             position: "absolute",
           },
           default: {},
         }),
       }}
     >
+      {/* Home */}
       <Tabs.Screen
         name="index"
         options={{
           title: "Home",
-          headerShown: false,
           tabBarIcon: ({ color }) => (
             <MaterialIcons name="home" size={28} color={color} />
           ),
         }}
       />
+
+      {/* Insights */}
+      <Tabs.Screen
+        name="insights"
+        options={{
+          title: "Insights",
+          tabBarIcon: ({ color }) => (
+            <MaterialIcons name="bar-chart" size={28} color={color} />
+          ),
+        }}
+      />
+
+      {/* Upkeep / Calendar */}
+      <Tabs.Screen
+        name="upkeep"
+        options={{
+          title: "Upkeep",
+          tabBarIcon: ({ color }) => (
+            <MaterialIcons name="calendar-today" size={28} color={color} />
+          ),
+        }}
+      />
+
+      {/* Requests */}
       <Tabs.Screen
         name="requests"
         options={{
@@ -46,6 +69,8 @@ export default function TabLayout() {
           ),
         }}
       />
+
+      {/* Properties */}
       <Tabs.Screen
         name="properties"
         options={{
@@ -55,6 +80,8 @@ export default function TabLayout() {
           ),
         }}
       />
+
+      {/* Add Property (modal) */}
       <Tabs.Screen
         name="add-property"
         options={{
@@ -63,22 +90,18 @@ export default function TabLayout() {
           href: null,
         }}
       />
-      <Tabs.Screen
-        name="ChatWindow"
-        options={{
-          title: 'ChatWindow',
-          presentation: "modal",
-          href: null,
-        }}
-      />
+
+      {/* Chat (modal) */}
       <Tabs.Screen
         name="chat"
         options={{
-          title: 'Chat',
+          title: "Chat",
           presentation: "modal",
           href: null,
         }}
       />
+
+      {/* Settings */}
       <Tabs.Screen
         name="settings"
         options={{
