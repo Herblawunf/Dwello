@@ -77,11 +77,11 @@ export default function Requests() {
   const getPriorityText = (priority) => {
     switch (priority) {
       case 0:
-        return { text: "Low Priority", color: "#4CAF50" };
+        return { text: "Minor", color: "#4CAF50" };
       case 1:
-        return { text: "Medium Priority", color: "#FFC107" };
+        return { text: "Routine", color: "#FFC107" };
       case 2:
-        return { text: "High Priority", color: "#F44336" };
+        return { text: "Urgent", color: "#F44336" };
       default:
         return { text: "Unknown Priority", color: "#9E9E9E" };
     }
@@ -208,7 +208,7 @@ export default function Requests() {
           }
         >
           <MaterialIcons name="comment" size={20} color="#757575" />
-          <Text style={styles.footerButtonText}>View thread</Text>
+          <Text style={styles.footerButtonText}>View discussion</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.footerButton}
@@ -217,7 +217,11 @@ export default function Requests() {
             setStatusInfoVisible(true);
           }}
         >
-          <MaterialIcons name={getStatusIcon(item.status)} size={20} color="#757575" />
+          <MaterialIcons
+            name={getStatusIcon(item.status)}
+            size={20}
+            color="#757575"
+          />
           <Text style={styles.footerButtonText}>{item.status}</Text>
         </TouchableOpacity>
       </View>
