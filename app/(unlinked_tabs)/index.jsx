@@ -3,10 +3,12 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFe
 import { Context as AuthContext } from "../../context/AuthContext";
 import { useRouter } from "expo-router";
 import { supabase } from "../../lib/supabase";
+import { MaterialIcons } from "@expo/vector-icons";
 
 export default function UnlinkedHome() {
   const [code, setCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
   const { state } = useContext(AuthContext);
   const router = useRouter();
 
@@ -55,7 +57,25 @@ export default function UnlinkedHome() {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.container}>
-        <Text style={styles.title}>Enter Code</Text>
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Enter Code</Text>
+          <View style={styles.tooltipWrapper}>
+            {showTooltip && (
+              <View style={styles.tooltipBubble}>
+                <Text style={styles.tooltipText}>
+                  Ask your landlord for your house code and enter it to link to the house
+                </Text>
+                <View style={styles.tooltipArrow} />
+              </View>
+            )}
+            <TouchableOpacity 
+              style={styles.tooltipButton}
+              onPress={() => setShowTooltip(!showTooltip)}
+            >
+              <MaterialIcons name="help-outline" size={20} color="#666" />
+            </TouchableOpacity>
+          </View>
+        </View>
         <TextInput
           style={styles.input}
           value={code}
@@ -90,11 +110,58 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 20,
   },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 30,
+  },
   title: {
     fontSize: 24,
     fontWeight: "600",
     color: "#333",
-    marginBottom: 30,
+    marginRight: 8,
+  },
+  tooltipWrapper: {
+    position: 'relative',
+  },
+  tooltipButton: {
+    padding: 4,
+  },
+  tooltipBubble: {
+    position: 'absolute',
+    bottom: 30,
+    right: -85,
+    backgroundColor: '#333',
+    padding: 10,
+    borderRadius: 8,
+    width: 200,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  tooltipText: {
+    color: 'white',
+    fontSize: 12,
+    lineHeight: 16,
+    textAlign: 'center',
+  },
+  tooltipArrow: {
+    position: 'absolute',
+    bottom: -6,
+    right: 85,
+    width: 0,
+    height: 0,
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderTopWidth: 6,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: '#333',
   },
   input: {
     width: "80%",
