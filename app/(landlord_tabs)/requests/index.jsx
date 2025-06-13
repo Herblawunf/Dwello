@@ -123,25 +123,6 @@ export default function Requests() {
     }
   };
 
-  const getStatusAction = (currentStatus) => {
-    switch (currentStatus) {
-      case "sent":
-        return {
-          action: "seen",
-          text: "Mark as seen",
-          icon: "visibility",
-        };
-      case "seen":
-        return {
-          action: "contractor sent",
-          text: "Send to contractor",
-          icon: "engineering",
-        };
-      default:
-        return null;
-    }
-  };
-
   const statusWorkflow = [
     {
       status: "sent",
@@ -214,30 +195,16 @@ export default function Requests() {
           <MaterialIcons name="comment" size={20} color="#757575" />
           <Text style={styles.footerButtonText}>View thread</Text>
         </TouchableOpacity>
-        <View style={styles.footerButton}>
-          <TouchableOpacity
-            onPress={() => {
-              setSelectedStatus(item.status);
-              setStatusInfoVisible(true);
-            }}
-            style={styles.footerIconButton}
-          >
-            <MaterialIcons name="info" size={20} color="#757575" />
-          </TouchableOpacity>
-          {getStatusAction(item.status) ? (
-            <TouchableOpacity
-              onPress={() =>
-                setStatus(item.request_id, getStatusAction(item.status).action)
-              }
-            >
-              <Text style={styles.footerButtonText}>
-                {getStatusAction(item.status).text}
-              </Text>
-            </TouchableOpacity>
-          ) : (
-            <Text style={styles.footerButtonText}>{item.status}</Text>
-          )}
-        </View>
+        <TouchableOpacity
+          style={styles.footerButton}
+          onPress={() => {
+            setSelectedStatus(item.status);
+            setStatusInfoVisible(true);
+          }}
+        >
+          <MaterialIcons name="info" size={20} color="#757575" />
+          <Text style={styles.footerButtonText}>{item.status}</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -412,13 +379,15 @@ export default function Requests() {
                   key={status.status}
                   style={[
                     styles.statusInfoItem,
-                    selectedStatus === status.status && styles.statusInfoItemActive,
+                    selectedStatus === status.status &&
+                      styles.statusInfoItemActive,
                     shouldHighlight && styles.statusInfoItemNext,
                   ]}
                   onPress={() => {
                     if (isClickable) {
                       setStatus(
-                        requests.find((r) => r.status === selectedStatus).request_id,
+                        requests.find((r) => r.status === selectedStatus)
+                          .request_id,
                         status.status
                       );
                       setStatusInfoVisible(false);
@@ -648,6 +617,31 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     backgroundColor: "#f5f5f5",
+  },
+  statusInfoItemActive: {
+    backgroundColor: "#e3f2fd",
+    borderColor: "#2196F3",
+    borderWidth: 1,
+  },
+  statusInfoItemNext: {
+    backgroundColor: "#e8f5e9",
+    borderColor: "#4CAF50",
+    borderWidth: 1,
+  },
+  statusInfoHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  statusInfoLabel: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#212121",
+  },
+  statusInfoDescription: {
+    fontSize: 14,
+    color: "#757575",
   },
   statusInfoItemActive: {
     backgroundColor: "#e3f2fd",
