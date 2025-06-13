@@ -554,7 +554,8 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-start",
+    justifyContent: "center",
+    alignItems: "center",
   },
   sortMenu: {
     position: "absolute",
@@ -625,6 +626,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
+    width: "90%",
+    maxWidth: 400,
   },
   statusInfoTitle: {
     fontSize: 18,
@@ -637,31 +640,6 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     backgroundColor: "#f5f5f5",
-  },
-  statusInfoItemActive: {
-    backgroundColor: "#e3f2fd",
-    borderColor: "#2196F3",
-    borderWidth: 1,
-  },
-  statusInfoItemNext: {
-    backgroundColor: "#e8f5e9",
-    borderColor: "#4CAF50",
-    borderWidth: 1,
-  },
-  statusInfoHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  statusInfoLabel: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#212121",
-  },
-  statusInfoDescription: {
-    fontSize: 14,
-    color: "#757575",
   },
   statusInfoItemActive: {
     backgroundColor: "#e3f2fd",
