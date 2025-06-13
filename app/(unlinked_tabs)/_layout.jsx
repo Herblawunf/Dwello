@@ -24,6 +24,14 @@ export default function UnlinkedTabsLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="confirm-house-modal"
+        options={{
+          title: "Confirm House",
+          href: null, // This prevents the screen from showing in the tab bar
+          presentation: 'modal',
+        }}
+      />
     </Tabs>
   );
 } 

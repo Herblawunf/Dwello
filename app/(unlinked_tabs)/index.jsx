@@ -1,7 +1,7 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFeedback, Keyboard, ActivityIndicator, Alert } from "react-native";
 import { Context as AuthContext } from "../../context/AuthContext";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { supabase } from "../../lib/supabase";
 import { MaterialIcons } from "@expo/vector-icons";
 
@@ -11,6 +11,14 @@ export default function UnlinkedHome() {
   const [showTooltip, setShowTooltip] = useState(false);
   const { state } = useContext(AuthContext);
   const router = useRouter();
+  const params = useLocalSearchParams();
+
+  useEffect(() => {
+    // Check if we're returning from a confirmation
+    if (params.confirmed === 'true' && params.houseId) {
+      handleConfirmLink(params.houseId);
+    }
+  }, [params]);
 
   const handleSubmit = async () => {
     if (!code || code.length !== 6) {
@@ -23,7 +31,7 @@ export default function UnlinkedHome() {
       // First, find the house with the matching code
       const { data: house, error: houseError } = await supabase
         .from('houses')
-        .select('house_id')
+        .select('house_id, postcode')
         .eq('code', parseInt(code))
         .single();
 
@@ -31,11 +39,29 @@ export default function UnlinkedHome() {
         throw new Error('Invalid house code');
       }
 
+      // Navigate to the confirmation modal
+      router.push({
+        pathname: "/confirm-house-modal",
+        params: {
+          postcode: house.postcode,
+          houseId: house.house_id
+        }
+      });
+    } catch (error) {
+      Alert.alert("Error", error.message || "Failed to verify code. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleConfirmLink = async (houseId) => {
+    setIsLoading(true);
+    try {
       // Update the tenant record with the house_id and has_house
       const { error: updateError } = await supabase
         .from('tenants')
         .update({
-          house_id: house.house_id,
+          house_id: houseId,
           has_house: true
         })
         .eq('tenant_id', state.userId);
@@ -47,7 +73,7 @@ export default function UnlinkedHome() {
       // If successful, redirect to tenant tabs
       router.replace('/(tenant_tabs)');
     } catch (error) {
-      Alert.alert("Error", error.message || "Failed to verify code. Please try again.");
+      Alert.alert("Error", error.message || "Failed to link to house. Please try again.");
     } finally {
       setIsLoading(false);
       setCode(""); // Clear the input field
