@@ -18,8 +18,10 @@ import { useFocusEffect } from "@react-navigation/native";
 import { Context as AuthContext } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import { useTheme } from "@/context/ThemeContext";
 
 export default function Requests() {
+  const theme = useTheme();
   const [activeTab, setActiveTab] = useState("pending");
   const [sortBy, setSortBy] = useState("time");
   const [sortMenuVisible, setSortMenuVisible] = useState(false);
@@ -228,6 +230,194 @@ export default function Requests() {
       </View>
     </View>
   );
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: theme.colors.surface,
+    },
+    tabBar: {
+      flex: 1,
+      flexDirection: "row",
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.divider,
+      backgroundColor: theme.colors.surface,
+    },
+    tab: {
+      flex: 1,
+      padding: theme.spacing.md,
+      alignItems: "center",
+    },
+    activeTab: {
+      borderBottomWidth: 2,
+      borderBottomColor: theme.colors.primary,
+    },
+    tabText: {
+      color: theme.colors.placeholder,
+    },
+    activeTabText: {
+      color: theme.colors.primary,
+      fontWeight: "500",
+    },
+    sortButton: {
+      padding: theme.spacing.sm,
+      marginRight: theme.spacing.sm,
+    },
+    list: {
+      flex: 1,
+    },
+    listContent: {
+      paddingBottom: theme.spacing.md,
+    },
+    buttonContainer: {
+      paddingBottom: theme.spacing.md,
+      backgroundColor: theme.colors.surface,
+    },
+    requestItem: {
+      padding: theme.spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.divider,
+      backgroundColor: theme.colors.surface,
+    },
+    requestHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: theme.spacing.sm,
+    },
+    priorityText: {
+      fontWeight: "500",
+    },
+    dateText: {
+      color: theme.colors.placeholder,
+      fontSize: theme.typography.fontSize.xs,
+    },
+    description: {
+      fontSize: theme.typography.fontSize.sm,
+      color: theme.colors.onSurface,
+    },
+    requestDetails: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginTop: theme.spacing.sm,
+      marginBottom: theme.spacing.sm,
+    },
+    requestInfo: {
+      fontSize: theme.typography.fontSize.xs,
+      color: theme.colors.placeholder,
+    },
+    requestFooter: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginTop: theme.spacing.sm,
+      paddingTop: theme.spacing.sm,
+    },
+    footerButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      padding: theme.spacing.xs,
+    },
+    footerIconButton: {
+      padding: theme.spacing.xs,
+    },
+    footerButtonText: {
+      marginLeft: theme.spacing.xs,
+      color: theme.colors.placeholder,
+      fontSize: theme.typography.fontSize.sm,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: theme.colors.backdrop,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    sortMenu: {
+      position: "absolute",
+      right: theme.spacing.sm,
+      top: Platform.OS === "android" ? StatusBar.currentHeight + 56 : 56,
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.borderRadius.md,
+      ...theme.elevation.md,
+    },
+    sortMenuItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      padding: theme.spacing.md,
+    },
+    sortMenuText: {
+      marginLeft: theme.spacing.sm,
+      fontSize: theme.typography.fontSize.md,
+      color: theme.colors.onSurface,
+    },
+    searchContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: theme.colors.surface,
+      margin: theme.spacing.md,
+      marginTop: theme.spacing.sm,
+      marginBottom: theme.spacing.sm,
+      padding: theme.spacing.sm,
+      borderRadius: theme.borderRadius.md,
+      ...theme.elevation.sm,
+    },
+    searchInput: {
+      flex: 1,
+      marginLeft: theme.spacing.sm,
+      fontSize: theme.typography.fontSize.md,
+      color: theme.colors.onSurface,
+    },
+    statusInfoContainer: {
+      backgroundColor: theme.colors.surface,
+      margin: theme.spacing.md,
+      padding: theme.spacing.md,
+      borderRadius: theme.borderRadius.md,
+      width: "90%",
+      maxWidth: 400,
+      ...theme.elevation.md,
+    },
+    statusInfoTitle: {
+      fontSize: theme.typography.fontSize.lg,
+      fontWeight: "500",
+      marginBottom: theme.spacing.md,
+      color: theme.colors.onSurface,
+    },
+    statusInfoItem: {
+      marginBottom: theme.spacing.md,
+      padding: theme.spacing.sm,
+      borderRadius: theme.borderRadius.md,
+      backgroundColor: theme.colors.surface,
+      ...theme.elevation.sm,
+    },
+    statusInfoItemActive: {
+      backgroundColor: theme.colors.primary,
+      borderColor: theme.colors.primaryVariant,
+      borderWidth: 1,
+    },
+    statusInfoItemNext: {
+      backgroundColor: theme.colors.secondary,
+      borderColor: theme.colors.secondaryVariant,
+      borderWidth: 1,
+    },
+    statusInfoHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: theme.spacing.sm,
+    },
+    statusInfoLabel: {
+      fontSize: theme.typography.fontSize.md,
+      fontWeight: "500",
+      color: theme.colors.onSurface,
+    },
+    statusInfoDescription: {
+      fontSize: theme.typography.fontSize.sm,
+      color: theme.colors.placeholder,
+    },
+  });
 
   return (
     <SafeAreaView
@@ -452,218 +642,3 @@ export default function Requests() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#fff",
-  },
-  tabBar: {
-    flex: 1,
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
-    backgroundColor: "#fff",
-  },
-  tab: {
-    flex: 1,
-    padding: 15,
-    alignItems: "center",
-  },
-  activeTab: {
-    borderBottomWidth: 2,
-    borderBottomColor: "#2196F3",
-  },
-  tabText: {
-    color: "#757575",
-  },
-  activeTabText: {
-    color: "#2196F3",
-    fontWeight: "500",
-  },
-  sortButton: {
-    padding: 12,
-    marginRight: 8,
-  },
-  list: {
-    flex: 1,
-  },
-  listContent: {
-    paddingBottom: 16,
-  },
-  buttonContainer: {
-    paddingBottom: 16,
-    backgroundColor: "#fff",
-  },
-  requestItem: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
-    backgroundColor: "#fff",
-  },
-  requestHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  priorityText: {
-    fontWeight: "500",
-  },
-  dateText: {
-    color: "#757575",
-    fontSize: 12,
-  },
-  description: {
-    fontSize: 14,
-    color: "#212121",
-  },
-  requestDetails: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 8,
-    marginBottom: 8,
-  },
-  requestInfo: {
-    fontSize: 12,
-    color: "#757575",
-  },
-  requestFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 12,
-    paddingTop: 8,
-  },
-  footerButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 4,
-  },
-  footerIconButton: {
-    padding: 4,
-  },
-  footerButtonText: {
-    marginLeft: 4,
-    color: "#757575",
-    fontSize: 14,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  sortMenu: {
-    position: "absolute",
-    right: 8,
-    top: Platform.OS === "android" ? StatusBar.currentHeight + 56 : 56,
-    backgroundColor: "white",
-    borderRadius: 8,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  sortMenuItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-  },
-  sortMenuText: {
-    marginLeft: 12,
-    fontSize: 16,
-    color: "#212121",
-  },
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#f5f5f5",
-    margin: 16,
-    marginTop: 8,
-    marginBottom: 8,
-    padding: 8,
-    borderRadius: 8,
-  },
-  searchInput: {
-    flex: 1,
-    marginLeft: 8,
-    fontSize: 16,
-    color: "#212121",
-  },
-  filterContainer: {
-    marginHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 8,
-  },
-  propertyButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#f5f5f5",
-    padding: 8,
-    borderRadius: 8,
-    marginTop: 8,
-  },
-  propertyButtonText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: "#212121",
-  },
-  propertyMenu: {
-    maxHeight: "50%",
-  },
-  statusInfoContainer: {
-    backgroundColor: "white",
-    margin: 16,
-    padding: 16,
-    borderRadius: 8,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    width: "90%",
-    maxWidth: 400,
-  },
-  statusInfoTitle: {
-    fontSize: 18,
-    fontWeight: "500",
-    marginBottom: 16,
-    color: "#212121",
-  },
-  statusInfoItem: {
-    marginBottom: 16,
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: "#f5f5f5",
-  },
-  statusInfoItemActive: {
-    backgroundColor: "#e3f2fd",
-    borderColor: "#2196F3",
-    borderWidth: 1,
-  },
-  statusInfoItemNext: {
-    backgroundColor: "#e8f5e9",
-    borderColor: "#4CAF50",
-    borderWidth: 1,
-  },
-  statusInfoHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  statusInfoLabel: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#212121",
-  },
-  statusInfoDescription: {
-    fontSize: 14,
-    color: "#757575",
-  },
-});

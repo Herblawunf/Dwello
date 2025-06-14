@@ -1,7 +1,5 @@
 import { StyleSheet, Text } from "react-native";
-
-import { useThemeColor } from "@/hooks/useThemeColor";
-import { responsiveFontSize } from "@/tools/fontscaling.js";
+import { useTheme } from "@/context/ThemeContext";
 
 export function ThemedText({
   style,
@@ -11,54 +9,57 @@ export function ThemedText({
   inverse = false,
   ...rest
 }) {
-  const color = useThemeColor(
-    { light: lightColor, dark: darkColor },
-    "text",
-    inverse
-  );
+  const theme = useTheme();
+  const color = lightColor || darkColor || (inverse ? theme.colors.onPrimary : theme.colors.onBackground);
+
+  const getTextStyle = () => {
+    switch (type) {
+      case "title":
+        return {
+          fontSize: theme.typography.fontSize.xxl,
+          fontWeight: theme.typography.fontWeight.bold,
+          lineHeight: theme.typography.lineHeight.xxl,
+        };
+      case "subtitle":
+        return {
+          fontSize: theme.typography.fontSize.lg,
+          fontWeight: theme.typography.fontWeight.semiBold,
+          lineHeight: theme.typography.lineHeight.lg,
+        };
+      case "subsubtitle":
+        return {
+          fontSize: theme.typography.fontSize.md,
+          fontWeight: theme.typography.fontWeight.medium,
+          lineHeight: theme.typography.lineHeight.md,
+        };
+      case "defaultSemiBold":
+        return {
+          fontSize: theme.typography.fontSize.md,
+          fontWeight: theme.typography.fontWeight.semiBold,
+          lineHeight: theme.typography.lineHeight.md,
+        };
+      case "link":
+        return {
+          fontSize: theme.typography.fontSize.md,
+          color: theme.colors.primary,
+          lineHeight: theme.typography.lineHeight.md,
+        };
+      default:
+        return {
+          fontSize: theme.typography.fontSize.md,
+          lineHeight: theme.typography.lineHeight.md,
+        };
+    }
+  };
 
   return (
     <Text
       style={[
         { color },
-        type === "default" ? styles.default : undefined,
-        type === "title" ? styles.title : undefined,
-        type === "defaultSemiBold" ? styles.defaultSemiBold : undefined,
-        type === "subtitle" ? styles.subtitle : undefined,
-        type === "subsubtitle" ? styles.subsubtitle : undefined,
-        type === "link" ? styles.link : undefined,
+        getTextStyle(),
         style,
       ]}
       {...rest}
     />
   );
 }
-
-const styles = StyleSheet.create({
-  default: {
-    fontSize: responsiveFontSize(16),
-    lineHeight: 24,
-  },
-  defaultSemiBold: {
-    fontSize: responsiveFontSize(16),
-    lineHeight: 24,
-    fontWeight: "600",
-  },
-  title: {
-    fontSize: responsiveFontSize(32),
-    fontWeight: "bold",
-    lineHeight: 32,
-  },
-  subtitle: {
-    fontSize: responsiveFontSize(20),
-    fontWeight: "bold",
-  },
-  subsubtitle: {
-    fontSize: responsiveFontSize(16),
-  },
-  link: {
-    lineHeight: 30,
-    fontSize: responsiveFontSize(16),
-    color: "#0a7ea4",
-  },
-});

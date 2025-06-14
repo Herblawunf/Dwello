@@ -1,22 +1,33 @@
-import { TextInput } from "react-native";
-import { useThemeColor } from "@/hooks/useThemeColor";
-import { responsiveFontSize } from "@/tools/fontscaling";
+import { TextInput, StyleSheet } from "react-native";
+import { useTheme } from "@/context/ThemeContext";
 
 export function ThemedTextInput({ style, lightColor, darkColor, ...rest }) {
-  const color = useThemeColor({ light: lightColor, dark: darkColor }, "text");
-  const borderColor = useThemeColor(
-    { light: lightColor, dark: darkColor },
-    "tint"
-  );
+  const theme = useTheme();
+  const color = lightColor || darkColor || theme.colors.onSurface;
+  const borderColor = theme.colors.divider;
 
   return (
     <TextInput
       style={[
-        { color, borderColor, borderWidth: responsiveFontSize(2) },
+        styles.input,
+        { 
+          color,
+          borderColor,
+          fontSize: theme.typography.fontSize.md,
+          backgroundColor: theme.colors.surface,
+        },
         style,
       ]}
-      placeholderTextColor={color}
+      placeholderTextColor={theme.colors.placeholder}
       {...rest}
     />
   );
 }
+
+const styles = StyleSheet.create({
+  input: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+  },
+});

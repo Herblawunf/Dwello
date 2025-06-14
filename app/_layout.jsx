@@ -1,7 +1,7 @@
 import {
   DarkTheme,
   DefaultTheme,
-  ThemeProvider,
+  ThemeProvider as NavigationThemeProvider,
 } from "@react-navigation/native";
 import { useFonts } from "expo-font";
 import { Stack, useRouter } from "expo-router";
@@ -12,7 +12,8 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 import {
   Provider as AuthProvider,
   Context as AuthContext,
-} from "../context/AuthContext";
+} from "@/context/AuthContext";
+import { ThemeProvider } from "@/context/ThemeContext";
 
 // Stacks Configuration
 const Stacks = {
@@ -57,11 +58,13 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <AuthProvider>
-        <AuthRouter />
-      </AuthProvider>
-    </ThemeProvider>
+    <NavigationThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+      <ThemeProvider>
+        <AuthProvider>
+          <AuthRouter />
+        </AuthProvider>
+      </ThemeProvider>
+    </NavigationThemeProvider>
   );
 }
 
