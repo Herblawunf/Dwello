@@ -26,6 +26,12 @@ export const theme = {
       xl: 32,
       xxl: 36,
     },
+    fontWeight: {
+      regular: '400',
+      medium: '500',
+      semiBold: '600',
+      bold: '700',
+    },
   },
 
   // Spacing
