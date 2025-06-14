@@ -15,9 +15,13 @@ import {
 } from "react-native";
 import { Context as AuthContext } from "@/context/AuthContext";
 import { getHousemates } from "@/context/utils";
-import { supabase } from "../../lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { useFocusEffect } from "@react-navigation/native";
 import { responsiveFontSize } from "@/tools/fontscaling";
+import { useTheme } from "@/context/ThemeContext";
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
+import { Ionicons } from "@expo/vector-icons";
 import uuid from "react-native-uuid";
 
 const ExpensesScreen = () => {
@@ -35,8 +39,311 @@ const ExpensesScreen = () => {
   const [showSplitDropdown, setShowSplitDropdown] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [expenseToDelete, setExpenseToDelete] = useState(null);
-
   const [pastExpenses, setPastExpenses] = useState([]);
+  const theme = useTheme();
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    scrollContent: {
+      paddingHorizontal: 20,
+      paddingTop: Platform.OS === "ios" ? 60 : 20,
+      paddingBottom: 100,
+    },
+    pressableWrapper: {
+      width: "100%",
+      marginBottom: 20,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: "600",
+      color: theme.colors.onSurface,
+      marginBottom: 20,
+      alignSelf: "flex-start",
+      paddingHorizontal: 10,
+    },
+    inputSection: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: 12,
+      padding: 20,
+      marginBottom: 20,
+      ...theme.elevation.sm,
+    },
+    amountInput: {
+      fontSize: 32,
+      color: theme.colors.onSurface,
+      textAlign: "center",
+      marginBottom: 15,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+    descriptionInput: {
+      fontSize: 16,
+      color: theme.colors.onSurface,
+      textAlign: "center",
+      fontFamily: theme.typography.fontFamily.regular,
+    },
+    splitAndButtonContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginTop: 15,
+    },
+    splitDetailsContainer: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      flexWrap: "wrap",
+      gap: 8,
+    },
+    splitText: {
+      fontSize: 16,
+      color: theme.colors.onSurface,
+      fontWeight: "500",
+      lineHeight: 24,
+    },
+    dropdownButton: {
+      backgroundColor: theme.colors.surface,
+      paddingHorizontal: 15,
+      paddingVertical: 8,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: theme.colors.outline,
+    },
+    dropdownButtonText: {
+      color: theme.colors.onSurface,
+      fontSize: 16,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+    addButton: {
+      backgroundColor: theme.colors.primary,
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      alignItems: "center",
+      justifyContent: "center",
+      ...theme.elevation.sm,
+    },
+    addButtonText: {
+      color: theme.colors.onPrimary,
+      fontSize: 32,
+      fontFamily: theme.typography.fontFamily.medium,
+      textAlign: "center",
+      lineHeight: 32,
+      height: 32,
+      width: 32,
+      textAlignVertical: "center",
+    },
+    balancesSection: {
+      width: "100%",
+      marginBottom: 20,
+    },
+    balancesScrollView: {
+      maxHeight: 200,
+    },
+    balancesScrollContent: {
+      paddingHorizontal: 15,
+    },
+    balancesTitle: {
+      fontSize: 18,
+      fontWeight: "600",
+      color: theme.colors.onSurface,
+      marginBottom: 8,
+      alignSelf: "flex-start",
+    },
+    balanceItem: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingVertical: 8,
+      paddingHorizontal: 15,
+      backgroundColor: theme.colors.surface,
+      borderRadius: 8,
+      marginBottom: 8,
+      ...theme.elevation.sm,
+    },
+    housemateName: {
+      fontSize: 16,
+      color: theme.colors.onSurface,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+    balanceAmount: {
+      fontSize: 16,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+    positiveBalance: {
+      color: theme.colors.success,
+    },
+    negativeBalance: {
+      color: theme.colors.error,
+    },
+    neutralBalance: {
+      color: theme.colors.onSurface,
+    },
+    clickableBalance: {
+      textDecorationLine: "underline",
+    },
+    noBalancesText: {
+      fontSize: 16,
+      color: theme.colors.onSurface,
+      textAlign: "center",
+      marginTop: 8,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    dropdownModal: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: 12,
+      padding: 20,
+      width: "80%",
+      maxWidth: 400,
+      ...theme.elevation.md,
+    },
+    modalText: {
+      fontSize: 18,
+      color: theme.colors.onSurface,
+      fontFamily: theme.typography.fontFamily.medium,
+      textAlign: "center",
+      marginBottom: 15,
+    },
+    modalSubText: {
+      fontSize: 16,
+      color: theme.colors.placeholder,
+      fontFamily: theme.typography.fontFamily.regular,
+      textAlign: "center",
+      marginBottom: 20,
+    },
+    modalButtonContainer: {
+      flexDirection: "row",
+      justifyContent: "center",
+      gap: 15,
+    },
+    modalButton: {
+      flex: 1,
+      paddingVertical: 15,
+      borderRadius: 8,
+      alignItems: "center",
+    },
+    confirmButton: {
+      backgroundColor: theme.colors.primary,
+    },
+    cancelButton: {
+      backgroundColor: theme.colors.error,
+    },
+    modalButtonText: {
+      color: theme.colors.onPrimary,
+      fontSize: 16,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+    dropdownList: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: 12,
+      padding: 8,
+      width: 200,
+      ...theme.elevation.md,
+    },
+    dropdownItem: {
+      paddingVertical: 8,
+      paddingHorizontal: 15,
+      borderRadius: 6,
+    },
+    dropdownItemText: {
+      fontSize: 16,
+      color: theme.colors.onSurface,
+      fontFamily: theme.typography.fontFamily.regular,
+    },
+    paidByDropdownPositioning: {
+      position: "absolute",
+      top: 200,
+      left: 20,
+    },
+    splitDropdownPositioning: {
+      position: "absolute",
+      top: 200,
+      left: 120,
+    },
+    pastExpensesSection: {
+      width: "100%",
+      marginBottom: 150,
+    },
+    pastExpensesTitle: {
+      fontSize: 18,
+      fontWeight: "600",
+      color: theme.colors.onSurface,
+      marginBottom: 8,
+      alignSelf: "flex-start",
+    },
+    pastExpensesList: {
+      maxHeight: responsiveFontSize(65) * 4,
+    },
+    pastExpensesListContent: {
+      paddingBottom: 8,
+    },
+    pastExpenseItem: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingVertical: 8,
+      paddingHorizontal: 15,
+      backgroundColor: theme.colors.surface,
+      borderRadius: 8,
+      marginBottom: 8,
+      ...theme.elevation.sm,
+    },
+    pastExpenseDetails: {
+      flex: 1,
+      marginRight: 15,
+    },
+    pastExpenseRightSection: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    pastExpenseDescription: {
+      fontSize: 16,
+      color: theme.colors.onSurface,
+      fontFamily: theme.typography.fontFamily.medium,
+      marginBottom: 4,
+    },
+    pastExpenseSubText: {
+      fontSize: 14,
+      color: theme.colors.placeholder,
+      fontFamily: theme.typography.fontFamily.regular,
+    },
+    pastExpenseAmount: {
+      fontSize: 16,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+    amountPositive: {
+      color: theme.colors.success,
+    },
+    amountNegative: {
+      color: theme.colors.error,
+    },
+    deleteButton: {
+      padding: 4,
+    },
+    deleteButtonText: {
+      color: theme.colors.error,
+      fontSize: 20,
+      fontFamily: theme.typography.fontFamily.medium,
+    },
+    noPastExpensesText: {
+      fontSize: 16,
+      color: theme.colors.onSurface,
+      textAlign: "center",
+      marginTop: 8,
+      paddingBottom: 8,
+    },
+  });
 
   const deleteExpense = async (expenseId) => {
     console.log("Deleting expense:", expenseId);
@@ -318,8 +625,8 @@ const ExpensesScreen = () => {
         keyboardShouldPersistTaps="handled"
       >
         <Pressable onPress={Keyboard.dismiss} style={styles.pressableWrapper}>
-          <Text style={styles.title}>Add expense</Text>
-          <View style={styles.inputSection}>
+          <ThemedText type="title" style={styles.title}>Add expense</ThemedText>
+          <ThemedView style={styles.inputSection}>
             <TextInput
               style={styles.amountInput}
               placeholder="0.00"
@@ -327,7 +634,7 @@ const ExpensesScreen = () => {
               value={amount}
               onChangeText={handleAmountChange}
               textAlign="center"
-              placeholderTextColor="#aaa"
+              placeholderTextColor={theme.colors.placeholder}
             />
             <TextInput
               style={styles.descriptionInput}
@@ -335,44 +642,41 @@ const ExpensesScreen = () => {
               value={description}
               onChangeText={setDescription}
               textAlign="center"
-              placeholderTextColor="#aaa"
+              placeholderTextColor={theme.colors.placeholder}
             />
-          </View>
+          </ThemedView>
           <View style={styles.splitAndButtonContainer}>
             <View style={styles.splitDetailsContainer}>
-              <Text style={styles.splitText}>Paid by</Text>
+              <ThemedText type="default">Paid by</ThemedText>
               <TouchableOpacity
                 style={styles.dropdownButton}
                 onPress={() => setShowPaidByDropdown(true)}
               >
-                <Text style={styles.dropdownButtonText}>
-                  {userOptions.find((opt) => opt.value === paidBy)?.label ||
-                    "You"}
-                </Text>
+                <ThemedText type="default">
+                  {userOptions.find((opt) => opt.value === paidBy)?.label || "You"}
+                </ThemedText>
               </TouchableOpacity>
-              <Text style={styles.splitText}>and split</Text>
+              <ThemedText type="default">and split</ThemedText>
               <TouchableOpacity
                 style={styles.dropdownButton}
                 onPress={() => setShowSplitDropdown(true)}
               >
-                <Text style={styles.dropdownButtonText}>
-                  {splitOptions.find((opt) => opt.value === splitMethod)
-                    ?.label || "Equally"}
-                </Text>
+                <ThemedText type="default">
+                  {splitOptions.find((opt) => opt.value === splitMethod)?.label || "Equally"}
+                </ThemedText>
               </TouchableOpacity>
             </View>
             <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-              <Pressable style={styles.addButton} onPress={addExpense}>
-                <Text style={styles.addButtonText}>＋</Text>
-              </Pressable>
+              <TouchableOpacity style={styles.addButton} onPress={addExpense}>
+                <ThemedText type="default" style={styles.addButtonText}>+</ThemedText>
+              </TouchableOpacity>
             </Animated.View>
           </View>
         </Pressable>
-        <View style={styles.balancesSection}>
-          <Text style={styles.balancesTitle}>Housemate Balances</Text>
+        <ThemedView style={styles.balancesSection}>
+          <ThemedText type="subtitle" style={styles.balancesTitle}>Housemate Balances</ThemedText>
           <ScrollView
             style={styles.balancesScrollView}
-            contentContainerStyle={styles.balancesScrollContent}
             showsVerticalScrollIndicator={false}
           >
             {housemateBalances.length > 0 ? (
@@ -388,12 +692,10 @@ const ExpensesScreen = () => {
                   }}
                   disabled={hm.balance >= 0}
                 >
-                  <Text style={styles.housemateName}>
-                    {hm.first_name}
-                  </Text>
-                  <Text
+                  <ThemedText type="default">{hm.first_name}</ThemedText>
+                  <ThemedText
+                    type="default"
                     style={[
-                      styles.balanceAmount,
                       hm.balance > 0
                         ? styles.positiveBalance
                         : hm.balance < 0
@@ -403,519 +705,152 @@ const ExpensesScreen = () => {
                     ]}
                   >
                     {formatBalanceText(hm.balance)}
-                  </Text>
+                  </ThemedText>
                 </TouchableOpacity>
               ))
             ) : (
-              <Text style={styles.noBalancesText}>
+              <ThemedText type="default" style={styles.noBalancesText}>
                 No housemate balances to show yet.
-              </Text>
+              </ThemedText>
             )}
           </ScrollView>
-        </View>
-        <View style={[styles.pastExpensesSection, {marginBottom: 150}]}>
-          <Text style={styles.pastExpensesTitle}>Recent Activity</Text>
+        </ThemedView>
+        <ThemedView style={styles.pastExpensesSection}>
+          <ThemedText type="subtitle" style={styles.pastExpensesTitle}>Recent Activity</ThemedText>
           {pastExpenses.length > 0 ? (
-            <View style={styles.pastExpensesList}>
-              {pastExpenses.map((item) => (
-                <View key={item.id}>{renderPastExpenseItem({ item })}</View>
-              ))}
-            </View>
+            pastExpenses.map((item) => (
+              <View key={item.id}>{renderPastExpenseItem({ item })}</View>
+            ))
           ) : (
-            <Text style={styles.noPastExpensesText}>
+            <ThemedText type="default" style={styles.noPastExpensesText}>
               No recent activity to show.
-            </Text>
+            </ThemedText>
           )}
-        </View>
-        <Modal
-          visible={showPaymentModal}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setShowPaymentModal(false)}
-        >
-          <TouchableOpacity
-            style={styles.modalOverlay}
-            onPress={() => setShowPaymentModal(false)}
-            activeOpacity={1}
-          >
-            <View style={styles.dropdownModal}>
-              <Text style={styles.modalText}>
-                Have you paid £
-                {Math.abs(selectedHousemate?.balance).toFixed(2)} to{" "}
-                {selectedHousemate?.first_name}?
-              </Text>
-              <View style={styles.modalButtonContainer}>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.confirmButton]}
-                  onPress={() =>
-                    handlePaymentConfirmation(true, selectedHousemate?.id)
-                  }
-                >
-                  <Text style={styles.modalButtonText}>Yes</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.cancelButton]}
-                  onPress={() =>
-                    handlePaymentConfirmation(false, selectedHousemate?.id)
-                  }
-                >
-                  <Text style={styles.modalButtonText}>No</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </TouchableOpacity>
-        </Modal>
-        <Modal
-          visible={showDeleteModal}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setShowDeleteModal(false)}
-        >
-          <TouchableOpacity
-            style={styles.modalOverlay}
-            onPress={() => setShowDeleteModal(false)}
-            activeOpacity={1}
-          >
-            <View style={styles.dropdownModal}>
-              <Text style={styles.modalText}>
-                Are you sure you want to delete this expense?
-              </Text>
-              <Text style={styles.modalSubText}>
-                {expenseToDelete?.description} - £
-                {expenseToDelete?.totalAmount.toFixed(2)}
-              </Text>
-              <View style={styles.modalButtonContainer}>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.confirmButton]}
-                  onPress={() =>
-                    handleDeleteConfirmation(true, expenseToDelete?.id)
-                  }
-                >
-                  <Text style={styles.modalButtonText}>Yes</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.cancelButton]}
-                  onPress={() => handleDeleteConfirmation(false, null)}
-                >
-                  <Text style={styles.modalButtonText}>No</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </TouchableOpacity>
-        </Modal>
-        <Modal
-          visible={showPaidByDropdown}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setShowPaidByDropdown(false)}
-        >
-          <TouchableOpacity
-            style={styles.modalOverlay}
-            activeOpacity={1}
-            onPress={() => setShowPaidByDropdown(false)}
-          >
-            <View
-              style={[styles.dropdownList, styles.paidByDropdownPositioning]}
-            >
-              {userOptions.map((option) => (
-                <TouchableOpacity
-                  key={option.value}
-                  style={styles.dropdownItem}
-                  onPress={() => {
-                    setPaidBy(option.value);
-                    setShowPaidByDropdown(false);
-                  }}
-                >
-                  <Text style={styles.dropdownItemText}>
-                    {option.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </TouchableOpacity>
-        </Modal>
-        <Modal
-          visible={showSplitDropdown}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setShowSplitDropdown(false)}
-        >
-          <TouchableOpacity
-            style={styles.modalOverlay}
-            activeOpacity={1}
-            onPress={() => setShowSplitDropdown(false)}
-          >
-            <View
-              style={[styles.dropdownList, styles.splitDropdownPositioning]}
-            >
-              {splitOptions.map((option) => (
-                <TouchableOpacity
-                  key={option.value}
-                  style={styles.dropdownItem}
-                  onPress={() => {
-                    setSplitMethod(option.value);
-                    setShowSplitDropdown(false);
-                  }}
-                >
-                  <Text style={styles.dropdownItemText}>
-                    {option.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </TouchableOpacity>
-        </Modal>
+        </ThemedView>
       </ScrollView>
+      <Modal
+        visible={showPaymentModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowPaymentModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          onPress={() => setShowPaymentModal(false)}
+          activeOpacity={1}
+        >
+          <ThemedView style={styles.dropdownModal}>
+            <ThemedText type="subtitle" style={styles.modalText}>
+              Have you paid £{Math.abs(selectedHousemate?.balance).toFixed(2)} to {selectedHousemate?.first_name}?
+            </ThemedText>
+            <View style={styles.modalButtonContainer}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton]}
+                onPress={() => handlePaymentConfirmation(true, selectedHousemate?.id)}
+              >
+                <ThemedText type="default" style={styles.modalButtonText}>Yes</ThemedText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => handlePaymentConfirmation(false, selectedHousemate?.id)}
+              >
+                <ThemedText type="default" style={styles.modalButtonText}>No</ThemedText>
+              </TouchableOpacity>
+            </View>
+          </ThemedView>
+        </TouchableOpacity>
+      </Modal>
+      <Modal
+        visible={showDeleteModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowDeleteModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          onPress={() => setShowDeleteModal(false)}
+          activeOpacity={1}
+        >
+          <ThemedView style={styles.dropdownModal}>
+            <ThemedText type="subtitle" style={styles.modalText}>
+              Are you sure you want to delete this expense?
+            </ThemedText>
+            <ThemedText type="default" style={styles.modalSubText}>
+              {expenseToDelete?.description} - £{expenseToDelete?.totalAmount.toFixed(2)}
+            </ThemedText>
+            <View style={styles.modalButtonContainer}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton]}
+                onPress={() => handleDeleteConfirmation(true, expenseToDelete?.id)}
+              >
+                <ThemedText type="default" style={styles.modalButtonText}>Yes</ThemedText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => handleDeleteConfirmation(false, null)}
+              >
+                <ThemedText type="default" style={styles.modalButtonText}>No</ThemedText>
+              </TouchableOpacity>
+            </View>
+          </ThemedView>
+        </TouchableOpacity>
+      </Modal>
+      <Modal
+        visible={showPaidByDropdown}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowPaidByDropdown(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowPaidByDropdown(false)}
+        >
+          <ThemedView style={[styles.dropdownList, styles.paidByDropdownPositioning]}>
+            {userOptions.map((option) => (
+              <TouchableOpacity
+                key={option.value}
+                style={styles.dropdownItem}
+                onPress={() => {
+                  setPaidBy(option.value);
+                  setShowPaidByDropdown(false);
+                }}
+              >
+                <ThemedText type="default">{option.label}</ThemedText>
+              </TouchableOpacity>
+            ))}
+          </ThemedView>
+        </TouchableOpacity>
+      </Modal>
+      <Modal
+        visible={showSplitDropdown}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowSplitDropdown(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowSplitDropdown(false)}
+        >
+          <ThemedView style={[styles.dropdownList, styles.splitDropdownPositioning]}>
+            {splitOptions.map((option) => (
+              <TouchableOpacity
+                key={option.value}
+                style={styles.dropdownItem}
+                onPress={() => {
+                  setSplitMethod(option.value);
+                  setShowSplitDropdown(false);
+                }}
+              >
+                <ThemedText type="default">{option.label}</ThemedText>
+              </TouchableOpacity>
+            ))}
+          </ThemedView>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === "ios" ? 60 : 20,
-    paddingBottom: 40,
-    alignItems: "center",
-  },
-  pressableWrapper: {
-    width: "100%",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 30,
-    alignSelf: "flex-start",
-    paddingHorizontal: 5,
-  },
-  inputSection: {
-    width: "100%",
-    alignItems: "center",
-    marginBottom: 30,
-  },
-  amountInput: {
-    fontSize: 48,
-    fontWeight: "600",
-    color: "#333",
-    borderBottomWidth: Platform.OS === "ios" ? 1 : 0,
-    borderColor: "#e0e0e0",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    marginBottom: 20,
-    width: "80%",
-    minHeight: 60,
-    alignSelf: "center",
-  },
-  descriptionInput: {
-    fontSize: 20,
-    fontWeight: "500",
-    color: "#555",
-    borderBottomWidth: Platform.OS === "ios" ? 1 : 0,
-    borderColor: "#e0e0e0",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    width: "80%",
-    minHeight: 50,
-    alignSelf: "center",
-  },
-  splitAndButtonContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    width: "100%",
-    marginTop: 10,
-    paddingHorizontal: 5,
-  },
-  splitDetailsContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "nowrap",
-    backgroundColor: "#f8f9fa",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    flex: 1,
-  },
-  splitText: {
-    fontSize: 10,
-    color: "#666",
-    marginHorizontal: 2,
-    fontWeight: "500",
-    lineHeight: 24,
-  },
-  dropdownButton: {
-    backgroundColor: "#fff",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    minWidth: 60,
-    marginHorizontal: 2,
-  },
-  dropdownButtonText: {
-    fontSize: 12,
-    color: "#333",
-    textAlign: "center",
-  },
-  paidByDropdownPositioning: {
-    top: "40%",
-    left: "10%",
-  },
-  splitDropdownPositioning: {
-    top: "40%",
-    right: "10%",
-  },
-  dropdownList: {
-    position: "absolute",
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    padding: 4,
-    width: 150,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  dropdownItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-  },
-  dropdownItemText: {
-    fontSize: 14,
-    color: "#333",
-  },
-  addButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "#007AFF",
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#007AFF",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-    marginLeft: 12,
-  },
-  addButtonText: {
-    fontSize: 24,
-    fontWeight: "500",
-    color: "#fff",
-    lineHeight: 24,
-  },
-  balancesScrollView: {
-    maxHeight: responsiveFontSize(50) * 4,
-  },
-  balancesScrollContent: {
-    paddingHorizontal: 10,
-  },
-  balancesSection: {
-    width: "100%",
-    marginTop: 30,
-    paddingHorizontal: 5,
-  },
-  balancesTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 15,
-    alignSelf: "flex-start",
-  },
-  balanceItem: {
-    height: responsiveFontSize(50),
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-  },
-  housemateName: {
-    fontSize: 15,
-    color: "#555",
-  },
-  balanceAmount: {
-    fontSize: 15,
-    fontWeight: "500",
-  },
-  positiveBalance: {
-    color: "#28a745",
-  },
-  negativeBalance: {
-    color: "#dc3545",
-  },
-  neutralBalance: {
-    color: "#6c757d",
-  },
-  clickableBalance: {
-    textDecorationLine: "underline",
-  },
-  noBalancesText: {
-    fontSize: 14,
-    color: "#6c757d",
-    textAlign: "center",
-    marginTop: 10,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  dropdownModal: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    width: "85%",
-    padding: 24,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  modalText: {
-    fontSize: 18,
-    fontWeight: "500",
-    color: "#333",
-    textAlign: "center",
-    marginBottom: 24,
-    lineHeight: 24,
-  },
-  modalSubText: {
-    fontSize: 14,
-    color: "#666",
-    textAlign: "center",
-    marginBottom: 20,
-    fontStyle: "italic",
-  },
-  modalButtonContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  modalButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  confirmButton: {
-    backgroundColor: "#007AFF",
-  },
-  cancelButton: {
-    backgroundColor: "#f8f9fa",
-    borderWidth: 1,
-    borderColor: "#e0e0e0",
-  },
-  modalButtonText: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#fff",
-  },
-  pastExpensesSection: {
-    width: "100%",
-    marginTop: 30,
-    paddingHorizontal: 5,
-  },
-  pastExpensesTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 15,
-    alignSelf: "flex-start",
-  },
-  pastExpensesList: {
-    maxHeight: responsiveFontSize(65) * 4,
-  },
-  pastExpensesListContent: {
-    paddingBottom: 10,
-  },
-  pastExpenseItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-    backgroundColor: "#fff",
-    minHeight: responsiveFontSize(60),
-  },
-  pastExpenseDetails: {
-    flex: 1,
-    marginRight: 10,
-  },
-  pastExpenseRightSection: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  pastExpenseDescription: {
-    fontSize: 15,
-    fontWeight: "500",
-    color: "#333",
-    marginBottom: 3,
-  },
-  pastExpenseSubText: {
-    fontSize: 12,
-    color: "#777",
-  },
-  pastExpenseAmount: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  amountPositive: {
-    color: "#28a745",
-  },
-  amountNegative: {
-    color: "#dc3545",
-  },
-  deleteButton: {
-    backgroundColor: "#f8f9fa",
-    borderWidth: 1,
-    borderColor: "#e74c3c",
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 6,
-    minWidth: 32,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  deleteButtonText: {
-    fontSize: 18,
-    color: "#e74c3c",
-    fontWeight: "500",
-    lineHeight: 18,
-  },
-  noPastExpensesText: {
-    fontSize: 14,
-    color: "#6c757d",
-    textAlign: "center",
-    marginTop: 20,
-    paddingBottom: 20,
-  },
-});
 
 export default ExpensesScreen;
