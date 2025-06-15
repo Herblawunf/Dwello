@@ -251,9 +251,9 @@ export default function Requests() {
                   <MaterialIcons
                     name={statusInfo.name}
                     size={14}
-                    color={statusInfo.color}
+                    color="#000000"
                   />
-                  <ThemedText style={[styles.statusText, { color: statusInfo.color }]}>
+                  <ThemedText style={[styles.statusText, { color: "#000000" }]}>
                     {item.status}
                   </ThemedText>
                 </LinearGradient>
@@ -517,20 +517,20 @@ export default function Requests() {
     },
     statusLabel: {
       fontSize: 16,
-      color: theme.colors.onSurface,
+      color: "#000000",
       fontFamily: theme.typography.fontFamily.medium,
       marginBottom: 4,
     },
     statusDescription: {
       fontSize: 14,
-      color: theme.colors.placeholder,
+      color: "#000000",
       fontFamily: theme.typography.fontFamily.regular,
     },
     activeStatus: {
       backgroundColor: theme.colors.primary,
     },
     activeStatusText: {
-      color: theme.colors.onPrimary,
+      color: "#000000",
     },
     addButton: {
       position: 'absolute',
@@ -678,7 +678,7 @@ export default function Requests() {
                 Priority
               </ThemedText>
             </TouchableOpacity>
-          </ThemedView>
+            </ThemedView>
         </TouchableOpacity>
       </Modal>
 
