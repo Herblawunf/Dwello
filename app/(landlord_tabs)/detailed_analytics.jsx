@@ -1,72 +1,50 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Platform } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Platform, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import FinancialBarChart from "./data_analytics_";
+import { analyticsApi } from "../../lib/supabase";
+import { useData } from "./components/DataProvider";
 
 const ADDRESSES = [
-  "Maple Street",
-  "Cedar Avenue",
-  "Bridgewater Road",
-  // Add more addresses as needed
+  "123 Bridgewater Road, London",
+  "45 Oak Avenue, Manchester"
 ];
 
 const sortedAddresses = [...ADDRESSES].sort();
-const TABS = ["Overview", ...sortedAddresses];
+const TABS = ["Overview"];
 
 const METRICS_DATA = {
-  'Jan 2024 - Jun 2024': {
-    Monthly: [
-      { key: "totalIncome", label: "Total Income", value: "£2,100", icon: "cash-outline", tooltip: "Sum of all rent and payments received in the selected month." },
-      { key: "overdueRent", label: "Overdue Rent", value: "£200", icon: "alert-circle-outline", tooltip: "Total rent payments that are overdue." },
-      { key: "utilityExpenses", label: "Utility Expenses", value: "£380", icon: "water-outline", tooltip: "Total spent on utilities (water, gas, electricity, etc.)." },
-      { key: "occupancyRate", label: "Occupancy Rate", value: "95%", icon: "people-outline", tooltip: "Percentage of time properties were occupied." },
-      { key: "maintenanceCosts", label: "Maintenance Costs", value: "£120", icon: "construct-outline", tooltip: "Total spent on property maintenance and repairs." },
-    ],
-    Quarterly: [
-      { key: "totalIncome", label: "Total Income", value: "£6,200", icon: "cash-outline", tooltip: "Sum of all rent and payments received in the selected quarter." },
-      { key: "overdueRent", label: "Overdue Rent", value: "£600", icon: "alert-circle-outline", tooltip: "Total rent payments that are overdue." },
-      { key: "utilityExpenses", label: "Utility Expenses", value: "£1,100", icon: "water-outline", tooltip: "Total spent on utilities (water, gas, electricity, etc.)." },
-      { key: "occupancyRate", label: "Occupancy Rate", value: "93%", icon: "people-outline", tooltip: "Percentage of time properties were occupied." },
-      { key: "maintenanceCosts", label: "Maintenance Costs", value: "£350", icon: "construct-outline", tooltip: "Total spent on property maintenance and repairs." },
-    ],
-    Annual: [
-      { key: "totalIncome", label: "Total Income", value: "£12,500", icon: "cash-outline", tooltip: "Sum of all rent and payments received in the selected year." },
-      { key: "overdueRent", label: "Overdue Rent", value: "£1,200", icon: "alert-circle-outline", tooltip: "Total rent payments that are overdue." },
-      { key: "utilityExpenses", label: "Utility Expenses", value: "£2,300", icon: "water-outline", tooltip: "Total spent on utilities (water, gas, electricity, etc.)." },
-      { key: "occupancyRate", label: "Occupancy Rate", value: "92%", icon: "people-outline", tooltip: "Percentage of time properties were occupied." },
-      { key: "maintenanceCosts", label: "Maintenance Costs", value: "£800", icon: "construct-outline", tooltip: "Total spent on property maintenance and repairs." },
-    ],
+  occupancyRate: { 
+    description: "The percentage of time the property is occupied by tenants."
   },
-  'Jul 2024 - Dec 2024': {
-    Monthly: [
-      { key: "totalIncome", label: "Total Income", value: "£2,300", icon: "cash-outline", tooltip: "Sum of all rent and payments received in the selected month." },
-      { key: "overdueRent", label: "Overdue Rent", value: "£150", icon: "alert-circle-outline", tooltip: "Total rent payments that are overdue." },
-      { key: "utilityExpenses", label: "Utility Expenses", value: "£410", icon: "water-outline", tooltip: "Total spent on utilities (water, gas, electricity, etc.)." },
-      { key: "occupancyRate", label: "Occupancy Rate", value: "97%", icon: "people-outline", tooltip: "Percentage of time properties were occupied." },
-      { key: "maintenanceCosts", label: "Maintenance Costs", value: "£140", icon: "construct-outline", tooltip: "Total spent on property maintenance and repairs." },
-    ],
-    Quarterly: [
-      { key: "totalIncome", label: "Total Income", value: "£6,800", icon: "cash-outline", tooltip: "Sum of all rent and payments received in the selected quarter." },
-      { key: "overdueRent", label: "Overdue Rent", value: "£400", icon: "alert-circle-outline", tooltip: "Total rent payments that are overdue." },
-      { key: "utilityExpenses", label: "Utility Expenses", value: "£1,200", icon: "water-outline", tooltip: "Total spent on utilities (water, gas, electricity, etc.)." },
-      { key: "occupancyRate", label: "Occupancy Rate", value: "96%", icon: "people-outline", tooltip: "Percentage of time properties were occupied." },
-      { key: "maintenanceCosts", label: "Maintenance Costs", value: "£420", icon: "construct-outline", tooltip: "Total spent on property maintenance and repairs." },
-    ],
-    Annual: [
-      { key: "totalIncome", label: "Total Income", value: "£13,800", icon: "cash-outline", tooltip: "Sum of all rent and payments received in the selected year." },
-      { key: "overdueRent", label: "Overdue Rent", value: "£1,000", icon: "alert-circle-outline", tooltip: "Total rent payments that are overdue." },
-      { key: "utilityExpenses", label: "Utility Expenses", value: "£2,500", icon: "water-outline", tooltip: "Total spent on utilities (water, gas, electricity, etc.)." },
-      { key: "occupancyRate", label: "Occupancy Rate", value: "94%", icon: "people-outline", tooltip: "Percentage of time properties were occupied." },
-      { key: "maintenanceCosts", label: "Maintenance Costs", value: "£900", icon: "construct-outline", tooltip: "Total spent on property maintenance and repairs." },
-    ],
+  maintenanceCosts: { 
+    description: "Total costs spent on maintenance and repairs."
   },
+  grossIncome: { 
+    description: "Total rental income before expenses."
+  },
+  totalExpenses: { 
+    description: "Sum of all expenses including maintenance, utilities, etc."
+  },
+  netProfit: { 
+    description: "Gross income minus total expenses."
+  },
+  roi: { 
+    description: "Return on investment as a percentage."
+  }
 };
 
 const PERIODS = ["Monthly", "Quarterly", "Annual"];
 
 function formatDate(date) {
-  return date.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
+  if (!date) return "";
+  const d = new Date(date);
+  return d.toLocaleDateString("en-GB", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 }
 
 // Add property-specific metrics data
@@ -127,107 +105,48 @@ const PROPERTY_METRICS = {
 
 export default function DetailedAnalyticsScreen() {
   const router = useRouter();
+  const { 
+    properties, 
+    overviewMetrics, 
+    propertyMetrics, 
+    maintenanceCosts, 
+    incomeExpensesTrend,
+    loading, 
+    error, 
+    dateRange, 
+    setDateRange 
+  } = useData();
   const [activeTab, setActiveTab] = useState("Overview");
   const [selectedPeriod, setSelectedPeriod] = useState("Monthly");
   const [tooltip, setTooltip] = useState(null);
-  const [dateRange, setDateRange] = useState('Jan 2024 - Jun 2024');
   const [expandedSections, setExpandedSections] = useState({
     maintenance: true,
     income: true,
     property: true
   });
-  const [expandedGraphs, setExpandedGraphs] = useState({
-    'Bridgewater Road': false,
-    'Oak Avenue': false
-  });
+  
+  // Get month labels from the trend data
+  const monthLabels = incomeExpensesTrend?.map(item => item.date) || [];
 
   const handleGoToChat = () => {
-    router.push("/chats");
+    router.push("/ChatWindow");
   };
-
-  // Sample properties data
-  const [properties] = useState([
-    {
-      id: 1,
-      name: "Bridgewater Road",
-      rent: 1200,
-      paymentHistory: [
-        { month: "Jan", paid: true, daysLate: 0 },
-        { month: "Feb", paid: true, daysLate: 0 },
-        { month: "Mar", paid: true, daysLate: 2 },
-        { month: "Apr", paid: true, daysLate: 0 },
-        { month: "May", paid: true, daysLate: 5 },
-        { month: "Jun", paid: true, daysLate: 0 },
-      ],
-      maintenance: [
-        { category: "Plumbing", amount: 150.00, percentage: 30 },
-        { category: "Electrical", amount: 120.00, percentage: 24 },
-        { category: "HVAC", amount: 80.00, percentage: 16 },
-        { category: "General Repairs", amount: 150.00, percentage: 30 },
-      ],
-      monthlyStats: [
-        { net: 1000, util: 200 },
-        { net: 1000, util: 250 },
-        { net: 900, util: 150 },
-        { net: 1000, util: 200 },
-        { net: 700, util: 100 },
-        { net: 600, util: 100 },
-      ]
-    },
-    {
-      id: 2,
-      name: "Oak Avenue",
-      rent: 1500,
-      paymentHistory: [
-        { month: "Jan", paid: true, daysLate: 0 },
-        { month: "Feb", paid: true, daysLate: 0 },
-        { month: "Mar", paid: true, daysLate: 0 },
-        { month: "Apr", paid: true, daysLate: 3 },
-        { month: "May", paid: true, daysLate: 0 },
-        { month: "Jun", paid: true, daysLate: 0 },
-      ],
-      maintenance: [
-        { category: "Plumbing", amount: 200.00, percentage: 35 },
-        { category: "Electrical", amount: 100.00, percentage: 17 },
-        { category: "HVAC", amount: 150.00, percentage: 26 },
-        { category: "General Repairs", amount: 120.00, percentage: 21 },
-      ],
-      monthlyStats: [
-        { net: 1200, util: 300 },
-        { net: 1200, util: 350 },
-        { net: 1100, util: 250 },
-        { net: 1200, util: 300 },
-        { net: 900, util: 200 },
-        { net: 800, util: 200 },
-      ]
-    }
-  ]);
-
-  // Sample monthly stats for the stacked bar chart
-  const [monthlyStats] = useState([
-    { net: 1000, util: 400 }, // Jan
-    { net: 1000, util: 550 }, // Feb
-    { net: 900,  util: 300 }, // Mar
-    { net: 1000, util: 350 }, // Apr
-    { net: 700, util: 200 }, // May
-    { net: 600, util: 200 }, // Jun
-  ]);
-  const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
-
-  // Sample maintenance data
-  const [maintenanceData] = useState([
-    { category: "Plumbing", amount: 450.00, percentage: 25 },
-    { category: "Electrical", amount: 320.00, percentage: 18 },
-    { category: "HVAC", amount: 280.00, percentage: 16 },
-    { category: "General Repairs", amount: 650.00, percentage: 37 },
-    { category: "Emergency", amount: 100.00, percentage: 4 },
-  ]);
 
   const toggleDateRange = () => {
     setDateRange(prev => {
-      const newRange = prev === 'Jan 2024 - Jun 2024' ? 'Jul 2024 - Dec 2024' : 'Jan 2024 - Jun 2024';
-      setSelectedPeriod(null); // Unhighlight period toggle
-      return newRange;
+      if (prev.label === 'Jan 2024 - Jun 2024') {
+        return {
+          label: 'Jul 2024 - Dec 2024',
+          start: '2024-07-01',
+          end: '2024-12-31'
+        };
+      } else {
+        return {
+          label: 'Jan 2024 - Jun 2024',
+          start: '2024-01-01',
+          end: '2024-06-30'
+        };
+      }
     });
   };
 
@@ -250,13 +169,6 @@ export default function DetailedAnalyticsScreen() {
     }));
   };
 
-  const toggleGraph = (property) => {
-    setExpandedGraphs(prev => ({
-      ...prev,
-      [property]: !prev[property]
-    }));
-  };
-
   const renderSectionHeader = (title, section) => (
     <TouchableOpacity 
       style={styles.sectionHeader} 
@@ -271,70 +183,39 @@ export default function DetailedAnalyticsScreen() {
     </TouchableOpacity>
   );
 
-  const calculateLateDays = (property) => {
-    return property.paymentHistory.reduce((total, payment) => total + payment.daysLate, 0);
-  };
+  // Loading component
+  const renderLoading = () => (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color="#007AFF" />
+      <Text style={styles.loadingText}>Loading data...</Text>
+    </View>
+  );
 
-  const calculateOnTimePercentage = (property) => {
-    const onTimePayments = property.paymentHistory.filter(payment => payment.daysLate === 0).length;
-    return (onTimePayments / property.paymentHistory.length) * 100;
-  };
-
-  const renderPropertyMetrics = (property) => (
-    <View style={styles.section}>
-      <View style={styles.metricsGrid}>
-        <View style={styles.metricCard}>
-          <Text style={styles.metricLabel}>Total Late Days</Text>
-          <Text style={styles.metricValue}>{calculateLateDays(property)}</Text>
-        </View>
-        <View style={styles.metricCard}>
-          <Text style={styles.metricLabel}>On-Time Payment %</Text>
-          <Text style={styles.metricValue}>{calculateOnTimePercentage(property).toFixed(1)}%</Text>
-        </View>
-        <View style={styles.metricCard}>
-          <Text style={styles.metricLabel}>Monthly Rent</Text>
-          <Text style={styles.metricValue}>£{property.rent}</Text>
-        </View>
-      </View>
-
-      {/* Property-specific Maintenance Costs */}
-      <View style={[styles.section, { marginTop: 20 }]}>
-        {renderSectionHeader("Maintenance Costs", "maintenance")}
-        {expandedSections.maintenance && (
-          <View style={styles.tableContainer}>
-            <View style={styles.tableHeader}>
-              <Text style={[styles.tableCell, styles.tableHeaderText, { flex: 2 }]}>Category</Text>
-              <Text style={[styles.tableCell, styles.tableHeaderText]}>Amount</Text>
-              <Text style={[styles.tableCell, styles.tableHeaderText]}>% of Total</Text>
-            </View>
-            {property.maintenance.map((item, index) => (
-              <View key={index} style={styles.tableRow}>
-                <Text style={[styles.tableCell, { flex: 2 }]}>{item.category}</Text>
-                <Text style={styles.tableCell}>£{item.amount.toFixed(2)}</Text>
-                <Text style={styles.tableCell}>{item.percentage}%</Text>
-              </View>
-            ))}
-          </View>
-        )}
-      </View>
-
-      {/* Property-specific Income Graph */}
-      <View style={[styles.section, { marginTop: 20 }]}>
-        {renderSectionHeader("Income & Expenses", "income")}
-        {expandedSections.income && (
-          <View style={styles.graphContainer}>
-            <FinancialBarChart
-              data={property.monthlyStats}
-              labels={monthLabels}
-              suffix="£"
-            />
-          </View>
-        )}
-      </View>
+  // Error component
+  const renderError = () => (
+    <View style={styles.errorContainer}>
+      <Ionicons name="alert-circle-outline" size={48} color="#FF3B30" />
+      <Text style={styles.errorText}>{error}</Text>
+      <TouchableOpacity 
+        style={styles.retryButton}
+        onPress={() => window.location.reload()}
+      >
+        <Text style={styles.retryButtonText}>Retry</Text>
+      </TouchableOpacity>
     </View>
   );
 
   const renderTabContent = () => {
+    // Show error if there is one
+    if (error) {
+      return renderError();
+    }
+    
+    // Show loading for initial data fetch
+    if (loading.properties) {
+      return renderLoading();
+    }
+    
     switch (activeTab) {
         case 'Overview':
             return (
@@ -345,7 +226,7 @@ export default function DetailedAnalyticsScreen() {
                             <Text style={styles.sectionTitle}>Key Metrics</Text>
                             <TouchableOpacity style={styles.dateRangeButton} onPress={toggleDateRange}>
                                 <Ionicons name="calendar-outline" size={18} color="#007AFF" />
-                                <Text style={styles.dateRangeText}>{dateRange}</Text>
+                                <Text style={styles.dateRangeText}>{dateRange.label}</Text>
                             </TouchableOpacity>
                         </View>
                         
@@ -371,70 +252,117 @@ export default function DetailedAnalyticsScreen() {
                         </View>
 
                         {/* Metrics Grid */}
-                        <View style={styles.metricsGrid}>
-                            {(selectedPeriod ? METRICS_DATA[dateRange][selectedPeriod] : []).map((metric) => (
-                                <View key={metric.key} style={styles.metricCard}>
-                                    <View style={styles.metricIconRow}>
-                                        <Ionicons name={metric.icon} size={22} color="#007AFF" />
-                                        <TouchableOpacity onPress={() => handleShowTooltip(metric)}>
-                                            <Ionicons 
-                                                name="information-circle-outline" 
-                                                size={18} 
-                                                color="#888" 
-                                                style={{ marginLeft: 6 }} 
-                                            />
-                                        </TouchableOpacity>
-                                    </View>
-                                    <Text style={styles.metricLabel} numberOfLines={1} ellipsizeMode="tail">
-                                        {metric.label}
-                                    </Text>
-                                    <Text style={styles.metricValue}>{metric.value}</Text>
-                                </View>
+                        {loading.metrics ? (
+                          <View style={styles.metricsGrid}>
+                            {[1, 2, 3, 4, 5, 6].map((_, i) => (
+                              <View key={i} style={[styles.metricCard, styles.metricCardLoading]}>
+                                <ActivityIndicator size="small" color="#007AFF" />
+                              </View>
                             ))}
-                        </View>
+                          </View>
+                        ) : (
+                          <View style={styles.metricsGrid}>
+                            {Object.entries(overviewMetrics).map(([key, data]) => (
+                              <View key={key} style={styles.metricCard}>
+                                <View style={styles.metricIconRow}>
+                                  <Ionicons 
+                                    name={getIconForMetric(key)} 
+                                    size={22} 
+                                    color="#007AFF" 
+                                  />
+                                  <TouchableOpacity onPress={() => handleShowTooltip({
+                                    title: formatMetricName(key),
+                                    description: METRICS_DATA[key]?.description || ""
+                                  })}>
+                                    <Ionicons 
+                                      name="information-circle-outline" 
+                                      size={18} 
+                                      color="#888" 
+                                      style={{ marginLeft: 6 }} 
+                                    />
+                                  </TouchableOpacity>
+                                </View>
+                                <Text style={styles.metricLabel} numberOfLines={1} ellipsizeMode="tail">
+                                  {formatMetricName(key)}
+                                </Text>
+                                <Text style={styles.metricValue}>
+                                  {formatMetricValue(data.value, key)}
+                                </Text>
+                              </View>
+                            ))}
+                          </View>
+                        )}
                     </View>
 
                     {/* Overall Maintenance Costs */}
                     <View style={styles.section}>
-                        {renderSectionHeader("Overall Maintenance Costs", "maintenance")}
+                        {renderSectionHeader("Maintenance Costs", "maintenance")}
                         {expandedSections.maintenance && (
-                            <View style={styles.tableContainer}>
-                                <View style={styles.tableHeader}>
-                                    <Text style={[styles.tableCell, styles.tableHeaderText, { flex: 2 }]}>Category</Text>
-                                    <Text style={[styles.tableCell, styles.tableHeaderText]}>Amount</Text>
-                                    <Text style={[styles.tableCell, styles.tableHeaderText]}>% of Total</Text>
-                                </View>
-                                {maintenanceData.map((item, index) => (
-                                    <View key={index} style={styles.tableRow}>
-                                        <Text style={[styles.tableCell, { flex: 2 }]}>{item.category}</Text>
-                                        <Text style={styles.tableCell}>£{item.amount.toFixed(2)}</Text>
-                                        <Text style={styles.tableCell}>{item.percentage}%</Text>
-                                    </View>
-                                ))}
+                          loading.maintenance ? (
+                            <View style={styles.loadingSectionContainer}>
+                              <ActivityIndicator size="small" color="#007AFF" />
                             </View>
+                          ) : (
+                            <View style={styles.maintenanceContainer}>
+                              {maintenanceCosts.map((item, index) => (
+                                <View key={index} style={styles.maintenanceItem}>
+                                  <View style={styles.maintenanceCategory}>
+                                    <Text style={styles.maintenanceCategoryText}>{item.category}</Text>
+                                  </View>
+                                  <View style={styles.maintenanceDetails}>
+                                    <Text style={styles.maintenanceAmount}>£{item.amount}</Text>
+                                    <Text style={styles.maintenancePercentage}>{item.percentage}%</Text>
+                                  </View>
+                                </View>
+                              ))}
+                            </View>
+                          )
                         )}
                     </View>
 
-                    {/* Overall Income & Expenses Trend Graph */}
-                    <View style={[styles.section, { marginTop: -10 }]}>
-                        {renderSectionHeader("Overall Income & Expenses", "income")}
+                    {/* Income and Expenses Trend */}
+                    <View style={styles.section}>
+                        {renderSectionHeader("Income & Expenses Trend", "income")}
                         {expandedSections.income && (
+                          loading.incomeExpenses ? (
+                            <View style={styles.loadingSectionContainer}>
+                              <ActivityIndicator size="small" color="#007AFF" />
+                            </View>
+                          ) : (
                             <View style={styles.graphContainer}>
                                 <FinancialBarChart
-                                    data={monthlyStats}
+                                    data={incomeExpensesTrend}
                                     labels={monthLabels}
                                     suffix="£"
                                 />
                             </View>
+                          )
                         )}
                     </View>
                 </>
             );
         case 'Bridgewater Road':
         case 'Oak Avenue':
-            const propertyMetrics = PROPERTY_METRICS[activeTab][selectedPeriod];
+            // Find the property
+            const property = properties.find(p => p.name === activeTab);
+            if (!property) return <Text>Property not found</Text>;
+            
+            // Get the metrics for this property
+            const propertyMetricsData = propertyMetrics[activeTab]?.[selectedPeriod];
+            
+            // If we don't have the metrics yet, show loading
+            if (loading.metrics || !propertyMetricsData) {
+              return (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color="#007AFF" />
+                  <Text style={styles.loadingText}>Loading property data...</Text>
+                </View>
+              );
+            }
+            
             // Filter out ROI from metrics
-            const filteredMetrics = Object.entries(propertyMetrics).filter(([key]) => key !== 'roi');
+            const filteredMetrics = Object.entries(propertyMetricsData)
+              .filter(([key]) => key !== 'roi' && !['id', 'property_id', 'date', 'created_at', 'period'].includes(key));
             
             return (
                 <View style={styles.tabContent}>
@@ -467,39 +395,43 @@ export default function DetailedAnalyticsScreen() {
                         </View>
 
                         <View style={styles.metricsGrid}>
-                            {filteredMetrics.map(([key, metric]) => (
+                            {filteredMetrics.map(([key, value]) => (
                                 <TouchableOpacity
                                     key={key}
                                     style={styles.metricCard}
                                     onPress={() => {
                                         setTooltip({
-                                            title: key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1'),
-                                            description: METRICS_DATA[key].description
+                                            title: formatMetricName(key),
+                                            description: METRICS_DATA[key]?.description || ""
                                         });
                                     }}
                                 >
                                     <View style={styles.metricIconRow}>
                                         <Text style={styles.metricLabel}>
-                                            {key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')}
+                                            {formatMetricName(key)}
                                         </Text>
                                         <TouchableOpacity
                                             onPress={() => {
                                                 setTooltip({
-                                                    title: key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1'),
-                                                    description: METRICS_DATA[key].description
+                                                    title: formatMetricName(key),
+                                                    description: METRICS_DATA[key]?.description || ""
                                                 });
                                             }}
                                         >
                                             <Ionicons name="information-circle-outline" size={16} color="#666" />
                                         </TouchableOpacity>
                                     </View>
-                                    <Text style={styles.metricValue}>{metric.value}</Text>
-                                    <Text style={[
-                                        styles.metricChange,
-                                        metric.change.startsWith('+') ? styles.positiveChange : styles.negativeChange
-                                    ]}>
-                                        {metric.change}
+                                    <Text style={styles.metricValue}>
+                                      {formatMetricValue(value, key)}
                                     </Text>
+                                    {value.change && (
+                                      <Text style={[
+                                          styles.metricChange,
+                                          value.change.startsWith('+') ? styles.positiveChange : styles.negativeChange
+                                      ]}>
+                                          {value.change}
+                                      </Text>
+                                    )}
                                 </TouchableOpacity>
                             ))}
                         </View>
@@ -508,6 +440,48 @@ export default function DetailedAnalyticsScreen() {
             );
         default:
             return null;
+    }
+  };
+  
+  // Helper function to format metric names
+  const formatMetricName = (key) => {
+    return key
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/^./, str => str.toUpperCase());
+  };
+  
+  // Helper function to format metric values
+  const formatMetricValue = (value, type) => {
+    if (typeof value === 'object') {
+      return value.value; // For property metrics
+    }
+    
+    if (typeof value !== 'string' && typeof value !== 'number') {
+      return '—';
+    }
+    
+    if (type === 'occupancyRate' || type === 'roi') {
+      return `${value}%`;
+    }
+    
+    if (type === 'maintenanceCosts' || type === 'grossIncome' || 
+        type === 'totalExpenses' || type === 'netProfit') {
+      return `£${value}`;
+    }
+    
+    return value;
+  };
+  
+  // Helper function to get icon for metric type
+  const getIconForMetric = (type) => {
+    switch (type) {
+      case 'occupancyRate': return 'people-outline';
+      case 'maintenanceCosts': return 'construct-outline';
+      case 'grossIncome': return 'cash-outline';
+      case 'totalExpenses': return 'trending-down-outline';
+      case 'netProfit': return 'trending-up-outline';
+      case 'roi': return 'pulse-outline';
+      default: return 'stats-chart-outline';
     }
   };
 
@@ -558,17 +532,24 @@ export default function DetailedAnalyticsScreen() {
       </ScrollView>
 
       {/* Tooltip Modal */}
-      <Modal visible={!!tooltip} transparent animationType="fade" onRequestClose={handleHideTooltip}>
-        <TouchableOpacity style={styles.tooltipOverlay} activeOpacity={1} onPress={handleHideTooltip}>
-          <View style={styles.tooltipModal}>
-            <Text style={styles.tooltipTitle}>{tooltip?.title}</Text>
-            <Text style={styles.tooltipText}>{tooltip?.description}</Text>
-            <TouchableOpacity onPress={handleHideTooltip} style={styles.tooltipCloseButton}>
-              <Text style={styles.tooltipCloseText}>Close</Text>
+      {tooltip && (
+        <TouchableOpacity 
+          style={styles.tooltipOverlay} 
+          activeOpacity={1} 
+          onPress={handleHideTooltip}
+        >
+          <View style={styles.tooltipContainer}>
+            <Text style={styles.tooltipTitle}>{tooltip.title}</Text>
+            <Text style={styles.tooltipDescription}>{tooltip.description}</Text>
+            <TouchableOpacity 
+              style={styles.tooltipCloseButton} 
+              onPress={handleHideTooltip}
+            >
+              <Text style={styles.tooltipCloseButtonText}>Close</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
-      </Modal>
+      )}
     </View>
   );
 }
@@ -747,7 +728,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  tooltipModal: {
+  tooltipContainer: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 20,
@@ -760,7 +741,7 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 8,
   },
-  tooltipText: {
+  tooltipDescription: {
     fontSize: 14,
     color: '#666',
     marginBottom: 16,
@@ -768,7 +749,7 @@ const styles = StyleSheet.create({
   tooltipCloseButton: {
     alignSelf: 'flex-end',
   },
-  tooltipCloseText: {
+  tooltipCloseButtonText: {
     color: '#007AFF',
     fontSize: 16,
     fontWeight: '500',
@@ -974,5 +955,88 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     justifyContent: 'center',
     width: '100%',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    minHeight: 200,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
+  },
+  loadingSectionContainer: {
+    padding: 20,
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    minHeight: 200,
+  },
+  errorText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: '#007AFF',
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  metricCardLoading: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  maintenanceContainer: {
+    width: '100%',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  maintenanceItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EDEDED',
+  },
+  maintenanceCategory: {
+    flex: 1,
+    marginRight: 10,
+  },
+  maintenanceCategoryText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+  },
+  maintenanceDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  maintenanceAmount: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
+  },
+  maintenancePercentage: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500',
   },
 }); 
