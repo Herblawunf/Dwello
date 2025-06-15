@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, View, Text, Dimensions, ScrollView } from "react-native";
+import { StyleSheet, View, Text, Dimensions, ScrollView, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 const screenWidth = Dimensions.get("window").width - 40; // account for parent padding
@@ -16,24 +16,45 @@ const barMargin = 4;  // margin between bars
  *  - suffix: string (e.g., "£")
  */
 export default function FinancialBarChart({ data, labels, suffix = "" }) {
+  // Handle loading state or empty data
+  if (!data || data.length === 0) {
+    return (
+      <View style={[styles.wrapper, { justifyContent: 'center', alignItems: 'center', height: 300 }]}>
+        <Text style={styles.title}>Monthly Income</Text>
+        <ActivityIndicator size="large" color="#007AFF" style={{ marginTop: 20 }} />
+        <Text style={{ marginTop: 10, color: '#666' }}>Loading data...</Text>
+      </View>
+    );
+  }
+
   // Compute totals and max
   const totals = data.map(item => item.net + item.util);
   const rawMaxTotal = Math.max(...totals);
 
-  // Round max to nearest 50 or 100
-  const roundTo = rawMaxTotal > 500 ? 100 : 50;
-  const maxTotal = Math.ceil(rawMaxTotal / roundTo) * roundTo;
+  // Add a 20% buffer to ensure bars don't get cut off
+  const bufferedMax = rawMaxTotal * 1.2;
+  
+  // Round max to nearest 100, 500, or 1000 based on the value
+  let roundTo = 100;
+  if (bufferedMax > 5000) {
+    roundTo = 1000;
+  } else if (bufferedMax > 2000) {
+    roundTo = 500;
+  }
+  
+  // Round up to the nearest roundTo value
+  const maxTotal = Math.ceil(bufferedMax / roundTo) * roundTo;
 
   // Generate y-axis ticks at rounded intervals
   const tickCount = 5;
   const tickInterval = maxTotal / (tickCount - 1);
   const ticks = Array.from({ length: tickCount }, (_, i) =>
-    Math.round((maxTotal - tickInterval * i) / roundTo) * roundTo
+    Math.round((maxTotal - tickInterval * i) / 100) * 100
   ); // descending
 
   // Calculate bar width for a natural scrollable look (show ~6 bars at a time)
   const barCount = data.length;
-  const barsVisible = 6;
+  const barsVisible = Math.min(6, barCount);
   const totalBarMargins = barMargin * (barsVisible - 1);
   const barWidth = (screenWidth - totalBarMargins) / barsVisible;
   const sidePadding = (screenWidth - screenWidth) / 2;
@@ -97,8 +118,10 @@ export default function FinancialBarChart({ data, labels, suffix = "" }) {
         >
           <View style={styles.chartContainer}>
             {data.map((item, idx) => {
-              const utilHeight = (item.util / maxTotal) * chartHeight;
-              const netHeight = (item.net / maxTotal) * chartHeight;
+              // Calculate heights as a percentage of maxTotal
+              const utilHeight = Math.min((item.util / maxTotal) * chartHeight, chartHeight);
+              const netHeight = Math.min((item.net / maxTotal) * chartHeight, chartHeight);
+              
               return (
                 <View key={idx} style={[styles.barWrapper, { width: barWidth, marginHorizontal: barMargin / 2 }]}>
                   <View style={{ flex: 1, justifyContent: 'flex-end', width: '100%' }}>
@@ -123,7 +146,7 @@ export default function FinancialBarChart({ data, labels, suffix = "" }) {
                       }}
                     />
                   </View>
-                  {labels && <Text style={styles.barLabel}>{labels[idx]}</Text>}
+                  {labels && idx < labels.length && <Text style={styles.barLabel}>{labels[idx]}</Text>}
                 </View>
               );
             })}
