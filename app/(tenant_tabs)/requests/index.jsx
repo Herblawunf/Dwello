@@ -21,6 +21,7 @@ import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useTheme } from "@/context/ThemeContext";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
+import { PanGestureHandler, State } from 'react-native-gesture-handler';
 
 export default function Requests() {
   const theme = useTheme();
@@ -202,43 +203,58 @@ export default function Requests() {
     </ThemedView>
   );
 
+  // Swipe handler
+  const onGestureEvent = (event) => {
+    if (event.nativeEvent.state === State.END) {
+      const { translationX } = event.nativeEvent;
+      if (translationX < -50 && activeTab === 'pending') {
+        setActiveTab('completed');
+      } else if (translationX > 50 && activeTab === 'completed') {
+        setActiveTab('pending');
+      }
+    }
+  };
+
   const styles = StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: theme.colors.background,
+      paddingBottom: 0,
     },
     header: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
       paddingHorizontal: 16,
-      paddingVertical: 12,
+      paddingVertical: 8,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.outline,
     },
-    tabBar: {
-      flexDirection: "row",
+    filterRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    filterSquare: {
+      width: 100,
       backgroundColor: theme.colors.surface,
-      borderRadius: 8,
-      padding: 4,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 12,
+      marginRight: 8,
+      ...theme.elevation.sm,
     },
-    tab: {
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-      borderRadius: 6,
-    },
-    activeTab: {
+    activeFilterSquare: {
       backgroundColor: theme.colors.primary,
     },
-    tabText: {
-      fontSize: 14,
+    filterSquareText: {
+      fontSize: 16,
       color: theme.colors.onSurface,
       fontFamily: theme.typography.fontFamily.medium,
     },
-    activeTabText: {
-      fontSize: 14,
+    activeFilterSquareText: {
       color: theme.colors.onPrimary,
-      fontFamily: theme.typography.fontFamily.medium,
     },
     sortButton: {
       padding: 8,
@@ -394,7 +410,7 @@ export default function Requests() {
     },
     addButton: {
       position: 'absolute',
-      bottom: Platform.OS === "android" ? 16 : tabBarHeight + 16,
+      bottom: 5,
       left: '50%',
       transform: [{ translateX: -100 }],
       backgroundColor: theme.colors.primary,
@@ -423,36 +439,24 @@ export default function Requests() {
         {
           paddingTop:
             Platform.OS === "android" ? StatusBar.currentHeight : insets.top,
+          paddingBottom: 0,
         },
       ]}
+      edges={['top']}
     >
       <ThemedView style={styles.header}>
-        <ThemedView style={styles.tabBar}>
+        <ThemedView style={styles.filterRow}>
           <TouchableOpacity
-            style={[styles.tab, activeTab === "pending" && styles.activeTab]}
+            style={[styles.filterSquare, activeTab === "pending" && styles.activeFilterSquare]}
             onPress={() => setActiveTab("pending")}
           >
-            <ThemedText
-              style={
-                activeTab === "pending" ? styles.activeTabText : styles.tabText
-              }
-            >
-              Pending
-            </ThemedText>
+            <ThemedText style={[styles.filterSquareText, activeTab === "pending" && styles.activeFilterSquareText]}>Pending</ThemedText>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.tab, activeTab === "completed" && styles.activeTab]}
+            style={[styles.filterSquare, activeTab === "completed" && styles.activeFilterSquare]}
             onPress={() => setActiveTab("completed")}
           >
-            <ThemedText
-              style={
-                activeTab === "completed"
-                  ? styles.activeTabText
-                  : styles.tabText
-              }
-            >
-              Completed
-            </ThemedText>
+            <ThemedText style={[styles.filterSquareText, activeTab === "completed" && styles.activeFilterSquareText]}>Completed</ThemedText>
           </TouchableOpacity>
         </ThemedView>
         <TouchableOpacity
@@ -473,14 +477,18 @@ export default function Requests() {
         />
       </ThemedView>
 
-      <FlatList
-        data={sortRequests(filterRequests(requests.filter(
-          (r) => (r.status === "completed") === (activeTab === "completed")
-        )))}
-        renderItem={renderRequest}
-        keyExtractor={(item) => item.request_id}
-        contentContainerStyle={{ paddingBottom: 80 }}
-      />
+      <PanGestureHandler onHandlerStateChange={onGestureEvent}>
+        <ThemedView style={{ flex: 1 }}>
+          <FlatList
+            data={sortRequests(filterRequests(requests.filter(
+              (r) => (r.status === "completed") === (activeTab === "completed")
+            )))}
+            renderItem={renderRequest}
+            keyExtractor={(item) => item.request_id}
+            contentContainerStyle={{ paddingBottom: 0 }}
+          />
+        </ThemedView>
+      </PanGestureHandler>
 
       <TouchableOpacity
         style={styles.addButton}

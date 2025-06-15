@@ -14,6 +14,7 @@ import {
   Context as AuthContext,
 } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 // Stacks Configuration
 const Stacks = {
@@ -58,13 +59,15 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <NavigationThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <ThemeProvider>
-        <AuthProvider>
-          <AuthRouter />
-        </AuthProvider>
-      </ThemeProvider>
-    </NavigationThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <NavigationThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <ThemeProvider>
+          <AuthProvider>
+            <AuthRouter />
+          </AuthProvider>
+        </ThemeProvider>
+      </NavigationThemeProvider>
+    </GestureHandlerRootView>
   );
 }
 
