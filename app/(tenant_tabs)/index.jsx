@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useCallback, useContext } from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
 import { getHousemates } from "../../context/utils";
-import { useRouter } from "expo-router"; // for navigation
+import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { Context as AuthContext } from "@/context/AuthContext";
+import { useTheme } from "@/context/ThemeContext";
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
 
 const formatBalanceText = (balance) => {
   if (balance > 0) {
@@ -27,10 +30,7 @@ const rentDue = async () => {
     .eq("tenant_id", user.id)
     .single();
 
-  console.log("Rent info:", rent_info);
-
   if (!rent_info) {
-    console.warn("No house_info found for user:", user.id);
     return 0;
   }
 
@@ -69,8 +69,26 @@ export default function HomeScreen() {
   const router = useRouter();
   const { state: authState } = useContext(AuthContext);
   const userId = authState.userId;
+  const theme = useTheme();
 
-  // Fetch rent due amount
+  const getBalance = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.rpc("get_housemate_balances", {
+        p_user_id: userId,
+      });
+      if (error) {
+        console.error('Error fetching balance:', error);
+        return;
+      }
+      if (data) {
+        const totalBalance = data.reduce((sum, account) => sum + account.balance, 0);
+        setBalance(totalBalance);
+      }
+    } catch (error) {
+      console.error('Error in getBalance:', error);
+    }
+  }, [userId]);
+
   useEffect(() => {
     const fetchRentDue = async () => {
       const amount = await rentDue();
@@ -79,7 +97,6 @@ export default function HomeScreen() {
     fetchRentDue();
   }, []);
 
-  // Fetch days until rent
   useEffect(() => {
     const fetchDaysToRent = async () => {
       const days = await daysToRent();
@@ -88,27 +105,11 @@ export default function HomeScreen() {
     fetchDaysToRent();
   }, []);
 
-  // Fetch balance whenever focused
   useFocusEffect(
     useCallback(() => {
       getBalance();
     }, [getBalance])
   );
-
-  const getBalance = useCallback(async () => {
-    try {
-      const { data, error } = await supabase.rpc("get_housemate_balances", {
-        p_user_id: userId,
-      });
-      if (data) {
-        setBalance(data.reduce((sum, account) => sum + account.balance, 0));
-      } else {
-        console.log(error);
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  }, [userId]);
 
   const handleReportRepair = () => {
     router.push("/requests");
@@ -123,139 +124,130 @@ export default function HomeScreen() {
   };
 
   const handleRentInfoPress = () => {
-    router.push("/rent_info"); 
+    router.push("/rent_info");
   };
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+      padding: theme.spacing.lg,
+      paddingTop: theme.spacing.xxl,
+    },
+    topBar: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: theme.spacing.lg,
+    },
+    header: {
+      color: theme.colors.primary,
+      letterSpacing: 1.5,
+    },
+    chatButton: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.borderRadius.round,
+      padding: theme.spacing.sm,
+      ...theme.elevation.sm,
+    },
+    section: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.borderRadius.lg,
+      padding: theme.spacing.lg,
+      marginBottom: theme.spacing.lg,
+      ...theme.elevation.sm,
+    },
+    sectionTitle: {
+      color: theme.colors.onSurface,
+      marginBottom: theme.spacing.sm,
+    },
+    balanceAmount: {
+      color: theme.colors.success,
+    },
+    smallText: {
+      color: theme.colors.placeholder,
+    },
+    notificationText: {
+      color: theme.colors.warning,
+    },
+    quickActionsContainer: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginTop: theme.spacing.sm,
+      marginBottom: theme.spacing.lg,
+    },
+    actionButton: {
+      flex: 1,
+      alignItems: "center",
+      padding: theme.spacing.md,
+      backgroundColor: theme.colors.primary,
+      borderRadius: theme.borderRadius.md,
+      marginHorizontal: theme.spacing.xs,
+      ...theme.elevation.sm,
+    },
+    actionText: {
+      color: theme.colors.onPrimary,
+      marginTop: theme.spacing.xs,
+    },
+  });
 
   return (
     <View style={styles.container}>
       {/* HEADER WITH TITLE + CHAT ICON */}
       <View style={styles.topBar}>
-        <Text style={styles.header}>dwello</Text>
+        <ThemedText type="title" style={styles.header}>dwello</ThemedText>
         <TouchableOpacity onPress={handleGoToChat} style={styles.chatButton}>
-          <Ionicons name="chatbubble-ellipses-outline" size={24} color="#333" />
+          <Ionicons name="chatbubble-ellipses-outline" size={24} color={theme.colors.primary} />
         </TouchableOpacity>
       </View>
 
       {/* Balance Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Balance due</Text>
-        <Text style={styles.balanceAmount}>£{due.toFixed(2)}</Text>
-      </View>
+      <ThemedView style={styles.section}>
+        <ThemedText type="subtitle" style={styles.sectionTitle}>Balance due</ThemedText>
+        <ThemedText type="title" style={styles.balanceAmount}>£{due.toFixed(2)}</ThemedText>
+      </ThemedView>
 
       {/* Splits Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Splits</Text>
-        <Text style={styles.smallText}>{formatBalanceText(balance)}</Text>
-      </View>
+      <ThemedView style={styles.section}>
+        <ThemedText type="subtitle" style={styles.sectionTitle}>Splits</ThemedText>
+        <ThemedText type="default" style={styles.smallText}>{formatBalanceText(balance)}</ThemedText>
+      </ThemedView>
 
       {/* Notifications Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Notifications</Text>
+      <ThemedView style={styles.section}>
+        <ThemedText type="subtitle" style={styles.sectionTitle}>Notifications</ThemedText>
         <TouchableOpacity onPress={handleRentInfoPress}>
-          <Text style={styles.notificationText}>
-            Rent payment due{" "}
-            {dueIn > 0 ? `in ${dueIn} days` : dueIn === 0 ? "today" : "now"}
-          </Text>
+          <ThemedText type="defaultSemiBold" style={styles.notificationText}>
+            Rent payment due {dueIn > 0 ? `in ${dueIn} days` : dueIn === 0 ? "today" : "now"}
+          </ThemedText>
         </TouchableOpacity>
-      </View>
+      </ThemedView>
 
       {/* Quick Actions Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Quick actions</Text>
-        <View style={styles.quickActionsContainer}>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={handleReportRepair}
-          >
-            <Ionicons name="build-outline" size={24} color="#666" />
-            <Text style={styles.actionText}>Report repair</Text>
-          </TouchableOpacity>
+      <ThemedText type="subtitle" style={styles.sectionTitle}>Quick actions</ThemedText>
+      <View style={styles.quickActionsContainer}>
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={handleReportRepair}
+        >
+          <Ionicons name="build-outline" size={24} color={theme.colors.onPrimary} />
+          <ThemedText type="default" style={styles.actionText}>Report repair</ThemedText>
+        </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={handleAddExpenses}
-          >
-            <Ionicons name="add-circle-outline" size={24} color="#666" />
-            <Text style={styles.actionText}>Add expenses</Text>
-          </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={handleAddExpenses}
+        >
+          <Ionicons name="add-circle-outline" size={24} color={theme.colors.onPrimary} />
+          <ThemedText type="default" style={styles.actionText}>Add expenses</ThemedText>
+        </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton}>
-            <Ionicons name="document-text-outline" size={24} color="#666" />
-            <Text style={styles.actionText}>View documents</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity style={styles.actionButton}>
+          <Ionicons name="document-text-outline" size={24} color={theme.colors.onPrimary} />
+          <ThemedText type="default" style={styles.actionText}>View documents</ThemedText>
+        </TouchableOpacity>
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-    padding: 20,
-    paddingTop: 40, // reduce top padding since we have a custom topBar
-  },
-
-  // New topBar style: title on left, chat icon on right
-  topBar: {
-    flexDirection: "row",
-    marginTop: 20,
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 30,
-  },
-  header: {
-    fontSize: 28,
-    fontWeight: "300",
-    fontWeight: "bold",
-    color: "#333",
-  },
-  chatButton: {
-    padding: 9, // increase tap area
-  },
-
-  section: {
-    marginBottom: 30,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "500",
-    color: "#333",
-    marginBottom: 10,
-  },
-  balanceAmount: {
-    fontSize: 32,
-    fontWeight: "600",
-    color: "#333",
-  },
-  smallText: {
-    fontSize: 14,
-    color: "#666",
-  },
-  notificationText: {
-    fontSize: 16,
-    color: "#333",
-  },
-  quickActionsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    flexWrap: "wrap",
-  },
-  actionButton: {
-    width: "30%",
-    aspectRatio: 1,
-    backgroundColor: "#F8F8F8",
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  actionText: {
-    fontSize: 12,
-    color: "#666",
-    textAlign: "center",
-    marginTop: 8,
-  },
-});
 

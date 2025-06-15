@@ -1,62 +1,188 @@
 import { useState, useCallback, useContext } from "react";
 import {
-  View,
-  Text,
   StyleSheet,
   FlatList,
-  SafeAreaView,
   RefreshControl,
   TouchableOpacity,
   Modal,
+  Platform,
+  StatusBar,
+  View,
 } from "react-native";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from "@/lib/supabase";
 import { useFocusEffect } from "@react-navigation/native";
 import { Context as AuthContext } from "@/context/AuthContext";
 import { formatDate } from "@/tools/formatDate";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useTheme } from "@/context/ThemeContext";
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
 
-const NotificationItem = ({ item }) => (
-  <View style={styles.notificationItem}>
-    <Text style={styles.notificationTitle}>
-      {item.type === "rent"
-        ? "Rent Payment Due"
-        : `${item.payee.name} added ${item.description}`}
-    </Text>
-    <Text style={styles.notificationMessage}>
-      {item.type === "rent"
-        ? `Due date: ${formatDate(item.dueDate, (reverse = true))}`
-        : `You ${
-            item.type === "receive" ? "will receive" : "owe"
-          } £${item.amount.toFixed(2)}`}
-    </Text>
-    <View style={styles.notificationFooter}>
-      <Text style={styles.notificationTime}>
+const NotificationItem = ({ item, theme }) => {
+  const getIconColor = () => {
+    switch (item.type) {
+      case 'rent':
+        return theme.colors.primary;
+      case 'receive':
+        return '#4CAF50'; // Green
+      case 'send':
+        return '#F44336'; // Red
+      default:
+        return theme.colors.placeholder;
+    }
+  };
+
+  const getIcon = () => {
+    switch (item.type) {
+      case 'rent':
+        return 'home';
+      case 'receive':
+        return 'arrow-downward';
+      case 'send':
+        return 'arrow-upward';
+      default:
+        return 'notifications';
+    }
+  };
+
+  const styles = StyleSheet.create({
+    notificationItem: {
+      backgroundColor: theme.colors.surface,
+      padding: 16,
+      marginVertical: 8,
+      borderRadius: 12,
+      ...theme.elevation.sm,
+    },
+    notificationHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    notificationIcon: {
+      marginRight: 12,
+    },
+    notificationTitle: {
+      fontSize: 16,
+      fontFamily: theme.typography.fontFamily.medium,
+      color: theme.colors.onSurface,
+      flex: 1,
+    },
+    notificationMessage: {
+      fontSize: 14,
+      fontFamily: theme.typography.fontFamily.regular,
+      color: theme.colors.onSurfaceVariant,
+      marginBottom: 8,
+    },
+    notificationTime: {
+      fontSize: 12,
+      fontFamily: theme.typography.fontFamily.regular,
+      color: theme.colors.placeholder,
+    },
+    notificationFooter: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+  });
+
+  return (
+    <ThemedView style={styles.notificationItem}>
+      <ThemedView style={styles.notificationHeader}>
+        <MaterialIcons
+          name={getIcon()}
+          size={24}
+          color={getIconColor()}
+          style={styles.notificationIcon}
+        />
+        <ThemedText style={styles.notificationTitle}>
+          {item.type === "rent"
+            ? "Rent Payment Due"
+            : `${item.payee.name} added ${item.description}`}
+        </ThemedText>
+      </ThemedView>
+      <ThemedText style={styles.notificationMessage}>
         {item.type === "rent"
-          ? `Amount: £${item.amount.toFixed(2)}`
-          : formatDate(item.date)}
-      </Text>
-      <MaterialIcons
-        name={
-          item.type === "rent"
-            ? "home"
-            : item.type === "receive"
-            ? "arrow-downward"
-            : "arrow-upward"
-        }
-        size={20}
-        color="#757575"
-      />
-    </View>
-  </View>
-);
+          ? `Due date: ${formatDate(item.dueDate, (reverse = true))}`
+          : `You ${
+              item.type === "receive" ? "will receive" : "owe"
+            } £${item.amount.toFixed(2)}`}
+      </ThemedText>
+      <ThemedView style={styles.notificationFooter}>
+        <ThemedText style={styles.notificationTime}>
+          {item.type === "rent"
+            ? `Amount: £${item.amount.toFixed(2)}`
+            : formatDate(item.date)}
+        </ThemedText>
+      </ThemedView>
+    </ThemedView>
+  );
+};
 
 const NotificationsScreen = () => {
+  const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const [notifications, setNotifications] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [filterBy, setFilterBy] = useState("all");
   const [filterMenuVisible, setFilterMenuVisible] = useState(false);
   const { state: authState } = useContext(AuthContext);
   const userId = authState.userId;
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.outline,
+    },
+    headerTitle: {
+      fontSize: 24,
+      fontFamily: theme.typography.fontFamily.bold,
+      color: theme.colors.onBackground,
+      paddingTop: 4,
+    },
+    filterButton: {
+      padding: 8,
+    },
+    list: {
+      flex: 1,
+    },
+    listContent: {
+      paddingHorizontal: 20,
+      paddingTop: 12,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.5)",
+      justifyContent: "flex-start",
+    },
+    filterMenu: {
+      position: "absolute",
+      right: 8,
+      top: 56,
+      backgroundColor: theme.colors.surface,
+      borderRadius: 8,
+      ...theme.elevation.md,
+    },
+    filterMenuItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      padding: 16,
+    },
+    filterMenuText: {
+      marginLeft: 12,
+      fontSize: 16,
+      fontFamily: theme.typography.fontFamily.regular,
+      color: theme.colors.onSurface,
+    },
+  });
 
   useFocusEffect(
     useCallback(() => {
@@ -174,16 +300,22 @@ const NotificationsScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Notifications</Text>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <ThemedView style={[
+        styles.header,
+        {
+          backgroundColor: theme.colors.background,
+          paddingTop: insets.top + (Platform.OS === 'android' ? StatusBar.currentHeight : 0),
+        }
+      ]}>
+        <ThemedText style={styles.headerTitle}>Notifications</ThemedText>
         <TouchableOpacity
           style={styles.filterButton}
           onPress={() => setFilterMenuVisible(true)}
         >
-          <MaterialIcons name="sort" size={24} color="#757575" />
+          <MaterialIcons name="sort" size={24} color={theme.colors.placeholder} />
         </TouchableOpacity>
-      </View>
+      </ThemedView>
 
       <Modal
         visible={filterMenuVisible}
@@ -196,7 +328,7 @@ const NotificationsScreen = () => {
           activeOpacity={1}
           onPress={() => setFilterMenuVisible(false)}
         >
-          <View style={styles.filterMenu}>
+          <ThemedView style={styles.filterMenu}>
             <TouchableOpacity
               style={styles.filterMenuItem}
               onPress={() => {
@@ -204,8 +336,8 @@ const NotificationsScreen = () => {
                 setFilterMenuVisible(false);
               }}
             >
-              <MaterialIcons name="list" size={20} color="#757575" />
-              <Text style={styles.filterMenuText}>Show All</Text>
+              <MaterialIcons name="list" size={20} color={theme.colors.placeholder} />
+              <ThemedText style={styles.filterMenuText}>Show All</ThemedText>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.filterMenuItem}
@@ -214,8 +346,8 @@ const NotificationsScreen = () => {
                 setFilterMenuVisible(false);
               }}
             >
-              <MaterialIcons name="home" size={20} color="#757575" />
-              <Text style={styles.filterMenuText}>Rent</Text>
+              <MaterialIcons name="home" size={20} color={theme.colors.placeholder} />
+              <ThemedText style={styles.filterMenuText}>Rent</ThemedText>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.filterMenuItem}
@@ -224,8 +356,8 @@ const NotificationsScreen = () => {
                 setFilterMenuVisible(false);
               }}
             >
-              <MaterialIcons name="arrow-downward" size={20} color="#757575" />
-              <Text style={styles.filterMenuText}>Receiving</Text>
+              <MaterialIcons name="arrow-downward" size={20} color={theme.colors.placeholder} />
+              <ThemedText style={styles.filterMenuText}>Receiving</ThemedText>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.filterMenuItem}
@@ -234,115 +366,31 @@ const NotificationsScreen = () => {
                 setFilterMenuVisible(false);
               }}
             >
-              <MaterialIcons name="arrow-upward" size={20} color="#757575" />
-              <Text style={styles.filterMenuText}>Sending</Text>
+              <MaterialIcons name="arrow-upward" size={20} color={theme.colors.placeholder} />
+              <ThemedText style={styles.filterMenuText}>Sending</ThemedText>
             </TouchableOpacity>
-          </View>
+          </ThemedView>
         </TouchableOpacity>
       </Modal>
 
       <FlatList
         data={filterNotifications(notifications)}
-        renderItem={({ item }) => <NotificationItem item={item} />}
+        renderItem={({ item }) => <NotificationItem item={item} theme={theme} />}
         keyExtractor={(item) => item.id}
         style={styles.list}
+        contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={getNotifications}
+            colors={[theme.colors.primary]}
+            tintColor={theme.colors.primary}
           />
         }
       />
-    </SafeAreaView>
+    </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: "#f5f5f5",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  filterButton: {
-    padding: 8,
-  },
-  list: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  notificationItem: {
-    backgroundColor: "#fff",
-    padding: 16,
-    marginVertical: 8,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  notificationTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 4,
-  },
-  notificationMessage: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 8,
-  },
-  notificationTime: {
-    fontSize: 12,
-    color: "#999",
-  },
-  notificationFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-start",
-  },
-  filterMenu: {
-    position: "absolute",
-    right: 8,
-    top: 56,
-    backgroundColor: "white",
-    borderRadius: 8,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  filterMenuItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-  },
-  filterMenuText: {
-    marginLeft: 12,
-    fontSize: 16,
-    color: "#212121",
-  },
-});
 
 export default NotificationsScreen;

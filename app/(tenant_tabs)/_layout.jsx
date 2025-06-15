@@ -1,38 +1,63 @@
 import { Tabs } from "expo-router";
 import { Platform } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useTheme } from "@/context/ThemeContext";
+import { View } from "react-native";
 
 import { HapticTab } from "@/components/HapticTab";
 import TabBarBackground from "@/components/ui/TabBarBackground";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 
+const TabBarIcon = ({ name, color, focused }) => {
+  const theme = useTheme();
+  return (
+    <View style={{ alignItems: 'center' }}>
+      <MaterialIcons name={name} size={24} color={color} />
+      {focused && (
+        <View
+          style={{
+            width: 4,
+            height: 4,
+            borderRadius: 2,
+            backgroundColor: theme.colors.onPrimary,
+            marginTop: 4,
+          }}
+        />
+      )}
+    </View>
+  );
+};
+
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const theme = useTheme();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
+        tabBarStyle: {
+          backgroundColor: theme.colors.primaryVariant,
+          borderTopWidth: 0,
+          elevation: 0,
+          shadowOpacity: 0,
+          height: 60,
+          paddingBottom: 8,
+          paddingTop: 8,
+        },
+        tabBarActiveTintColor: theme.colors.onPrimary,
+        tabBarInactiveTintColor: theme.colors.onPrimary + '80',
         headerShown: false,
         tabBarButton: HapticTab,
-        tabBarBackground: TabBarBackground,
-        tabBarStyle: Platform.select({
-          ios: {
-            // Use a transparent background on iOS to show the blur effect
-            position: "absolute",
-          },
-          default: {},
-        }),
+        tabBarBackground: () => null,
+        tabBarShowLabel: false,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
-          headerShown: false,
-          tabBarIcon: ({ color }) => (
-            <MaterialIcons name="home" size={28} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="home" color={color} focused={focused} />
           ),
         }}
       />
@@ -40,26 +65,24 @@ export default function TabLayout() {
         name="expenses"
         options={{
           title: "Expenses",
-          tabBarIcon: ({ color }) => (
-            <MaterialIcons name="percent" size={28} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="percent" color={color} focused={focused} />
           ),
         }}
       />
       <Tabs.Screen
         name="requests"
         options={{
-          title: "Requests",
-          tabBarIcon: ({ color }) => (
-            <MaterialIcons name="build" size={28} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="build" color={color} focused={focused} />
           ),
         }}
       />
       <Tabs.Screen
         name="notifications"
         options={{
-          title: "Notifications",
-          tabBarIcon: ({ color }) => (
-            <MaterialIcons name="notifications" size={28} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="notifications" color={color} focused={focused} />
           ),
         }}
       />
@@ -67,8 +90,8 @@ export default function TabLayout() {
         name="settings"
         options={{
           title: "Settings",
-          tabBarIcon: ({ color }) => (
-            <MaterialIcons name="settings" size={28} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="settings" color={color} focused={focused} />
           ),
         }}
       />
