@@ -88,16 +88,24 @@ export default function ChatScreen() {
 
   const fetchChats = useCallback(async () => {
     try {
-      // Get the tenant's house
-      const { data: tenantData, error: tenantError } = await supabase
-        .from("tenants")
-        .select("house_id")
-        .eq("tenant_id", userId)
-        .single();
+      // Get all houses for this landlord
+      const { data: houses, error: housesError } = await supabase
+        .from("houses")
+        .select("house_id, street_address")
+        .eq("landlord_id", userId);
 
-      if (tenantError) throw tenantError;
+      if (housesError) {
+        console.error("Error fetching houses:", housesError);
+        throw housesError;
+      }
 
-      // Get all chats for this house
+      if (!houses || houses.length === 0) {
+        console.log("No houses found for landlord:", userId);
+        setGroups([]);
+        return;
+      }
+
+      // Get all non-tenant-only chats for these houses
       const { data: chats, error: chatError } = await supabase
         .from("chats")
         .select(
@@ -109,7 +117,8 @@ export default function ChatScreen() {
           )
         `
         )
-        .eq("house_id", tenantData.house_id);
+        .in("house_id", houses.map(house => house.house_id))
+        .eq("tenants_only", false);
 
       if (chatError) throw chatError;
 
@@ -131,27 +140,49 @@ export default function ChatScreen() {
           group_id: chat.group_id,
           name: chat.houses?.street_address || "Property Chat",
           lastMessage: messages?.[0] || null,
-          unreadCount: 0, // You can implement unread count logic later
+          unreadCount: 0,
           request_id: chat.request_id,
           tenants_only: chat.tenants_only,
+          house_id: chat.house_id
         };
       });
 
-      const validChats = (await Promise.all(chatPromises)).filter(
-        (chat) => chat !== null
-      );
+      const validChats = (await Promise.all(chatPromises))
+        .filter((chat) => chat !== null)
+        // Deduplicate chats by group_id
+        .filter((chat, index, self) => 
+          index === self.findIndex((c) => c.group_id === chat.group_id)
+        );
+
       setGroups(validChats);
     } catch (error) {
       console.error("Error fetching chats:", error);
     }
   }, [userId]);
 
+  // Add cleanup for any subscriptions
   React.useEffect(() => {
     fetchChats();
+    
+    // Set up real-time subscription for new messages
+    const subscription = supabase
+      .channel('public:messages')
+      .on('postgres_changes', 
+        { event: 'INSERT', schema: 'public', table: 'messages' },
+        () => {
+          fetchChats(); // Refresh chats when new message arrives
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription on unmount
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [fetchChats]);
 
   const handleGroupPress = (group) => {
-    router.push(`/(tenant_tabs)/chat/${group.group_id}`);
+    router.push(`/(landlord_tabs)/chat/${group.group_id}`);
   };
 
   const renderGroupItem = useCallback(

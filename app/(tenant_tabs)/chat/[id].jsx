@@ -226,15 +226,16 @@ export default function ChatWindow() {
     if (!id) return;
 
     console.log("Setting up real-time subscription for chat:", id);
+    let channel;
 
     const setupSubscription = () => {
-      const channel = supabase
-        .channel(`chat-${id}`, {
-          config: {
-            broadcast: { self: true },
-            presence: { key: "" },
-          },
-        })
+      // Clean up any existing channel
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+
+      channel = supabase
+        .channel(`chat-${id}`)
         .on(
           "postgres_changes",
           {
@@ -279,26 +280,19 @@ export default function ChatWindow() {
               );
             }
           }
-        )
-        .subscribe((status) => {
-          console.log("Subscription status:", status);
-          if (status === "TIMED_OUT" || status === "CLOSED") {
-            console.log(
-              "Subscription timed out or closed, attempting to reconnect..."
-            );
-            setTimeout(setupSubscription, 1000); // Retry after 1 second
-          }
-        });
+        );
 
       return channel;
     };
 
-    const channel = setupSubscription();
+    channel = setupSubscription();
 
     // Cleanup subscription on unmount
     return () => {
       console.log("Cleaning up real-time subscription for chat:", id);
-      supabase.removeChannel(channel);
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
     };
   }, [id]);
 
