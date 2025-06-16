@@ -15,6 +15,7 @@ import {
 } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { analyticsApi } from '../lib/supabase';
 
 // Stacks Configuration
 const Stacks = {
@@ -52,9 +53,41 @@ const LoadingScreen = () => (
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, error] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
+
+  // Initialize analytics system
+  useEffect(() => {
+    const initAnalytics = async () => {
+      try {
+        console.log('Initializing analytics system...');
+        const result = await analyticsApi.initializeAnalytics();
+        if (result.success) {
+          console.log('Analytics system initialized successfully');
+        } else {
+          console.error('Failed to initialize analytics system:', result.error);
+          // Try to set up analytics directly as fallback
+          await analyticsApi.setupPropertyAnalytics();
+        }
+      } catch (error) {
+        console.error('Error initializing analytics:', error);
+        // Try to set up analytics directly as fallback
+        try {
+          await analyticsApi.setupPropertyAnalytics();
+        } catch (setupError) {
+          console.error('Failed to set up analytics after initialization error:', setupError);
+        }
+      }
+    };
+    
+    initAnalytics();
+  }, []);
+
+  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
+  useEffect(() => {
+    if (error) throw error;
+  }, [error]);
 
   if (!fontsLoaded) return null;
 

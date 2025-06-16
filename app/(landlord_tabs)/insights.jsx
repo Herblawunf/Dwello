@@ -13,6 +13,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useData } from '../components/DataProvider';
 import { LinearGradient } from 'expo-linear-gradient';
+import ExpenseModal from './components/ExpenseModal';
 
 const { width } = Dimensions.get('window');
 const cardWidth = width * 0.44;
@@ -23,6 +24,9 @@ export default function InsightsScreen() {
   
   // State for property selection
   const [selectedProperty, setSelectedProperty] = useState(null);
+  
+  // Add Expense modal state
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
   
   // Metrics to display (will be populated from API data or use fallbacks)
   const [metrics, setMetrics] = useState({
@@ -306,6 +310,13 @@ export default function InsightsScreen() {
   const handleGoToChat = () => {
     router.push("/ChatWindow");
   };
+  
+  // Handle expense added (refresh data)
+  const handleExpenseAdded = () => {
+    // Refresh metrics data
+    console.log("Expense added, refreshing data...");
+    // In a real app, you would refetch data here
+  };
 
   // Handle case where data context is not available or show loading state
   if (!dataContext || loading.properties || loading.metrics) {
@@ -526,17 +537,17 @@ export default function InsightsScreen() {
         
         <TouchableOpacity 
           style={styles.insightCard}
-          onPress={() => handleMetricClick('yieldRate', 'Yield Rate')}
+          onPress={() => setShowExpenseModal(true)}
         >
           <View style={[styles.insightIconContainer, { backgroundColor: '#FF9800' }]}>
-            <MaterialCommunityIcons name="home-analytics" size={24} color="#FFF" />
+            <MaterialCommunityIcons name="wallet-plus" size={24} color="#FFF" />
           </View>
           <View style={styles.insightContent}>
-            <Text style={styles.insightTitle}>Property Comparison</Text>
+            <Text style={styles.insightTitle}>Expense Management</Text>
             <Text style={styles.insightDescription}>
               {selectedProperty ? 
-                `This property is ${selectedProperty.id % 2 === 0 ? 'outperforming' : 'underperforming'} your portfolio average by ${5 + (selectedProperty.id * 2)}%` : 
-                'Oak Avenue is outperforming Bridgewater Road by 15% in ROI'
+                `Add and track expenses for ${selectedProperty.name || 'this property'} to stay on top of your finances` : 
+                'Add and track expenses across your entire portfolio to optimize your cash flow'
               }
             </Text>
           </View>
@@ -564,6 +575,14 @@ export default function InsightsScreen() {
           <Ionicons name="chevron-forward" size={20} color="#888" />
         </TouchableOpacity>
       </ScrollView>
+      
+      {/* Add Expense Modal */}
+      <ExpenseModal
+        visible={showExpenseModal}
+        onClose={() => setShowExpenseModal(false)}
+        properties={properties}
+        onExpenseAdded={handleExpenseAdded}
+      />
     </SafeAreaView>
   );
 }
@@ -850,5 +869,29 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 16,
     color: '#666',
+  },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+  addExpenseButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f9ff',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#d0e8ff',
+  },
+  actionButtonIcon: {
+    marginRight: 6,
+  },
+  addExpenseText: {
+    color: '#007AFF',
+    fontWeight: '500',
+    fontSize: 14,
   },
 }); 
