@@ -74,8 +74,8 @@ export default function ChatScreen() {
 
       if (tenantError) throw tenantError;
 
-      // Get the chat for this house
-      const { data: chat, error: chatError } = await supabase
+      // Get all chats for this house
+      const { data: chats, error: chatError } = await supabase
         .from('chats')
         .select(`
           *,
@@ -84,31 +84,36 @@ export default function ChatScreen() {
             postcode
           )
         `)
-        .eq('house_id', tenantData.house_id)
-        .single();
+        .eq('house_id', tenantData.house_id);
 
       if (chatError) throw chatError;
 
-      // Get the last message for this chat
-      const { data: messages, error: messageError } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('group_id', chat.group_id)
-        .order('sent', { ascending: false })
-        .limit(1);
+      // Get last messages for all chats
+      const chatPromises = chats.map(async (chat) => {
+        const { data: messages, error: messageError } = await supabase
+          .from('messages')
+          .select('*')
+          .eq('group_id', chat.group_id)
+          .order('sent', { ascending: false })
+          .limit(1);
 
-      if (messageError) {
-        console.error('Error fetching last message:', messageError);
-      }
+        if (messageError) {
+          console.error('Error fetching last message:', messageError);
+          return null;
+        }
 
-      const lastMessage = messages?.[0] || null;
+        return {
+          group_id: chat.group_id,
+          name: chat.houses?.street_address || 'Property Chat',
+          lastMessage: messages?.[0] || null,
+          unreadCount: 0, // You can implement unread count logic later
+          request_id: chat.request_id,
+          tenants_only: chat.tenants_only
+        };
+      });
 
-      setGroups([{
-        group_id: chat.group_id,
-        name: chat.houses?.street_address || 'Property Chat',
-        lastMessage,
-        unreadCount: 0 // You can implement unread count logic later
-      }]);
+      const validChats = (await Promise.all(chatPromises)).filter(chat => chat !== null);
+      setGroups(validChats);
     } catch (error) {
       console.error('Error fetching chats:', error);
     }
@@ -197,4 +202,4 @@ const styles = StyleSheet.create({
   separator: {
     height: 1,
   },
-}); 
+});
