@@ -1,6 +1,6 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
-import { NotionCalendar } from "./components";
+import { NotionCalendar } from "../components";
 
 // Sample maintenance events
 const MAINTENANCE_EVENTS = [

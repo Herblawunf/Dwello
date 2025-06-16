@@ -12,8 +12,8 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import FinancialBarChart from "./data_analytics_.jsx";
-import { useData } from "./components/DataProvider";
-import DataProvider from "./components/DataProvider";
+import { useData } from "../components/DataProvider";
+import DataProvider from "../components/DataProvider";
 
 const { width } = Dimensions.get("window");
 const cardWidth = width * 0.42;

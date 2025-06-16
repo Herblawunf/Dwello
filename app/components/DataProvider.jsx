@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { analyticsApi } from '../../../lib/supabase';
+import { analyticsApi } from '../../lib/supabase';
 
 // Create context
 export const DataContext = createContext();

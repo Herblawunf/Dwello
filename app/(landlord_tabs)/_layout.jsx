@@ -3,7 +3,7 @@ import React from "react";
 import { Platform, View } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "@/context/ThemeContext";
-import DataProvider from "./components/DataProvider";
+import DataProvider from "../components/DataProvider";
 
 import { HapticTab } from "@/components/HapticTab";
 import TabBarBackground from "@/components/ui/TabBarBackground";
@@ -127,6 +127,15 @@ export default function TabLayout() {
             title: "Chat",
             presentation: "modal",
             href: null,
+          }}
+        />
+
+        {/* Metric Details (modal) */}
+        <Tabs.Screen
+          name="metric_details"
+          options={{
+            href: null,
+            presentation: 'modal',
           }}
         />
 
