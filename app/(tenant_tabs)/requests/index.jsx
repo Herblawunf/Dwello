@@ -23,7 +23,6 @@ import { useTheme } from "@/context/ThemeContext";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
-import { LinearGradient } from 'expo-linear-gradient';
 
 export default function Requests() {
   const theme = useTheme();
@@ -67,28 +66,24 @@ export default function Requests() {
         return { 
           text: "Minor", 
           color: theme.colors.success,
-          gradient: ['#4CAF50', '#81C784'],
           icon: 'build'
         };
       case 1:
         return { 
           text: "Routine", 
           color: theme.colors.warning,
-          gradient: ['#FFC107', '#FFD54F'],
           icon: 'handyman'
         };
       case 2:
         return { 
           text: "Urgent", 
           color: theme.colors.error,
-          gradient: ['#F44336', '#E57373'],
           icon: 'priority-high'
         };
       default:
         return { 
           text: "Unknown Priority", 
           color: theme.colors.placeholder,
-          gradient: ['#9E9E9E', '#BDBDBD'],
           icon: 'help'
         };
     }
@@ -118,7 +113,6 @@ export default function Requests() {
         p_request_id: request_id,
         p_new_status: status,
       });
-      console.log(status);
       if (error) throw error;
       getHouseRequests();
     } catch (error) {
@@ -157,67 +151,99 @@ export default function Requests() {
   const getStatusIcon = (status) => {
     switch (status) {
       case "sent":
-        return { name: "send", color: "#4CAF50", gradient: ['#4CAF50', '#81C784'] };
+        return { name: "send", color: theme.colors.success };
       case "seen":
-        return { name: "visibility", color: "#2196F3", gradient: ['#2196F3', '#64B5F6'] };
+        return { name: "visibility", color: theme.colors.primary };
       case "contractor sent":
-        return { name: "engineering", color: "#FF9800", gradient: ['#FF9800', '#FFB74D'] };
+        return { name: "engineering", color: theme.colors.warning };
       case "completed":
-        return { name: "check-circle", color: "#673AB7", gradient: ['#673AB7', '#9575CD'] };
+        return { name: "check-circle", color: theme.colors.info };
       default:
-        return { name: "info", color: "#9E9E9E", gradient: ['#9E9E9E', '#BDBDBD'] };
+        return { name: "info", color: theme.colors.placeholder };
     }
   };
 
   const renderRequest = ({ item }) => {
     const priorityInfo = getPriorityText(item.priority);
     const statusInfo = getStatusIcon(item.status);
-    const formattedDate = new Date(item.created_at).toLocaleDateString('en-GB', {
-      day: 'numeric',
+    const formattedDate = new Date(item.created_at).toLocaleDateString(undefined, {
       month: 'short',
+      day: 'numeric',
       year: 'numeric'
     });
     
     return (
-      <ThemedView style={styles.requestItemContainer}>
-        <LinearGradient
-          colors={priorityInfo.gradient}
-          style={styles.requestItemGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-        >
-          <View style={[styles.priorityIconContainer, { backgroundColor: priorityInfo.gradient[0] + '40' }]}>
-            <MaterialIcons name={priorityInfo.icon} size={22} color="#FFFFFF" />
-          </View>
+      <View style={styles.requestCard}>
+        <View style={styles.requestCardContent}>
+          <View 
+            style={[
+              styles.coloredSidebar, 
+              { backgroundColor: priorityInfo.color }
+            ]}
+          />
           
-          <View style={styles.requestContent}>
-            <View style={styles.requestHeader}>
-              <ThemedText style={styles.priorityText}>
-                {priorityInfo.text}
-              </ThemedText>
-              <ThemedText style={styles.dateText}>
-                {formattedDate}
-              </ThemedText>
-            </View>
-            
-            <ThemedText style={styles.description} numberOfLines={2}>{item.description}</ThemedText>
-            
-            <View style={styles.requestDetails}>
-              <View style={styles.userInfoContainer}>
-                <View style={styles.userIconContainer}>
-                  <ThemedText style={styles.userInitials}>
-                    {item.poster_first_name.charAt(0) + item.poster_last_name.charAt(0)}
-                  </ThemedText>
-                </View>
-                <ThemedText style={styles.requestInfo}>
+          <TouchableOpacity
+            style={styles.requestCardInner}
+            activeOpacity={0.9}
+            onPress={() =>
+              router.push({
+                pathname: "/request_screens/",
+                params: {
+                  requestId: item.request_id,
+                  description: item.description,
+                  tenant: `${item.poster_first_name} ${item.poster_last_name}`,
+                },
+              })
+            }
+          >
+            <View style={styles.userInfoHeader}>
+              <View style={styles.userIconContainer}>
+                <Text style={styles.userInitials}>
+                  {item.poster_first_name.charAt(0) + item.poster_last_name.charAt(0)}
+                </Text>
+              </View>
+              <View style={styles.userTextContainer}>
+                <Text style={styles.userName}>
                   {item.poster_first_name} {item.poster_last_name}
-                </ThemedText>
+                </Text>
+                <View style={styles.userAddressContainer}>
+                  <MaterialIcons name="home" size={12} color={theme.colors.placeholder} style={{marginRight: 4}} />
+                  <Text style={styles.userAddress} numberOfLines={1}>{item.street_address}</Text>
+                </View>
+              </View>
+              <View style={styles.priorityContainer}>
+                <View style={[styles.priorityBadge, { backgroundColor: priorityInfo.color }]}>
+                  <MaterialIcons name={priorityInfo.icon} size={12} color="#FFFFFF" />
+                </View>
+                <Text style={[styles.priorityText, { color: priorityInfo.color }]}>
+                  {priorityInfo.text}
+                </Text>
               </View>
             </View>
             
-            <View style={styles.requestFooter}>
+            <Text style={styles.descriptionText} numberOfLines={2}>{item.description}</Text>
+            
+            <View style={styles.engagementBar}>
+              <View
+                style={[styles.statusBadge, { backgroundColor: statusInfo.color }]}
+              >
+                <MaterialIcons
+                  name={statusInfo.name}
+                  size={12}
+                  color="#FFFFFF"
+                />
+                <Text style={styles.statusText}>
+                  {item.status}
+                </Text>
+              </View>
+              
+              <View style={styles.dateContainer}>
+                <MaterialIcons name="event" size={12} color={theme.colors.placeholder} style={styles.dateIcon} />
+                <Text style={styles.dateText}>{formattedDate}</Text>
+              </View>
+              
               <TouchableOpacity
-                style={styles.footerButton}
+                style={styles.viewButton}
                 onPress={() =>
                   router.push({
                     pathname: "/request_screens/",
@@ -229,39 +255,13 @@ export default function Requests() {
                   })
                 }
               >
-                <MaterialIcons name="comment" size={18} color={theme.colors.primary} />
-                <ThemedText style={[styles.footerButtonText, { color: theme.colors.primary }]}>
-                  View
-                </ThemedText>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={styles.statusButton}
-                onPress={() => {
-                  setSelectedStatus(item.status);
-                  setStatusInfoVisible(true);
-                }}
-              >
-                <LinearGradient
-                  colors={statusInfo.gradient}
-                  style={styles.statusBadge}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                >
-                  <MaterialIcons
-                    name={statusInfo.name}
-                    size={14}
-                    color={statusInfo.color}
-                  />
-                  <ThemedText style={[styles.statusText, { color: statusInfo.color }]}>
-                    {item.status}
-                  </ThemedText>
-                </LinearGradient>
+                <Text style={styles.viewButtonText}>View</Text>
+                <MaterialIcons name="chevron-right" size={14} color={theme.colors.primary} />
               </TouchableOpacity>
             </View>
-          </View>
-        </LinearGradient>
-      </ThemedView>
+          </TouchableOpacity>
+        </View>
+      </View>
     );
   };
 
@@ -277,289 +277,6 @@ export default function Requests() {
     }
   };
 
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: theme.colors.background,
-      paddingBottom: 0,
-    },
-    header: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.outline,
-    },
-    filterRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 10,
-    },
-    filterSquare: {
-      width: 100,
-      backgroundColor: theme.colors.surface,
-      borderRadius: 12,
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 10,
-      ...theme.elevation.sm,
-    },
-    activeFilterSquare: {
-      backgroundColor: theme.colors.primary,
-    },
-    filterSquareText: {
-      fontSize: 14,
-      color: theme.colors.onSurface,
-      fontFamily: theme.typography.fontFamily.medium,
-    },
-    activeFilterSquareText: {
-      color: theme.colors.onPrimary,
-    },
-    sortButton: {
-      padding: 8,
-      backgroundColor: theme.colors.surface,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: theme.colors.outlineVariant,
-      elevation: 0,
-    },
-    requestItemContainer: {
-      marginHorizontal: 12,
-      marginVertical: 6,
-      borderRadius: 12,
-      overflow: 'hidden',
-      backgroundColor: theme.colors.surface,
-      borderWidth: 1,
-      borderColor: theme.colors.outlineVariant,
-      elevation: 0,
-      shadowColor: 'transparent',
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0,
-      shadowRadius: 0,
-    },
-    requestItemGradient: {
-      flexDirection: 'row',
-      borderRadius: 12,
-      overflow: 'hidden',
-      backgroundColor: theme.colors.surface,
-    },
-    priorityIconContainer: {
-      width: 40,
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 12,
-    },
-    requestContent: {
-      flex: 1,
-      backgroundColor: theme.colors.surface,
-      padding: 12,
-      borderTopRightRadius: 12,
-      borderBottomRightRadius: 12,
-    },
-    requestHeader: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: 8,
-    },
-    priorityText: {
-      fontSize: 14,
-      fontFamily: theme.typography.fontFamily.semiBold,
-    },
-    dateText: {
-      fontSize: 12,
-      color: theme.colors.placeholder,
-      fontFamily: theme.typography.fontFamily.regular,
-    },
-    description: {
-      fontSize: 14,
-      color: theme.colors.onSurface,
-      fontFamily: theme.typography.fontFamily.regular,
-      marginBottom: 10,
-      lineHeight: 18,
-    },
-    requestDetails: {
-      marginBottom: 10,
-    },
-    userInfoContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    userIconContainer: {
-      width: 24,
-      height: 24,
-      borderRadius: 12,
-      backgroundColor: theme.colors.primaryContainer,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginRight: 6,
-    },
-    userInitials: {
-      fontSize: 12,
-      color: theme.colors.primary,
-      fontFamily: theme.typography.fontFamily.medium,
-    },
-    requestInfo: {
-      fontSize: 12,
-      color: theme.colors.onSurfaceVariant,
-      fontFamily: theme.typography.fontFamily.medium,
-    },
-    requestFooter: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: 'center',
-      paddingTop: 8,
-      borderTopWidth: 1,
-      borderTopColor: theme.colors.outlineVariant,
-    },
-    footerButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 4,
-    },
-    footerButtonText: {
-      fontSize: 12,
-      fontFamily: theme.typography.fontFamily.medium,
-    },
-    statusButton: {
-      alignItems: 'flex-end',
-    },
-    statusBadge: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingVertical: 4,
-      paddingHorizontal: 8,
-      borderRadius: 8,
-      gap: 3,
-    },
-    statusText: {
-      fontSize: 10,
-      fontFamily: theme.typography.fontFamily.medium,
-    },
-    searchContainer: {
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-    },
-    searchInput: {
-      backgroundColor: theme.colors.surface,
-      borderRadius: 12,
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      fontSize: 14,
-      color: theme.colors.onSurface,
-      fontFamily: theme.typography.fontFamily.regular,
-      borderWidth: 1,
-      borderColor: theme.colors.outlineVariant,
-      elevation: 0,
-    },
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: "rgba(0, 0, 0, 0.5)",
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    modalContent: {
-      backgroundColor: theme.colors.surface,
-      borderRadius: 12,
-      padding: 20,
-      width: "80%",
-      maxWidth: 400,
-      ...theme.elevation.md,
-    },
-    modalTitle: {
-      fontSize: 18,
-      color: theme.colors.onSurface,
-      fontFamily: theme.typography.fontFamily.medium,
-      marginBottom: 16,
-      textAlign: "center",
-    },
-    sortOption: {
-      paddingVertical: 12,
-      paddingHorizontal: 16,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.outline,
-    },
-    sortOptionText: {
-      fontSize: 16,
-      color: theme.colors.onSurface,
-      fontFamily: theme.typography.fontFamily.regular,
-    },
-    selectedSortOption: {
-      backgroundColor: theme.colors.primaryContainer,
-    },
-    selectedSortOptionText: {
-      color: theme.colors.primary,
-      fontFamily: theme.typography.fontFamily.medium,
-    },
-    statusInfoContainer: {
-      backgroundColor: theme.colors.surface,
-      borderRadius: 12,
-      padding: 20,
-      width: "80%",
-      maxWidth: 400,
-      ...theme.elevation.md,
-    },
-    statusStep: {
-      flexDirection: "row",
-      alignItems: "center",
-      marginBottom: 16,
-    },
-    statusIcon: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      backgroundColor: theme.colors.primaryContainer,
-      alignItems: "center",
-      justifyContent: "center",
-      marginRight: 12,
-    },
-    statusLabel: {
-      fontSize: 16,
-      color: theme.colors.onSurface,
-      fontFamily: theme.typography.fontFamily.medium,
-      marginBottom: 4,
-    },
-    statusDescription: {
-      fontSize: 14,
-      color: theme.colors.placeholder,
-      fontFamily: theme.typography.fontFamily.regular,
-    },
-    activeStatus: {
-      backgroundColor: theme.colors.primary,
-    },
-    activeStatusText: {
-      color: theme.colors.onPrimary,
-    },
-    addButton: {
-      position: 'absolute',
-      bottom: 16,
-      left: '50%',
-      transform: [{ translateX: -90 }],
-      backgroundColor: theme.colors.primary,
-      paddingVertical: 12,
-      paddingHorizontal: 20,
-      borderRadius: 20,
-      elevation: 2,
-      shadowColor: theme.colors.shadow,
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.2,
-      shadowRadius: 2,
-      width: 180,
-      flexDirection: 'row',
-      justifyContent: 'center',
-      alignItems: 'center',
-      gap: 6,
-    },
-    addButtonText: {
-      fontSize: 14,
-      color: theme.colors.onPrimary,
-      fontFamily: theme.typography.fontFamily.medium,
-      textAlign: 'center',
-    },
-  });
-
   return (
     <SafeAreaView
       style={[
@@ -572,59 +289,89 @@ export default function Requests() {
       ]}
       edges={['top']}
     >
-      <ThemedView style={styles.header}>
-        <ThemedView style={styles.filterRow}>
+      <View style={styles.header}>
+        <View style={styles.tabBar}>
           <TouchableOpacity
-            style={[styles.filterSquare, activeTab === "pending" && styles.activeFilterSquare]}
+            style={[styles.tab, activeTab === "pending" && styles.activeTab]}
             onPress={() => setActiveTab("pending")}
           >
-            <ThemedText style={[styles.filterSquareText, activeTab === "pending" && styles.activeFilterSquareText]}>Pending</ThemedText>
+            <Text
+              style={
+                activeTab === "pending" ? styles.activeTabText : styles.tabText
+              }
+            >
+              Pending
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.filterSquare, activeTab === "completed" && styles.activeFilterSquare]}
+            style={[styles.tab, activeTab === "completed" && styles.activeTab]}
             onPress={() => setActiveTab("completed")}
           >
-            <ThemedText style={[styles.filterSquareText, activeTab === "completed" && styles.activeFilterSquareText]}>Completed</ThemedText>
+            <Text
+              style={
+                activeTab === "completed"
+                  ? styles.activeTabText
+                  : styles.tabText
+              }
+            >
+              Completed
+            </Text>
           </TouchableOpacity>
-        </ThemedView>
+        </View>
         <TouchableOpacity
           style={styles.sortButton}
           onPress={() => setSortMenuVisible(true)}
         >
           <MaterialIcons name="sort" size={24} color={theme.colors.primary} />
         </TouchableOpacity>
-      </ThemedView>
+      </View>
 
-      <ThemedView style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search requests..."
-          placeholderTextColor={theme.colors.placeholder}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-      </ThemedView>
+      <View style={styles.filterContainer}>
+        <View style={styles.searchContainer}>
+          <MaterialIcons name="search" size={20} color="#757575" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search requests..."
+            placeholderTextColor={theme.colors.placeholder}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
+      </View>
 
       <PanGestureHandler onHandlerStateChange={onGestureEvent}>
-        <ThemedView style={{ flex: 1 }}>
+        <View style={{ flex: 1 }}>
           <FlatList
             data={sortRequests(filterRequests(requests.filter(
               (r) => (r.status === "completed") === (activeTab === "completed")
             )))}
             renderItem={renderRequest}
             keyExtractor={(item) => item.request_id}
-            contentContainerStyle={{ paddingBottom: 80 }}
+            contentContainerStyle={[
+              styles.listContent,
+              !requests.length && styles.emptyListContent
+            ]}
             showsVerticalScrollIndicator={false}
+            ListEmptyComponent={() => (
+              <View style={styles.emptyState}>
+                <MaterialIcons name="inbox" size={64} color={theme.colors.placeholder} />
+                <Text style={styles.emptyStateTitle}>No requests found</Text>
+                <Text style={styles.emptyStateText}>
+                  {activeTab === "pending"
+                    ? "There are no pending maintenance requests."
+                    : "There are no completed maintenance requests."}
+                </Text>
+              </View>
+            )}
           />
-        </ThemedView>
+        </View>
       </PanGestureHandler>
 
       <TouchableOpacity
-        style={styles.addButton}
+        style={styles.createButton}
         onPress={() => router.push("/(tenant_tabs)/requests/contact")}
       >
-        <Ionicons name="add-circle-outline" size={20} color={theme.colors.onPrimary} />
-        <ThemedText style={styles.addButtonText}>Add request</ThemedText>
+        <MaterialIcons name="add" size={24} color="#FFFFFF" />
       </TouchableOpacity>
 
       <Modal
@@ -638,47 +385,28 @@ export default function Requests() {
           activeOpacity={1}
           onPress={() => setSortMenuVisible(false)}
         >
-          <ThemedView style={styles.modalContent}>
-            <ThemedText style={styles.modalTitle}>Sort by</ThemedText>
+          <View style={styles.sortMenu}>
             <TouchableOpacity
-              style={[
-                styles.sortOption,
-                sortBy === "time" && styles.selectedSortOption,
-              ]}
+              style={styles.sortMenuItem}
               onPress={() => {
                 setSortBy("time");
                 setSortMenuVisible(false);
               }}
             >
-              <ThemedText
-                style={[
-                  styles.sortOptionText,
-                  sortBy === "time" && styles.selectedSortOptionText,
-                ]}
-              >
-                Time
-              </ThemedText>
+              <MaterialIcons name="schedule" size={20} color="#757575" />
+              <Text style={styles.sortMenuText}>Sort by Time</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[
-                styles.sortOption,
-                sortBy === "priority" && styles.selectedSortOption,
-              ]}
+              style={styles.sortMenuItem}
               onPress={() => {
                 setSortBy("priority");
                 setSortMenuVisible(false);
               }}
             >
-              <ThemedText
-                style={[
-                  styles.sortOptionText,
-                  sortBy === "priority" && styles.selectedSortOptionText,
-                ]}
-              >
-                Priority
-              </ThemedText>
+              <MaterialIcons name="flag" size={20} color="#757575" />
+              <Text style={styles.sortMenuText}>Sort by Priority</Text>
             </TouchableOpacity>
-          </ThemedView>
+          </View>
         </TouchableOpacity>
       </Modal>
 
@@ -693,49 +421,375 @@ export default function Requests() {
           activeOpacity={1}
           onPress={() => setStatusInfoVisible(false)}
         >
-          <ThemedView style={styles.statusInfoContainer}>
-            <ThemedText style={styles.modalTitle}>Request Status</ThemedText>
-            {statusWorkflow.map((step, index) => {
-              const isActive = getStatusIndex(selectedStatus) >= index;
+          <View style={styles.statusInfoContainer}>
+            <Text style={styles.statusInfoTitle}>Request Status Workflow</Text>
+            {statusWorkflow.map((status, index) => {
+              const currentStatusIndex = getStatusIndex(selectedStatus);
+              const isActive = currentStatusIndex >= index;
+              const statusIcon = getStatusIcon(status.status);
+
               return (
-                <ThemedView
-                  key={step.status}
+                <View
+                  key={status.status}
                   style={[
-                    styles.statusStep,
-                    isActive && styles.activeStatus,
+                    styles.statusInfoItem,
+                    selectedStatus === status.status &&
+                      styles.statusInfoItemActive,
                   ]}
                 >
-                  <ThemedView
-                    style={[
-                      styles.statusIcon,
-                      isActive && styles.activeStatus,
-                    ]}
-                  >
-                    <MaterialIcons
-                      name={getStatusIcon(step.status).name}
-                      size={20}
-                      color={isActive ? theme.colors.onPrimary : theme.colors.primary}
-                    />
-                  </ThemedView>
-                  <ThemedView style={styles.statusText}>
-                    <ThemedText
-                      style={[
-                        styles.statusLabel,
-                        isActive && styles.activeStatusText,
-                      ]}
-                    >
-                      {step.label}
-                    </ThemedText>
-                    <ThemedText style={styles.statusDescription}>
-                      {step.description}
-                    </ThemedText>
-                  </ThemedView>
-                </ThemedView>
+                  <View style={styles.statusInfoHeader}>
+                    <Text style={styles.statusInfoLabel}>{status.label}</Text>
+                    {index < statusWorkflow.length - 1 &&
+                    index < currentStatusIndex ? (
+                      <MaterialIcons
+                        name={statusIcon.name}
+                        size={20}
+                        color="#757575"
+                      />
+                    ) : null}
+                  </View>
+                  <Text style={styles.statusInfoDescription}>
+                    {status.description}
+                  </Text>
+                </View>
               );
             })}
-          </ThemedView>
+          </View>
         </TouchableOpacity>
       </Modal>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#f8f9fa", // Light modern background
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0, 0, 0, 0.12)",
+    elevation: 0,
+  },
+  tabBar: {
+    flex: 1,
+    flexDirection: "row",
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 12,
+  },
+  tab: {
+    flex: 1,
+    padding: 8,
+    alignItems: "center",
+    borderRadius: 12,
+    marginHorizontal: 4,
+  },
+  activeTab: {
+    backgroundColor: "#6200EE", // Tenant primary color
+  },
+  tabText: {
+    color: "rgba(0, 0, 0, 0.54)",
+    fontWeight: '500',
+    fontSize: 14,
+  },
+  activeTabText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  sortButton: {
+    padding: 8,
+    marginRight: 8,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(0, 0, 0, 0.12)",
+  },
+  listContent: {
+    padding: 12,
+    paddingBottom: 24,
+  },
+  emptyListContent: {
+    flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 100,
+  },
+  requestCard: {
+    marginBottom: 14,
+    borderRadius: 14,
+    overflow: 'hidden',
+    backgroundColor: "#FFFFFF",
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 3,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.04)',
+  },
+  requestCardContent: {
+    flexDirection: 'row',
+    borderRadius: 14,
+    overflow: 'hidden',
+    backgroundColor: "#FFFFFF",
+  },
+  coloredSidebar: {
+    width: 8,
+    height: '100%',
+  },
+  requestCardInner: {
+    flex: 1,
+    padding: 14,
+  },
+  userInfoHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  userIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#6200EE15", // Tenant primary color with opacity
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+  },
+  userInitials: {
+    fontSize: 13,
+    color: "#6200EE", // Tenant primary color
+    fontWeight: '600',
+  },
+  userTextContainer: {
+    flex: 1,
+    flexDirection: "column",
+  },
+  userName: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#000000",
+  },
+  userAddressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  userAddress: {
+    fontSize: 12,
+    color: "rgba(0, 0, 0, 0.54)",
+    fontWeight: '500',
+  },
+  priorityContainer: {
+    alignItems: 'center',
+  },
+  priorityBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  priorityText: {
+    fontWeight: "600",
+    fontSize: 11,
+  },
+  descriptionText: {
+    fontSize: 14,
+    color: "#000000",
+    fontWeight: '400',
+    marginVertical: 10,
+    lineHeight: 20,
+  },
+  engagementBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.04)',
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    gap: 3,
+  },
+  statusText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  dateContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  dateIcon: {
+    marginRight: 4,
+  },
+  dateText: {
+    color: "rgba(0, 0, 0, 0.54)",
+    fontSize: 12,
+  },
+  viewButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#6200EE10", // Tenant primary color with opacity
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#6200EE20", // Tenant primary color with opacity
+  },
+  viewButtonText: {
+    fontSize: 12,
+    color: "#6200EE", // Tenant primary color
+    fontWeight: '600',
+    marginRight: 3,
+  },
+  filterContainer: {
+    backgroundColor: "#f8f9fa",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    marginBottom: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(0, 0, 0, 0.12)",
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 8,
+    fontSize: 14,
+    color: "#000000",
+    fontWeight: '400',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  sortMenu: {
+    position: "absolute",
+    right: 8,
+    top: Platform.OS === "android" ? StatusBar.currentHeight + 56 : 56,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    overflow: 'hidden',
+    minWidth: 180,
+    elevation: 0,
+    borderWidth: 1,
+    borderColor: "rgba(0, 0, 0, 0.12)",
+  },
+  sortMenuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+  },
+  sortMenuText: {
+    marginLeft: 8,
+    fontSize: 16,
+    color: "#000000",
+  },
+  createButton: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#6200EE", // Tenant primary color
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 6,
+  },
+  statusInfoContainer: {
+    backgroundColor: "#FFFFFF",
+    margin: 16,
+    padding: 24,
+    borderRadius: 16,
+    width: "90%",
+    maxWidth: 400,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    borderWidth: 1,
+    borderColor: "rgba(0, 0, 0, 0.12)",
+  },
+  statusInfoTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom: 16,
+    color: "#000000",
+    textAlign: 'center',
+  },
+  statusInfoItem: {
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: "#f8f9fa",
+    borderWidth: 1,
+    borderColor: "rgba(0, 0, 0, 0.12)",
+  },
+  statusInfoItemActive: {
+    backgroundColor: "#6200EE15", // Tenant primary color with opacity
+    borderLeftWidth: 4,
+    borderLeftColor: "#6200EE", // Tenant primary color
+  },
+  statusInfoHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  statusInfoLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#000000",
+  },
+  statusInfoDescription: {
+    fontSize: 14,
+    color: "rgba(0, 0, 0, 0.54)",
+    lineHeight: 20,
+  },
+  emptyState: {
+    alignItems: "center",
+    padding: 24,
+  },
+  emptyStateTitle: {
+    fontSize: 24,
+    fontWeight: "600",
+    marginBottom: 16,
+    color: "#000000",
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: "rgba(0, 0, 0, 0.54)",
+    textAlign: "center",
+  },
+});
