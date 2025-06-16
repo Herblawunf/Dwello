@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import { supabase } from "@/lib/supabase";
+import { analyticsApi } from "@/lib/supabase";
 import {
   View,
   Text,
@@ -249,18 +250,56 @@ const RentScreen = () => {
       return;
     }
 
-    try {
-      const { data, error } = await supabase.rpc("update_next_payment", {
-        p_user_id: userId,
-      });
-      if (error) {
-        throw error;
-      }
-    } catch (error) {
-      console.error(error);
-    }
-    getRentInfo();
-    Alert.alert("Success", "Rent payment recorded.");
+    // Show confirmation dialog
+    Alert.alert(
+      "Confirm Payment",
+      "Are you sure you want to mark this rent as paid?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Confirm", 
+          onPress: async () => {
+            try {
+              // First update the next payment date
+              const { data, error } = await supabase.rpc("update_next_payment", {
+                p_user_id: userId,
+              });
+              
+              if (error) throw error;
+              
+              // Get the property ID associated with this tenant
+              const { data: tenantData, error: tenantError } = await supabase
+                .from('tenants')
+                .select('house_id')
+                .eq('tenant_id', userId)
+                .single();
+                
+              if (tenantError) throw tenantError;
+              
+              if (tenantData && tenantData.house_id) {
+                const propertyId = tenantData.house_id;
+                const rentAmount = rentInfo.monthly_rent * rentInfo.months_per_payment;
+                
+                // Update property analytics with the rent income
+                console.log(`Adding rent payment to property_analytics: Property ID: ${propertyId}, Amount: ${rentAmount}`);
+                
+                await analyticsApi.updateAnalyticsForIncome(
+                  propertyId, 
+                  rentAmount,
+                  'Rent'
+                );
+              }
+              
+              getRentInfo();
+              Alert.alert("Success", "Rent payment recorded.");
+            } catch (error) {
+              console.error("Error processing rent payment:", error);
+              Alert.alert("Error", "Failed to process payment. Please try again.");
+            }
+          }
+        }
+      ]
+    );
   };
 
   return (

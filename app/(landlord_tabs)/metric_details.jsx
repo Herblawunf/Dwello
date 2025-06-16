@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useData } from './components/DataProvider';
 import { LinearGradient } from 'expo-linear-gradient';
+import { supabase } from '@/lib/supabase';
 
 const { width } = Dimensions.get('window');
 
@@ -22,6 +23,7 @@ export default function MetricDetailsScreen() {
   const params = useLocalSearchParams();
   const metricKey = params?.metricKey || 'occupancyRate';
   const metricName = params?.metricName || 'Occupancy Rate';
+  const propertyId = params?.propertyId || null;
   
   const { 
     properties, 
@@ -38,7 +40,9 @@ export default function MetricDetailsScreen() {
   
   // State for chart data
   const [propertyComparison, setPropertyComparison] = useState([]);
-  const [historicalData, setHistoricalData] = useState([]);
+  const [analyticsData, setAnalyticsData] = useState([]);
+  const [totalMetrics, setTotalMetrics] = useState({});
+  const [periodTotals, setPeriodTotals] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Get metric info based on the metric key
@@ -206,121 +210,235 @@ export default function MetricDetailsScreen() {
 
   const metricInfo = getMetricInfo();
 
-  // Generate sample data for the chart
+  // Fetch data when component mounts
   useEffect(() => {
-    // Simulate loading
-    setIsLoading(true);
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch data from the property_analytics table
+        await fetchAnalyticsData();
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setIsLoading(false);
+      }
+    };
     
-    setTimeout(() => {
-      // Generate historical data for the line chart
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-      const generateHistorical = () => {
-        let baseValue = 0;
-        
-        // Set base value based on metric type
-        switch(metricKey) {
-          case 'occupancyRate':
-            baseValue = 90;
-            break;
-          case 'grossIncome':
-            baseValue = 1200;
-            break;
-          case 'totalExpenses':
-            baseValue = 500;
-            break;
-          case 'netProfit':
-            baseValue = 700;
-            break;
-          case 'maintenanceCosts':
-            baseValue = 300;
-            break;
-          case 'tenantSatisfaction':
-            baseValue = 85;
-            break;
-          case 'rentCollection':
-            baseValue = 95;
-            break;
-          case 'propertyValue':
-            baseValue = 450000;
-            break;
-          case 'yieldRate':
-            baseValue = 6.5;
-            break;
-          default:
-            baseValue = 100;
-        }
-        
-        return months.map((month, i) => {
-          // Add some variation to the data
-          const variation = Math.random() * 20 - 10; // -10 to +10
-          const value = baseValue + variation + (i * 2); // Slight upward trend
-          
-          return {
-            month,
-            value
-          };
-        });
-      };
-      
-      // Generate property comparison data
-      const generatePropertyComparison = () => {
-        // Add more properties for horizontal scrolling demo
-        const propertyNames = ['Bridgewater Road', 'Oak Avenue', 'Maple Street', 'Pine Lane', 'Cedar Court'];
-        
-        return propertyNames.map(name => {
-          let baseValue = 0;
-          
-          // Set base value based on metric type and property
-          switch(metricKey) {
-            case 'occupancyRate':
-              baseValue = name === 'Bridgewater Road' ? 92 : name === 'Oak Avenue' ? 96 : 94;
-              break;
-            case 'grossIncome':
-              baseValue = name === 'Bridgewater Road' ? 1200 : name === 'Oak Avenue' ? 1500 : 1350;
-              break;
-            case 'totalExpenses':
-              baseValue = name === 'Bridgewater Road' ? 550 : name === 'Oak Avenue' ? 580 : 520;
-              break;
-            case 'netProfit':
-              baseValue = name === 'Bridgewater Road' ? 650 : name === 'Oak Avenue' ? 920 : 830;
-              break;
-            case 'maintenanceCosts':
-              baseValue = name === 'Bridgewater Road' ? 350 : name === 'Oak Avenue' ? 280 : 320;
-              break;
-            case 'tenantSatisfaction':
-              baseValue = name === 'Bridgewater Road' ? 88 : name === 'Oak Avenue' ? 94 : 90;
-              break;
-            case 'rentCollection':
-              baseValue = name === 'Bridgewater Road' ? 96 : name === 'Oak Avenue' ? 99 : 97;
-              break;
-            case 'propertyValue':
-              baseValue = name === 'Bridgewater Road' ? 425000 : name === 'Oak Avenue' ? 475000 : 450000;
-              break;
-            case 'yieldRate':
-              baseValue = name === 'Bridgewater Road' ? 6.2 : name === 'Oak Avenue' ? 7.1 : 6.5;
-              break;
-            default:
-              baseValue = name === 'Bridgewater Road' ? 90 : name === 'Oak Avenue' ? 110 : 100;
-          }
-          
-          // Add some variation
-          const variation = Math.random() * 10 - 5; // -5 to +5
-          
-          return {
-            property: name,
-            value: baseValue + variation,
-            address: `${Math.floor(Math.random() * 100) + 1} ${name}, ${['London', 'Manchester', 'Birmingham', 'Leeds', 'Liverpool'][Math.floor(Math.random() * 5)]}`,
-            change: (Math.random() > 0.3 ? '+' : '-') + (Math.random() * 5 + 1).toFixed(1) + '%'
-          };
-        });
-      };
-      
-      // Set the data
-      setHistoricalData(generateHistorical());
-      setPropertyComparison(generatePropertyComparison());
-      setIsLoading(false);
-    }, 1000);
+    fetchData();
   }, [metricKey, timeFrame]);
+
+  // Fetch from property_analytics table
+  const fetchAnalyticsData = async () => {
+    try {
+      // Determine how many months to look back based on time frame
+      const monthsToLookBack = timeFrame === 'Monthly' ? 1 : 
+                             timeFrame === 'Quarterly' ? 3 : 12;
+      
+      const now = new Date();
+      const startDate = new Date();
+      startDate.setMonth(now.getMonth() - monthsToLookBack);
+      
+      // Query the database
+      let query = supabase
+        .from('property_analytics')
+        .select('*')
+        .gte('record_date', startDate.toISOString().split('T')[0])
+        .order('record_date', { ascending: false });
+        
+      // Filter by property ID if provided
+      if (propertyId) {
+        query = query.eq('property_id', propertyId);
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error("Error fetching analytics data:", error);
+        return;
+      }
+      
+      if (!data || data.length === 0) {
+        console.log("No analytics data found");
+        setPropertyComparison([]);
+        setAnalyticsData([]);
+        setTotalMetrics({});
+        setPeriodTotals([]);
+        return;
+      }
+      
+      console.log(`Fetched ${data.length} analytics records`);
+      setAnalyticsData(data);
+      
+      // Process the data for property comparison
+      processPropertyComparison(data);
+      
+      // Process data for totals and period breakdowns
+      processTotalMetrics(data);
+      processPeriodTotals(data);
+    } catch (error) {
+      console.error("Error fetching analytics data:", error);
+    }
+  };
+  
+  // Process property comparison from analytics data
+  const processPropertyComparison = (data) => {
+    if (!data || data.length === 0) return;
+    
+    // Group data by property
+    const propertyGroups = {};
+    data.forEach(record => {
+      if (!propertyGroups[record.property_id]) {
+        propertyGroups[record.property_id] = [];
+      }
+      propertyGroups[record.property_id].push(record);
+    });
+    
+    // Calculate aggregated metrics for each property
+    const comparison = Object.entries(propertyGroups).map(([propertyId, records]) => {
+      // Sort by date (most recent first)
+      records.sort((a, b) => new Date(b.record_date) - new Date(a.record_date));
+      
+      // Get the property name from the most recent record
+      const propertyName = records[0].property_name;
+      
+      // Aggregate values based on the metric
+      let value = 0;
+      let change = '+0.0%';
+      
+      if (metricKey === 'occupancyRate' || metricKey === 'tenantSatisfaction') {
+        // For percentages, take the average
+        value = records.reduce((sum, r) => sum + r[mapMetricKeyToDbField(metricKey)], 0) / records.length;
+      } else {
+        // For monetary values, sum them
+        value = records.reduce((sum, r) => sum + r[mapMetricKeyToDbField(metricKey)], 0);
+      }
+      
+      return {
+        id: propertyId,
+        name: propertyName,
+        value,
+        change
+      };
+    });
+    
+    setPropertyComparison(comparison);
+  };
+  
+  // Process total metrics from analytics data
+  const processTotalMetrics = (data) => {
+    if (!data || data.length === 0) return;
+    
+    // Calculate overall totals for the chosen metric
+    const fieldName = mapMetricKeyToDbField(metricKey);
+    let totalValue = 0;
+    
+    if (metricKey === 'occupancyRate' || metricKey === 'tenantSatisfaction') {
+      // For percentages, take the average
+      totalValue = data.reduce((sum, r) => sum + r[fieldName], 0) / data.length;
+    } else {
+      // For monetary values, sum them
+      totalValue = data.reduce((sum, r) => sum + r[fieldName], 0);
+    }
+    
+    // Also calculate min, max, and average
+    const values = data.map(r => r[fieldName]);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
+    
+    setTotalMetrics({
+      total: totalValue,
+      min,
+      max,
+      avg,
+      count: data.length
+    });
+  };
+  
+  // Process period-based totals (monthly, quarterly, yearly breakdown)
+  const processPeriodTotals = (data) => {
+    if (!data || data.length === 0) return;
+    
+    const fieldName = mapMetricKeyToDbField(metricKey);
+    
+    // Group data by period according to selected timeframe
+    const periodGroups = {};
+    
+    data.forEach(record => {
+      let periodKey;
+      
+      if (timeFrame === 'Monthly') {
+        periodKey = `${record.month}/${record.year}`;
+      } else if (timeFrame === 'Quarterly') {
+        const quarter = Math.floor((record.month - 1) / 3) + 1;
+        periodKey = `Q${quarter}/${record.year}`;
+      } else {
+        periodKey = `${record.year}`;
+      }
+      
+      if (!periodGroups[periodKey]) {
+        periodGroups[periodKey] = [];
+      }
+      
+      periodGroups[periodKey].push(record);
+    });
+    
+    // Calculate totals for each period
+    const periodData = Object.entries(periodGroups).map(([period, records]) => {
+      let value;
+      
+      if (metricKey === 'occupancyRate' || metricKey === 'tenantSatisfaction') {
+        // For percentages, take the average
+        value = records.reduce((sum, r) => sum + r[fieldName], 0) / records.length;
+      } else {
+        // For monetary values, sum them
+        value = records.reduce((sum, r) => sum + r[fieldName], 0);
+      }
+      
+      return {
+        period,
+        value,
+        recordCount: records.length
+      };
+    });
+    
+    // Sort periods chronologically
+    periodData.sort((a, b) => {
+      if (timeFrame === 'Monthly') {
+        const [aMonth, aYear] = a.period.split('/').map(Number);
+        const [bMonth, bYear] = b.period.split('/').map(Number);
+        return aYear !== bYear ? aYear - bYear : aMonth - bMonth;
+      } else if (timeFrame === 'Quarterly') {
+        const aQuarter = parseInt(a.period.charAt(1));
+        const aYear = parseInt(a.period.substring(3));
+        const bQuarter = parseInt(b.period.charAt(1));
+        const bYear = parseInt(b.period.substring(3));
+        return aYear !== bYear ? aYear - bYear : aQuarter - bQuarter;
+      } else {
+        return parseInt(a.period) - parseInt(b.period);
+      }
+    });
+    
+    setPeriodTotals(periodData);
+  };
+  
+  // Map our front-end metric keys to database field names
+  const mapMetricKeyToDbField = (key) => {
+    const mapping = {
+      'occupancyRate': 'occupancy_rate',
+      'grossIncome': 'gross_income',
+      'totalExpenses': 'total_expenses',
+      'netProfit': 'net_profit',
+      'maintenanceCosts': 'maintenance_costs',
+      'tenantSatisfaction': 'tenant_satisfaction',
+      // For metrics not directly in the database, use defaults
+      'rentCollection': 'occupancy_rate', // Use as proxy since we don't have this field
+      'propertyValue': 'gross_income', // Use as proxy since we don't have this field
+      'yieldRate': 'net_profit' // Use as proxy since we don't have this field
+    };
+    
+    return mapping[key] || 'net_profit'; // Default to net_profit if no mapping
+  };
 
   // Handle time frame selection
   const handleTimeFrameSelect = (period) => {
@@ -397,7 +515,7 @@ export default function MetricDetailsScreen() {
   const renderPropertyCard = ({ item }) => (
     <View style={styles.propertyCard}>
       <View style={styles.propertyHeader}>
-        <Text style={styles.propertyName} numberOfLines={1}>{item.property}</Text>
+        <Text style={styles.propertyName} numberOfLines={1}>{item.name}</Text>
         <View style={styles.changeContainer}>
           <Ionicons 
             name={item.change.startsWith('-') ? 'arrow-down-outline' : 'arrow-up-outline'} 
@@ -410,7 +528,6 @@ export default function MetricDetailsScreen() {
           ]}>{formatChangeValue(item.change)}</Text>
         </View>
       </View>
-      <Text style={styles.propertyAddress} numberOfLines={1}>{item.address}</Text>
       <Text style={styles.propertyValue}>{formatValue(item.value)}</Text>
     </View>
   );
@@ -495,45 +612,120 @@ export default function MetricDetailsScreen() {
           ))}
         </View>
         
-        {/* Historical Trend Chart (Simple Version) */}
-        <View style={styles.chartContainer}>
-          <Text style={styles.sectionTitle}>Historical Trend</Text>
-          <Text style={styles.dateRangeText}>{dateRange?.label || 'Jan 2024 - Jun 2024'}</Text>
+        {/* Overall Summary Section */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Overall Summary</Text>
           
-          <View style={styles.simpleChart}>
-            {historicalData.map((item, index) => (
-              <View key={index} style={styles.chartBar}>
-                <View style={styles.barLabelContainer}>
-                  <Text style={styles.barLabel}>{item.month}</Text>
+          {isLoading ? (
+            <ActivityIndicator size="large" color={metricInfo.color} />
+          ) : Object.keys(totalMetrics).length === 0 ? (
+            <Text style={styles.noDataText}>No data available for this time period.</Text>
+          ) : (
+            <View style={styles.summaryContainer}>
+              <View style={styles.summaryCard}>
+                <Text style={styles.summaryLabel}>Total {metricInfo.title}</Text>
+                <Text style={styles.summaryValue}>{formatValue(totalMetrics.total)}</Text>
+              </View>
+              
+              <View style={styles.summaryRow}>
+                <View style={styles.summaryItem}>
+                  <Text style={styles.summaryItemLabel}>Average</Text>
+                  <Text style={styles.summaryItemValue}>{formatValue(totalMetrics.avg)}</Text>
                 </View>
-                <View style={styles.barContainer}>
-                  <View 
-                    style={[
-                      styles.bar, 
-                      { 
-                        width: `${Math.min(100, (item.value / (historicalData.reduce((max, curr) => Math.max(max, curr.value), 0) * 1.2)) * 100)}%`,
-                        backgroundColor: metricInfo.color
-                      }
-                    ]}
-                  />
-                  <Text style={styles.barValue}>{formatValue(item.value)}</Text>
+                <View style={styles.summaryItem}>
+                  <Text style={styles.summaryItemLabel}>Minimum</Text>
+                  <Text style={styles.summaryItemValue}>{formatValue(totalMetrics.min)}</Text>
+                </View>
+                <View style={styles.summaryItem}>
+                  <Text style={styles.summaryItemLabel}>Maximum</Text>
+                  <Text style={styles.summaryItemValue}>{formatValue(totalMetrics.max)}</Text>
                 </View>
               </View>
-            ))}
-          </View>
+            </View>
+          )}
         </View>
         
-        {/* Property Comparison - Horizontally Scrollable */}
+        {/* Period Breakdown Section */}
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Property Comparison</Text>
-          <FlatList
-            data={propertyComparison}
-            renderItem={renderPropertyCard}
-            keyExtractor={(item, index) => `property-${index}`}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.propertyComparisonList}
-          />
+          <Text style={styles.sectionTitle}>{timeFrame} Breakdown</Text>
+          
+          {isLoading ? (
+            <ActivityIndicator size="large" color={metricInfo.color} />
+          ) : periodTotals.length === 0 ? (
+            <Text style={styles.noDataText}>No data available for this time period.</Text>
+          ) : (
+            <View style={styles.periodBreakdownContainer}>
+              <View style={styles.tableHeader}>
+                <Text style={styles.tableHeaderText}>Period</Text>
+                <Text style={styles.tableHeaderText}>{metricInfo.title}</Text>
+              </View>
+              {periodTotals.map((item, index) => (
+                <View key={index} style={styles.tableRow}>
+                  <Text style={styles.tableCell}>{item.period}</Text>
+                  <Text style={styles.tableCellValue}>{formatValue(item.value)}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+
+        {/* Property Breakdown Table */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Property Breakdown</Text>
+          
+          {/* Chart placeholder */}
+          <View style={styles.chartContainer}>
+            {isLoading ? (
+              <ActivityIndicator size="large" color={metricInfo.color} />
+            ) : analyticsData.length === 0 ? (
+              <Text style={styles.noDataText}>No data available for this time period.</Text>
+            ) : (
+              <View style={styles.analyticsTable}>
+                <View style={styles.tableHeader}>
+                  <Text style={styles.tableHeaderText}>Date</Text>
+                  <Text style={styles.tableHeaderText}>Property</Text>
+                  <Text style={styles.tableHeaderText}>{metricInfo.title}</Text>
+                </View>
+                {analyticsData.map((item, index) => (
+                  <View key={index} style={styles.tableRow}>
+                    <Text style={styles.tableCell}>
+                      {new Date(item.record_date).toLocaleDateString('en-GB', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric'
+                      })}
+                    </Text>
+                    <Text style={styles.tableCell}>{item.property_name}</Text>
+                    <Text style={styles.tableCellValue}>
+                      {formatValue(item[mapMetricKeyToDbField(metricKey)])}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Property Comparison Section */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Property Summary</Text>
+          
+          {isLoading ? (
+            <ActivityIndicator size="large" color={metricInfo.color} />
+          ) : propertyComparison.length === 0 ? (
+            <Text style={styles.noDataText}>No data available for this time period.</Text>
+          ) : (
+            <View style={styles.propertyCardsContainer}>
+              <FlatList
+                data={propertyComparison}
+                renderItem={renderPropertyCard}
+                keyExtractor={(item) => item.id}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.propertyCardsList}
+              />
+            </View>
+          )}
         </View>
       </ScrollView>
       
@@ -819,5 +1011,111 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FFFFFF',
     marginLeft: 8,
+  },
+  analyticsTable: {
+    width: '100%',
+    marginTop: 10,
+    marginBottom: 20,
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    backgroundColor: '#F5F5F5',
+    paddingVertical: 10,
+    paddingHorizontal: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  tableHeaderText: {
+    flex: 1,
+    fontWeight: 'bold',
+    fontSize: 14,
+    color: '#333',
+    textAlign: 'left',
+  },
+  tableRow: {
+    flexDirection: 'row',
+    paddingVertical: 10,
+    paddingHorizontal: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEEEEE',
+  },
+  tableCell: {
+    flex: 1,
+    fontSize: 14,
+    color: '#555',
+  },
+  tableCellValue: {
+    flex: 1,
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
+  },
+  noDataText: {
+    marginVertical: 20,
+    textAlign: 'center',
+    fontSize: 16,
+    color: '#888',
+  },
+  propertyCardsContainer: {
+    padding: 16,
+  },
+  propertyCardsList: {
+    paddingRight: 8,
+  },
+  chartLabel: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 16,
+  },
+  summaryContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 8,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  summaryCard: {
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEEEEE',
+  },
+  summaryLabel: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+  },
+  summaryValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  summaryItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  summaryItemLabel: {
+    fontSize: 12,
+    color: '#888',
+    marginBottom: 4,
+  },
+  summaryItemValue: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+  },
+  periodBreakdownContainer: {
+    marginTop: 10,
+    marginBottom: 20,
   },
 }); 
