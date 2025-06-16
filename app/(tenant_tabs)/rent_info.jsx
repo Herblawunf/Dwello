@@ -15,6 +15,7 @@ import {
   ScrollView,
 } from "react-native";
 import { Context as AuthContext } from "@/context/AuthContext";
+import { colors } from "@/app/theme/colors";
 
 const RentScreen = () => {
   const [rentInfo, setRentInfo] = useState({});
@@ -540,16 +541,16 @@ const RentScreen = () => {
 const styles = StyleSheet.create({
   frequencyText: {
     fontSize: 14,
-    color: "#666",
+    color: colors.placeholder,
     marginTop: 8,
   },
   safeArea: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: colors.background,
   },
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: colors.background,
   },
   contentContainer: {
     padding: 20,
@@ -558,17 +559,17 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: "bold",
     marginBottom: 30,
-    color: "#333",
+    color: colors.onBackground,
     textAlign: "center",
   },
   section: {
     width: "100%",
     paddingVertical: 15,
     paddingHorizontal: 20,
-    backgroundColor: "#fff",
+    backgroundColor: colors.surface,
     borderRadius: 8,
     marginBottom: 20,
-    shadowColor: "#000",
+    shadowColor: colors.onBackground,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
@@ -576,48 +577,48 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    color: "#555",
+    color: colors.placeholder,
     marginBottom: 8,
   },
   amountText: {
     fontSize: 24,
     fontWeight: "600",
-    color: "#2c3e50",
+    color: colors.onSurface,
   },
   dateText: {
     fontSize: 18,
     fontWeight: "500",
-    color: "#2c3e50",
+    color: colors.onSurface,
   },
   pastDueDate: {
-    color: "#e74c3c",
+    color: colors.error,
   },
   button: {
-    backgroundColor: "#007bff",
+    backgroundColor: colors.primary,
     paddingVertical: 15,
     paddingHorizontal: 30,
     borderRadius: 8,
-    marginTop: 10, // Adjusted margin
+    marginTop: 10,
     width: "100%",
     alignItems: "center",
   },
   buttonText: {
-    color: "#fff",
+    color: colors.onPrimary,
     fontSize: 18,
     fontWeight: "bold",
   },
   secondaryButton: {
-    backgroundColor: "#6c757d",
+    backgroundColor: colors.secondary,
     paddingVertical: 12,
     paddingHorizontal: 30,
     borderRadius: 8,
     marginTop: 15,
     width: "100%",
     alignItems: "center",
-    marginBottom: 20, // Added margin before log
+    marginBottom: 20,
   },
   secondaryButtonText: {
-    color: "#fff",
+    color: colors.onSecondary,
     fontSize: 16,
     fontWeight: "bold",
   },
@@ -625,15 +626,15 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: colors.backdrop,
   },
   modalView: {
     width: "90%",
-    backgroundColor: "white",
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 25,
     alignItems: "stretch",
-    shadowColor: "#000",
+    shadowColor: colors.onBackground,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
@@ -644,24 +645,25 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 25,
     textAlign: "center",
-    color: "#333",
+    color: colors.onSurface,
   },
   inputLabel: {
     fontSize: 14,
-    color: "#444",
+    color: colors.placeholder,
     marginBottom: 6,
     alignSelf: "flex-start",
   },
   input: {
     width: "100%",
     height: 50,
-    borderColor: "#ccc",
+    borderColor: colors.divider,
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 15,
     marginBottom: 18,
     fontSize: 16,
-    backgroundColor: "#fff",
+    backgroundColor: colors.surface,
+    color: colors.onSurface,
   },
   reasonInput: {
     height: 90,
@@ -681,27 +683,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   cancelButton: {
-    backgroundColor: "#6c757d",
+    backgroundColor: colors.secondary,
     marginRight: 8,
   },
   submitButton: {
-    backgroundColor: "#007bff",
+    backgroundColor: colors.primary,
     marginLeft: 8,
   },
   modalButtonText: {
-    color: "white",
+    color: colors.onPrimary,
     fontWeight: "bold",
     textAlign: "center",
     fontSize: 16,
   },
-  // Styles for Delay Request Log
   logContainer: {
     width: "100%",
-    marginTop: 10, // Space above the log section
-    backgroundColor: "#fff",
+    marginTop: 10,
+    backgroundColor: colors.surface,
     borderRadius: 8,
     padding: 15,
-    shadowColor: "#000",
+    shadowColor: colors.onBackground,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
@@ -710,18 +711,18 @@ const styles = StyleSheet.create({
   logTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#333",
+    color: colors.onSurface,
     marginBottom: 15,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: colors.divider,
   },
   logItem: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: colors.divider,
   },
   logItemTextContainer: {
     flex: 1,
@@ -729,88 +730,87 @@ const styles = StyleSheet.create({
   },
   logItemTextPrimary: {
     fontSize: 15,
-    color: "#333",
+    color: colors.onSurface,
     marginBottom: 2,
   },
   logItemTextSecondary: {
     fontSize: 13,
-    color: "#666",
+    color: colors.placeholder,
   },
   logItemChevron: {
     fontSize: 20,
-    color: "#ccc",
+    color: colors.placeholder,
   },
   statusIcon: {
     fontSize: 20,
-    width: 24, // Ensure consistent width for alignment
+    width: 24,
     textAlign: "center",
   },
   statusIconAccepted: {
-    color: "#28a745", // Green
+    color: colors.success,
   },
   statusIconOpen: {
-    color: "#fd7e14", // Orange
+    color: colors.warning,
   },
   statusIconDenied: {
-    color: "#dc3545", // Red
+    color: colors.error,
   },
   noRequestsText: {
     textAlign: "center",
-    color: "#777",
+    color: colors.placeholder,
     paddingVertical: 10,
     fontSize: 15,
   },
-  // Styles for Reason Display Modal
   reasonModalOverlay: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.6)", // Slightly darker overlay
+    backgroundColor: colors.backdrop,
   },
   reasonModalView: {
     width: "90%",
     maxWidth: 400,
-    backgroundColor: "white",
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 25,
-    alignItems: "stretch", // Changed from 'center' to 'stretch' for text alignment
-    shadowColor: "#000",
+    alignItems: "stretch",
+    shadowColor: colors.onBackground,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
   },
   reasonModalTitle: {
-    fontSize: 20, // Slightly smaller than main modal title
+    fontSize: 20,
     fontWeight: "bold",
     marginBottom: 20,
     textAlign: "center",
-    color: "#333",
+    color: colors.onSurface,
   },
   reasonModalDetail: {
     fontSize: 16,
-    color: "#444",
+    color: colors.placeholder,
     marginBottom: 10,
   },
   reasonModalDetailLabel: {
     fontWeight: "bold",
-    color: "#333",
+    color: colors.onSurface,
   },
   reasonModalReasonText: {
     fontSize: 15,
-    color: "#555",
+    color: colors.onSurface,
     marginTop: 5,
     marginBottom: 25,
     padding: 10,
-    backgroundColor: "#f9f9f9",
+    backgroundColor: colors.background,
     borderRadius: 5,
     borderWidth: 1,
-    borderColor: "#eee",
+    borderColor: colors.divider,
     minHeight: 60,
     textAlignVertical: "top",
   },
   reasonModalCloseButton: {
-    backgroundColor: "#007bff",
+    backgroundColor: colors.primary,
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: "center",
@@ -820,12 +820,12 @@ const styles = StyleSheet.create({
     marginTop: 15,
     paddingTop: 15,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: colors.divider,
   },
   subsectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2c3e50',
+    color: colors.onSurface,
     marginBottom: 12,
   },
   contractDetailRow: {
@@ -836,12 +836,12 @@ const styles = StyleSheet.create({
   },
   contractDetailLabel: {
     fontSize: 14,
-    color: '#666',
+    color: colors.placeholder,
   },
   contractDetailValue: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#2c3e50',
+    color: colors.onSurface,
   },
   contractHeader: {
     flexDirection: 'row',
@@ -851,7 +851,7 @@ const styles = StyleSheet.create({
   },
   expandIcon: {
     fontSize: 16,
-    color: '#666',
+    color: colors.placeholder,
   },
 });
 
