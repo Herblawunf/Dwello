@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Modal, Platform, ScrollView, Dimensions, Pressable, Animated } from "react-native";
+import React, { useState, useMemo, useEffect } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Platform, ScrollView, Dimensions, Pressable, Animated, TextInput } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, isSameMonth, addDays, addWeeks, subWeeks, parseISO } from "date-fns";
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, isSameMonth, addDays, addWeeks, subWeeks, parseISO, addMonths, subMonths } from "date-fns";
 
 // Get screen dimensions
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -117,7 +117,11 @@ const DayCell = ({ date, isCurrentMonth, isToday, isSelected, events, onDayPress
 
 // Month Grid component
 const MonthView = ({ selectedDate, onDateSelect, onTaskPress, events }) => {
-  const currentDate = selectedDate ? parseISO(selectedDate) : new Date();
+  const [currentDate, setCurrentDate] = useState(selectedDate ? parseISO(selectedDate) : new Date());
+  
+  // Navigate to previous/next month
+  const goToPreviousMonth = () => setCurrentDate(subMonths(currentDate, 1));
+  const goToNextMonth = () => setCurrentDate(addMonths(currentDate, 1));
   
   // Generate days for the current month view
   const monthDays = useMemo(() => {
@@ -153,6 +157,18 @@ const MonthView = ({ selectedDate, onDateSelect, onTaskPress, events }) => {
 
   return (
     <View style={styles.monthContainer}>
+      <View style={styles.monthNavigation}>
+        <TouchableOpacity onPress={goToPreviousMonth} style={styles.navButton}>
+          <Ionicons name="chevron-back" size={20} color="#666" />
+        </TouchableOpacity>
+        <Text style={styles.monthYearText}>
+          {format(currentDate, 'MMMM yyyy')}
+        </Text>
+        <TouchableOpacity onPress={goToNextMonth} style={styles.navButton}>
+          <Ionicons name="chevron-forward" size={20} color="#666" />
+        </TouchableOpacity>
+      </View>
+      
       <View style={styles.weekdayHeader}>
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
           <Text key={day} style={styles.weekdayText}>{day}</Text>
@@ -373,11 +389,40 @@ const WeekView = ({ selectedDate, onDateSelect, onTaskPress, events }) => {
 };
 
 // Task Details Modal component
-const TaskDetailsModal = ({ visible, onClose, task, date }) => {
+const TaskDetailsModal = ({ visible, onClose, task, date, onTaskUpdate }) => {
   if (!task) return null;
 
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedTask, setEditedTask] = useState(task);
+  
   const priorityColor = PRIORITY_COLORS[task.priority] || '#6B7280';
   const categoryColor = CATEGORY_COLORS[task.category] || '#6B7280';
+  
+  const handleEditPress = () => {
+    setEditedTask({...task});
+    setIsEditing(true);
+  };
+  
+  const handleSavePress = () => {
+    onTaskUpdate(editedTask);
+    setIsEditing(false);
+  };
+  
+  const handleCancelPress = () => {
+    setIsEditing(false);
+  };
+  
+  const handleCategoryChange = (category) => {
+    setEditedTask({...editedTask, category});
+  };
+  
+  const handlePriorityChange = (priority) => {
+    setEditedTask({...editedTask, priority});
+  };
+  
+  const handleDescriptionChange = (description) => {
+    setEditedTask({...editedTask, description});
+  };
 
   return (
     <Modal
@@ -405,36 +450,109 @@ const TaskDetailsModal = ({ visible, onClose, task, date }) => {
               </Text>
             </View>
             
-            <View style={styles.tagsRow}>
-              <View style={[styles.tagPill, { backgroundColor: `${categoryColor}15`, borderColor: `${categoryColor}30` }]}>
-                <View style={[styles.tagDot, { backgroundColor: categoryColor }]} />
-                <Text style={[styles.tagText, { color: categoryColor }]}>{task.category}</Text>
+            {isEditing ? (
+              <View style={styles.editSection}>
+                <Text style={styles.sectionTitle}>Category</Text>
+                <View style={styles.categoryOptions}>
+                  {Object.keys(CATEGORY_COLORS).map((category) => (
+                    <TouchableOpacity
+                      key={category}
+                      style={[
+                        styles.categoryOption,
+                        { backgroundColor: `${CATEGORY_COLORS[category]}15` },
+                        editedTask.category === category && { 
+                          backgroundColor: `${CATEGORY_COLORS[category]}30`,
+                          borderWidth: 1,
+                          borderColor: CATEGORY_COLORS[category]
+                        }
+                      ]}
+                      onPress={() => handleCategoryChange(category)}
+                    >
+                      <View style={[styles.categoryDot, { backgroundColor: CATEGORY_COLORS[category] }]} />
+                      <Text style={styles.categoryOptionText}>{category}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                
+                <Text style={[styles.sectionTitle, { marginTop: 16 }]}>Priority</Text>
+                <View style={styles.priorityOptions}>
+                  {Object.keys(PRIORITY_COLORS).map((priority) => (
+                    <TouchableOpacity
+                      key={priority}
+                      style={[
+                        styles.priorityOption,
+                        { backgroundColor: `${PRIORITY_COLORS[priority]}15` },
+                        editedTask.priority === priority && { 
+                          backgroundColor: `${PRIORITY_COLORS[priority]}30`,
+                          borderWidth: 1,
+                          borderColor: PRIORITY_COLORS[priority]
+                        }
+                      ]}
+                      onPress={() => handlePriorityChange(priority)}
+                    >
+                      <Text style={[styles.priorityOptionText, { color: PRIORITY_COLORS[priority] }]}>
+                        {priority}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                
+                <Text style={[styles.sectionTitle, { marginTop: 16 }]}>Description</Text>
+                <TextInput
+                  style={styles.descriptionInput}
+                  value={editedTask.description}
+                  onChangeText={handleDescriptionChange}
+                  multiline
+                  numberOfLines={4}
+                  placeholder="Enter task description"
+                />
               </View>
-              
-              <View style={[styles.tagPill, { backgroundColor: `${priorityColor}15`, borderColor: `${priorityColor}30` }]}>
-                <Text style={[styles.tagText, { color: priorityColor }]}>{task.priority}</Text>
-              </View>
-            </View>
-            
-            <View style={styles.modalSection}>
-              <Text style={styles.sectionTitle}>Property</Text>
-              <View style={styles.propertyRowLarge}>
-                <Ionicons name="business-outline" size={16} color="#666" />
-                <Text style={styles.propertyTextLarge}>{task.property}</Text>
-              </View>
-            </View>
-            
-            <View style={styles.modalSection}>
-              <Text style={styles.sectionTitle}>Description</Text>
-              <Text style={styles.descriptionText}>{task.description}</Text>
-            </View>
+            ) : (
+              <>
+                <View style={styles.tagsRow}>
+                  <View style={[styles.tagPill, { backgroundColor: `${categoryColor}15`, borderColor: `${categoryColor}30` }]}>
+                    <View style={[styles.tagDot, { backgroundColor: categoryColor }]} />
+                    <Text style={[styles.tagText, { color: categoryColor }]}>{task.category}</Text>
+                  </View>
+                  
+                  <View style={[styles.tagPill, { backgroundColor: `${priorityColor}15`, borderColor: `${priorityColor}30` }]}>
+                    <Text style={[styles.tagText, { color: priorityColor }]}>{task.priority}</Text>
+                  </View>
+                </View>
+                
+                <View style={styles.modalSection}>
+                  <Text style={styles.sectionTitle}>Property</Text>
+                  <View style={styles.propertyRowLarge}>
+                    <Ionicons name="business-outline" size={16} color="#666" />
+                    <Text style={styles.propertyTextLarge}>{task.property}</Text>
+                  </View>
+                </View>
+                
+                <View style={styles.modalSection}>
+                  <Text style={styles.sectionTitle}>Description</Text>
+                  <Text style={styles.descriptionText}>{task.description}</Text>
+                </View>
+              </>
+            )}
           </ScrollView>
           
           <View style={styles.modalFooter}>
-            <TouchableOpacity style={styles.editButton}>
-              <Ionicons name="create-outline" size={20} color="#FFF" />
-              <Text style={styles.editButtonText}>Edit Task</Text>
-            </TouchableOpacity>
+            {isEditing ? (
+              <View style={styles.editButtonsRow}>
+                <TouchableOpacity style={styles.cancelButton} onPress={handleCancelPress}>
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.saveButton} onPress={handleSavePress}>
+                  <Ionicons name="checkmark" size={20} color="#FFF" />
+                  <Text style={styles.saveButtonText}>Save Changes</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity style={styles.editButton} onPress={handleEditPress}>
+                <Ionicons name="create-outline" size={20} color="#FFF" />
+                <Text style={styles.editButtonText}>Edit Task</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </View>
@@ -443,11 +561,17 @@ const TaskDetailsModal = ({ visible, onClose, task, date }) => {
 };
 
 // Main NotionCalendar component
-const NotionCalendar = ({ events }) => {
+const NotionCalendar = ({ events, onTaskUpdate }) => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [viewMode, setViewMode] = useState('month');
   const [selectedTask, setSelectedTask] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [localEvents, setLocalEvents] = useState(events);
+
+  // Update local events when props events change
+  useEffect(() => {
+    setLocalEvents(events);
+  }, [events]);
 
   const handleTaskPress = (task) => {
     setSelectedTask(task);
@@ -456,6 +580,19 @@ const NotionCalendar = ({ events }) => {
 
   const handleDateSelect = (dateString) => {
     setSelectedDate(dateString);
+  };
+  
+  const handleTaskUpdate = (updatedTask) => {
+    const updatedEvents = localEvents.map(event => 
+      event.id === updatedTask.id ? updatedTask : event
+    );
+    setLocalEvents(updatedEvents);
+    setSelectedTask(updatedTask);
+    
+    // Call the parent's onTaskUpdate if provided
+    if (onTaskUpdate) {
+      onTaskUpdate(updatedTask);
+    }
   };
 
   return (
@@ -471,14 +608,14 @@ const NotionCalendar = ({ events }) => {
             selectedDate={selectedDate}
             onDateSelect={handleDateSelect}
             onTaskPress={handleTaskPress}
-            events={events}
+            events={localEvents}
           />
         ) : (
           <WeekView
             selectedDate={selectedDate}
             onDateSelect={handleDateSelect}
             onTaskPress={handleTaskPress}
-            events={events}
+            events={localEvents}
           />
         )}
       </View>
@@ -491,6 +628,7 @@ const NotionCalendar = ({ events }) => {
         }}
         task={selectedTask}
         date={selectedDate}
+        onTaskUpdate={handleTaskUpdate}
       />
     </View>
   );
@@ -558,6 +696,23 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 12,
     paddingTop: 12,
+  },
+  monthNavigation: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  navButton: {
+    padding: 8,
+  },
+  monthYearText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
   },
   weekdayHeader: {
     flexDirection: 'row',
@@ -692,9 +847,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
-  },
-  navButton: {
-    padding: 8,
   },
   weekRangeText: {
     fontSize: 16,
@@ -944,7 +1096,94 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     fontSize: 14,
   },
-  // Removed redundant weekBottomPadding style
+  editSection: {
+    marginBottom: 16,
+  },
+  categoryOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  categoryOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    borderRadius: 4,
+    marginBottom: 4,
+    gap: 4,
+  },
+  categoryOptionText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  categoryDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  priorityOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
+  },
+  priorityOption: {
+    padding: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    borderRadius: 4,
+  },
+  priorityOptionText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  descriptionInput: {
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    borderRadius: 4,
+    marginTop: 4,
+    textAlignVertical: 'top',
+    minHeight: 100,
+  },
+  editButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: '#6B7280',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  saveButton: {
+    flex: 2,
+    backgroundColor: '#4573D2',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+  },
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
 });
 
 export default NotionCalendar; 

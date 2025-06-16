@@ -1,9 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, StyleSheet } from "react-native";
 import { NotionCalendar } from "./components";
 
 // Sample maintenance events
-const MAINTENANCE_EVENTS = [
+const INITIAL_MAINTENANCE_EVENTS = [
   {
     id: '1',
     title: 'AC Filter Replacement',
@@ -115,9 +115,21 @@ const MAINTENANCE_EVENTS = [
 ];
 
 export default function UpkeepScreen() {
+  const [maintenanceEvents, setMaintenanceEvents] = useState(INITIAL_MAINTENANCE_EVENTS);
+  
+  const handleTaskUpdate = (updatedTask) => {
+    const updatedEvents = maintenanceEvents.map(event => 
+      event.id === updatedTask.id ? updatedTask : event
+    );
+    setMaintenanceEvents(updatedEvents);
+  };
+  
   return (
     <View style={styles.container}>
-      <NotionCalendar events={MAINTENANCE_EVENTS} />
+      <NotionCalendar 
+        events={maintenanceEvents}
+        onTaskUpdate={handleTaskUpdate}
+      />
     </View>
   );
 }

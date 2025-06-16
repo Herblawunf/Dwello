@@ -17,6 +17,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import * as ImagePicker from "expo-image-picker";
 import { MaterialIcons } from "@expo/vector-icons";
+import { Calendar } from "react-native-calendars";
 // FileSystem is no longer needed as FormData handles URI directly for uploads
 // import * as FileSystem from "expo-file-system";
 
@@ -31,9 +32,21 @@ export default function Contact() {
   const [isUploading, setIsUploading] = useState(false);
   const [showPriorityInfo, setShowPriorityInfo] = useState(false); // New state for info modal
 
+  // ---------------- Availability calendar states ----------------
+  const [calendarVisible, setCalendarVisible] = useState(false);
+  const [markedDates, setMarkedDates] = useState({});
+  const [rangeStart, setRangeStart] = useState(null);
+  const [alwaysAvailable, setAlwaysAvailable] = useState(false);
+
+  // ---------------- Reason dropdown options ----------------
   const reasons = [
     { label: "General Inquiry", value: "general" },
-    { label: "Maintenance request", value: "maintenance" },
+    { label: "Plumbing Issue", value: "plumbing" },
+    { label: "Electrical Issue", value: "electrical" },
+    { label: "Heating/Cooling Issue", value: "hvac" },
+    { label: "Appliance Repair", value: "appliance" },
+    { label: "Pest Control", value: "pest" },
+    { label: "Other Maintenance", value: "maintenance_other" },
   ];
 
   const priorities = [
@@ -366,6 +379,68 @@ export default function Contact() {
     }
   };
 
+  // ---------------- Helpers for availability selection ----------------
+
+  const getDatesBetween = (startDateStr, endDateStr) => {
+    const dates = {};
+    const start = new Date(startDateStr);
+    const end = new Date(endDateStr);
+
+    // Ensure chronological order
+    if (start > end) {
+      return getDatesBetween(endDateStr, startDateStr);
+    }
+
+    const current = new Date(start);
+    while (current <= end) {
+      const dateString = current.toISOString().split("T")[0];
+      dates[dateString] = {
+        selected: true,
+        selectedColor: "#4CAF50",
+      };
+      current.setDate(current.getDate() + 1);
+    }
+    return dates;
+  };
+
+  const handleDayPress = (day) => {
+    if (alwaysAvailable) return; // Skip if always available selected
+
+    const { dateString } = day;
+
+    if (rangeStart) {
+      // Range end selected – mark entire span
+      const range = getDatesBetween(rangeStart, dateString);
+      setMarkedDates((prev) => ({ ...prev, ...range }));
+      setRangeStart(null);
+    } else if (markedDates[dateString]) {
+      // Toggle off existing mark
+      const updated = { ...markedDates };
+      delete updated[dateString];
+      setMarkedDates(updated);
+    } else {
+      // Single-day toggle on
+      setMarkedDates((prev) => ({
+        ...prev,
+        [dateString]: { selected: true, selectedColor: "#4CAF50" },
+      }));
+    }
+  };
+
+  const handleDayLongPress = (day) => {
+    if (alwaysAvailable) return;
+    setRangeStart(day.dateString);
+  };
+
+  const toggleAlwaysAvailable = () => {
+    setAlwaysAvailable((prev) => !prev);
+    if (!alwaysAvailable) {
+      // When switching to always available, clear specific selections
+      setMarkedDates({});
+      setRangeStart(null);
+    }
+  };
+
   return (
     <TouchableWithoutFeedback onPress={dismissKeyboard}>
       <View style={styles.container}>
@@ -426,6 +501,38 @@ export default function Contact() {
                 </Text>
               </View>
               <Text style={styles.dropdownArrow}>▼</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* ---------------- Availability Section ---------------- */}
+          <View style={styles.section}>
+            <Text style={styles.label}>Availability for Maintenance</Text>
+
+            <TouchableOpacity
+              style={styles.dropdownButton}
+              onPress={() => setCalendarVisible(true)}
+              disabled={alwaysAvailable}
+            >
+              <Text style={styles.dropdownText}>
+                {alwaysAvailable
+                  ? "Always available"
+                  : Object.keys(markedDates).length > 0
+                  ? `${Object.keys(markedDates).length} day(s) selected`
+                  : "Select available days..."}
+              </Text>
+              {!alwaysAvailable && <Text style={styles.dropdownArrow}>▼</Text>}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.checkboxRow}
+              onPress={toggleAlwaysAvailable}
+            >
+              <MaterialIcons
+                name={alwaysAvailable ? "check-box" : "check-box-outline-blank"}
+                size={24}
+                color="#000"
+              />
+              <Text style={[styles.dropdownText, { marginLeft: 8 }]}>Always available</Text>
             </TouchableOpacity>
           </View>
 
@@ -593,6 +700,37 @@ export default function Contact() {
               <Text style={styles.attachButtonText}>📎 Attach Media</Text>
             )}
           </TouchableOpacity>
+
+          {/* Calendar Modal */}
+          <Modal
+            visible={calendarVisible}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setCalendarVisible(false)}
+          >
+            <TouchableOpacity
+              style={styles.modalOverlay}
+              activeOpacity={1}
+              onPress={() => setCalendarVisible(false)}
+            >
+              <TouchableWithoutFeedback>
+                <View style={styles.calendarModal}>
+                  <Calendar
+                    onDayPress={handleDayPress}
+                    onDayLongPress={handleDayLongPress}
+                    markedDates={markedDates}
+                    markingType="simple"
+                  />
+                  <TouchableOpacity
+                    style={styles.closeButton}
+                    onPress={() => setCalendarVisible(false)}
+                  >
+                    <Text style={styles.closeButtonText}>Done</Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableWithoutFeedback>
+            </TouchableOpacity>
+          </Modal>
 
           <TouchableOpacity
             style={[
@@ -817,9 +955,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-  closeButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
+  calendarModal: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    width: "90%",
+    padding: 10,
+    alignItems: "center",
+  },
+  checkboxRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 10,
   },
 });

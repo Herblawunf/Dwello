@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useGlobalSearchParams } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { MaterialIcons } from "@expo/vector-icons";
+import ExpenseModal from "../components/ExpenseModal";
 
 export default function PropertyDetails() {
   const insets = useSafeAreaInsets();
@@ -21,6 +22,7 @@ export default function PropertyDetails() {
   const [property, setProperty] = useState(null);
   const [tenants, setTenants] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
 
   const getPropertyDetails = async () => {
     if (!houseId) return;
@@ -55,6 +57,10 @@ export default function PropertyDetails() {
     } finally {
       setRefreshing(false);
     }
+  };
+
+  const handleExpenseAdded = () => {
+    getPropertyDetails();
   };
 
   useEffect(() => {
@@ -119,6 +125,16 @@ export default function PropertyDetails() {
         </Text>
       </View>
 
+      <View style={styles.actionContainer}>
+        <TouchableOpacity
+          style={styles.addExpenseButton}
+          onPress={() => setShowExpenseModal(true)}
+        >
+          <MaterialIcons name="add-circle-outline" size={18} color="#007AFF" />
+          <Text style={styles.addExpenseText}>Add Expense</Text>
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.tenantsSection}>
         <Text style={styles.sectionTitle}>Tenants</Text>
         <FlatList
@@ -134,6 +150,13 @@ export default function PropertyDetails() {
           style={styles.tenantsList}
         />
       </View>
+
+      <ExpenseModal
+        visible={showExpenseModal}
+        onClose={() => setShowExpenseModal(false)}
+        properties={property ? [{ id: property.house_id, name: property.street_address }] : []}
+        onExpenseAdded={handleExpenseAdded}
+      />
     </SafeAreaView>
   );
 }
@@ -230,5 +253,27 @@ const styles = StyleSheet.create({
     color: '#FFA500',
     fontSize: 12,
     fontWeight: '500',
+  },
+  actionContainer: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  addExpenseButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f9ff',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#d0e8ff',
+  },
+  addExpenseText: {
+    color: '#007AFF',
+    fontWeight: '500',
+    fontSize: 14,
+    marginLeft: 6,
   },
 });
