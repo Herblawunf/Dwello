@@ -19,6 +19,8 @@ import { Context as AuthContext } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { colors } from "../../theme/colors";
+import { GestureHandlerRootView, Swipeable } from "react-native-gesture-handler";
+import * as Haptics from "expo-haptics";
 
 // Define a default theme object with more modern colors
 const defaultTheme = {
@@ -90,6 +92,7 @@ export default class Requests extends Component {
       propertyMenuVisible: false,
       statusInfoVisible: false,
       selectedStatus: null,
+      selectedRequestId: null,
       requests: [],
       tabBarHeight: 49, // Default value
     };
@@ -197,11 +200,13 @@ export default class Requests extends Component {
 
   setStatus = async (request_id, status) => {
     try {
+      console.log('Setting status:', status, 'for request:', request_id);
       const { data, error } = await supabase.rpc("update_request_status", {
         p_request_id: request_id,
         p_new_status: status,
       });
       if (error) throw error;
+      console.log('Status update successful');
       this.getRequests();
     } catch (error) {
       console.error("Error updating status:", error);
@@ -274,106 +279,139 @@ export default class Requests extends Component {
       router.push(`/(landlord_tabs)/chat/${item.request_id}`);
     };
 
-    return (
-      <View style={styles.requestCard}>
-        <View style={styles.requestCardContent}>
-          <View
-            style={[
-              styles.coloredSidebar,
-              { backgroundColor: priorityInfo.color },
-            ]}
-          />
+    const handleSwipeRight = () => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      this.setState({
+        selectedStatus: item.status,
+        selectedRequestId: item.request_id,
+        statusInfoVisible: true
+      });
+    };
 
-          <TouchableOpacity
-            style={styles.requestCardInner}
-            activeOpacity={0.9}
-            onPress={handlePress}
-          >
-            <View style={styles.userInfoHeader}>
-              <View style={styles.userIconContainer}>
-                <Text style={styles.userInitials}>
-                  {item.poster_first_name.charAt(0) +
-                    item.poster_last_name.charAt(0)}
-                </Text>
-              </View>
-              <View style={styles.userTextContainer}>
-                <Text style={styles.userName}>
-                  {item.poster_first_name} {item.poster_last_name}
-                </Text>
-                <View style={styles.userAddressContainer}>
-                  <MaterialIcons
-                    name="home"
-                    size={12}
-                    color={this.theme.colors.placeholder}
-                    style={{ marginRight: 4 }}
-                  />
-                  <Text style={styles.userAddress} numberOfLines={1}>
-                    {item.street_address}
+    const renderRightActions = (progress, dragX) => {
+      const scale = dragX.interpolate({
+        inputRange: [-100, 0],
+        outputRange: [1, 0],
+        extrapolate: 'clamp',
+      });
+
+      return (
+        <View style={styles.swipeActionContainer}>
+          <Animated.View style={[styles.swipeAction, { transform: [{ scale }] }]}>
+            <MaterialIcons name="info" size={24} color="#FFFFFF" />
+          </Animated.View>
+        </View>
+      );
+    };
+
+    return (
+      <Swipeable
+        renderRightActions={renderRightActions}
+        onSwipeableOpen={handleSwipeRight}
+        friction={2}
+        rightThreshold={40}
+        enabled={item.status !== "completed"}
+      >
+        <View style={styles.requestCard}>
+          <View style={styles.requestCardContent}>
+            <View
+              style={[
+                styles.coloredSidebar,
+                { backgroundColor: priorityInfo.color },
+              ]}
+            />
+
+            <TouchableOpacity
+              style={styles.requestCardInner}
+              activeOpacity={0.9}
+              onPress={handlePress}
+            >
+              <View style={styles.userInfoHeader}>
+                <View style={styles.userIconContainer}>
+                  <Text style={styles.userInitials}>
+                    {item.poster_first_name.charAt(0) +
+                      item.poster_last_name.charAt(0)}
+                  </Text>
+                </View>
+                <View style={styles.userTextContainer}>
+                  <Text style={styles.userName}>
+                    {item.poster_first_name} {item.poster_last_name}
+                  </Text>
+                  <View style={styles.userAddressContainer}>
+                    <MaterialIcons
+                      name="home"
+                      size={12}
+                      color={this.theme.colors.placeholder}
+                      style={{ marginRight: 4 }}
+                    />
+                    <Text style={styles.userAddress} numberOfLines={1}>
+                      {item.street_address}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.priorityContainer}>
+                  <View
+                    style={[
+                      styles.priorityBadge,
+                      { backgroundColor: priorityInfo.color },
+                    ]}
+                  >
+                    <MaterialIcons
+                      name={priorityInfo.icon}
+                      size={12}
+                      color="#FFFFFF"
+                    />
+                  </View>
+                  <Text
+                    style={[styles.priorityText, { color: priorityInfo.color }]}
+                  >
+                    {priorityInfo.text}
                   </Text>
                 </View>
               </View>
-              <View style={styles.priorityContainer}>
+
+              <Text style={styles.descriptionText} numberOfLines={2}>
+                {item.description}
+              </Text>
+
+              <View style={styles.engagementBar}>
                 <View
                   style={[
-                    styles.priorityBadge,
-                    { backgroundColor: priorityInfo.color },
+                    styles.statusBadge,
+                    { backgroundColor: statusInfo.color },
                   ]}
                 >
                   <MaterialIcons
-                    name={priorityInfo.icon}
+                    name={statusInfo.name}
                     size={12}
                     color="#FFFFFF"
                   />
+                  <Text style={styles.statusText}>{item.status}</Text>
                 </View>
-                <Text
-                  style={[styles.priorityText, { color: priorityInfo.color }]}
-                >
-                  {priorityInfo.text}
-                </Text>
+
+                <View style={styles.dateContainer}>
+                  <MaterialIcons
+                    name="event"
+                    size={12}
+                    color={this.theme.colors.placeholder}
+                    style={styles.dateIcon}
+                  />
+                  <Text style={styles.dateText}>{formattedDate}</Text>
+                </View>
+
+                <TouchableOpacity style={styles.viewButton} onPress={handlePress}>
+                  <Text style={styles.viewButtonText}>View</Text>
+                  <MaterialIcons
+                    name="chevron-right"
+                    size={14}
+                    color={this.theme.colors.primary}
+                  />
+                </TouchableOpacity>
               </View>
-            </View>
-
-            <Text style={styles.descriptionText} numberOfLines={2}>
-              {item.description}
-            </Text>
-
-            <View style={styles.engagementBar}>
-              <View
-                style={[
-                  styles.statusBadge,
-                  { backgroundColor: statusInfo.color },
-                ]}
-              >
-                <MaterialIcons
-                  name={statusInfo.name}
-                  size={12}
-                  color="#FFFFFF"
-                />
-                <Text style={styles.statusText}>{item.status}</Text>
-              </View>
-
-              <View style={styles.dateContainer}>
-                <MaterialIcons
-                  name="event"
-                  size={12}
-                  color={this.theme.colors.placeholder}
-                  style={styles.dateIcon}
-                />
-                <Text style={styles.dateText}>{formattedDate}</Text>
-              </View>
-
-              <TouchableOpacity style={styles.viewButton} onPress={handlePress}>
-                <Text style={styles.viewButtonText}>View</Text>
-                <MaterialIcons
-                  name="chevron-right"
-                  size={14}
-                  color={this.theme.colors.primary}
-                />
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </Swipeable>
     );
   };
 
@@ -387,289 +425,281 @@ export default class Requests extends Component {
       propertyMenuVisible,
       statusInfoVisible,
       selectedStatus,
+      selectedRequestId,
       requests,
     } = this.state;
 
     return (
-      <SafeAreaInsetsContext.Consumer>
-        {(insets) => (
-          <SafeAreaView
-            style={[
-              styles.container,
-              {
-                paddingTop:
-                  Platform.OS === "android"
-                    ? StatusBar.currentHeight
-                    : insets.top,
-              },
-            ]}
-          >
-            <View style={styles.header}>
-              <View style={styles.tabBar}>
-                <TouchableOpacity
-                  style={[
-                    styles.tab,
-                    activeTab === "pending" && styles.activeTab,
-                  ]}
-                  onPress={() => this.setState({ activeTab: "pending" })}
-                >
-                  <Text
-                    style={
-                      activeTab === "pending"
-                        ? styles.activeTabText
-                        : styles.tabText
-                    }
-                  >
-                    Pending
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.tab,
-                    activeTab === "completed" && styles.activeTab,
-                  ]}
-                  onPress={() => this.setState({ activeTab: "completed" })}
-                >
-                  <Text
-                    style={
-                      activeTab === "completed"
-                        ? styles.activeTabText
-                        : styles.tabText
-                    }
-                  >
-                    Completed
-                  </Text>
-                </TouchableOpacity>
-              </View>
-              <TouchableOpacity
-                style={styles.sortButton}
-                onPress={() => this.setState({ sortMenuVisible: true })}
-              >
-                <MaterialIcons
-                  name="sort"
-                  size={24}
-                  color={defaultTheme.colors.primary}
-                />
-              </TouchableOpacity>
-            </View>
-
-            <Modal
-              visible={sortMenuVisible}
-              transparent={true}
-              animationType="fade"
-              onRequestClose={() => this.setState({ sortMenuVisible: false })}
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaInsetsContext.Consumer>
+          {(insets) => (
+            <SafeAreaView
+              style={[
+                styles.container,
+                {
+                  paddingTop:
+                    Platform.OS === "android"
+                      ? StatusBar.currentHeight
+                      : insets.top,
+                },
+              ]}
             >
-              <TouchableOpacity
-                style={styles.modalOverlay}
-                activeOpacity={1}
-                onPress={() => this.setState({ sortMenuVisible: false })}
-              >
-                <View style={styles.sortMenu}>
+              <View style={styles.header}>
+                <View style={styles.tabBar}>
                   <TouchableOpacity
-                    style={styles.sortMenuItem}
-                    onPress={() => {
-                      this.setState({
-                        sortBy: "time",
-                        sortMenuVisible: false,
-                      });
-                    }}
+                    style={[
+                      styles.tab,
+                      activeTab === "pending" && styles.activeTab,
+                    ]}
+                    onPress={() => this.setState({ activeTab: "pending" })}
                   >
-                    <MaterialIcons name="schedule" size={20} color="#757575" />
-                    <Text style={styles.sortMenuText}>Sort by Time</Text>
+                    <Text
+                      style={
+                        activeTab === "pending"
+                          ? styles.activeTabText
+                          : styles.tabText
+                      }
+                    >
+                      Pending
+                    </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={styles.sortMenuItem}
-                    onPress={() => {
-                      this.setState({
-                        sortBy: "priority",
-                        sortMenuVisible: false,
-                      });
-                    }}
+                    style={[
+                      styles.tab,
+                      activeTab === "completed" && styles.activeTab,
+                    ]}
+                    onPress={() => this.setState({ activeTab: "completed" })}
                   >
-                    <MaterialIcons name="flag" size={20} color="#757575" />
-                    <Text style={styles.sortMenuText}>Sort by Priority</Text>
+                    <Text
+                      style={
+                        activeTab === "completed"
+                          ? styles.activeTabText
+                          : styles.tabText
+                      }
+                    >
+                      Completed
+                    </Text>
                   </TouchableOpacity>
                 </View>
-              </TouchableOpacity>
-            </Modal>
-
-            <View style={styles.filterContainer}>
-              <View style={styles.searchContainer}>
-                <MaterialIcons name="search" size={20} color="#757575" />
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Search requests..."
-                  value={searchQuery}
-                  onChangeText={(text) => this.setState({ searchQuery: text })}
-                />
+                <TouchableOpacity
+                  style={styles.sortButton}
+                  onPress={() => this.setState({ sortMenuVisible: true })}
+                >
+                  <MaterialIcons
+                    name="sort"
+                    size={24}
+                    color={defaultTheme.colors.primary}
+                  />
+                </TouchableOpacity>
               </View>
 
-              <TouchableOpacity
-                style={styles.propertyButton}
-                onPress={() => this.setState({ propertyMenuVisible: true })}
+              <Modal
+                visible={sortMenuVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => this.setState({ sortMenuVisible: false })}
               >
-                <MaterialIcons name="home" size={20} color="#757575" />
-                <Text style={styles.propertyButtonText}>
-                  {selectedProperty
-                    ? selectedProperty.street_address
-                    : "All Properties"}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <Modal
-              visible={propertyMenuVisible}
-              transparent={true}
-              animationType="fade"
-              onRequestClose={() =>
-                this.setState({ propertyMenuVisible: false })
-              }
-            >
-              <TouchableOpacity
-                style={styles.modalOverlay}
-                activeOpacity={1}
-                onPress={() => this.setState({ propertyMenuVisible: false })}
-              >
-                <View style={[styles.sortMenu, styles.propertyMenu]}>
-                  <TouchableOpacity
-                    style={styles.sortMenuItem}
-                    onPress={() => {
-                      this.setState({
-                        selectedProperty: null,
-                        propertyMenuVisible: false,
-                      });
-                    }}
-                  >
-                    <Text style={styles.sortMenuText}>All Properties</Text>
-                  </TouchableOpacity>
-                  {properties.map((property) => (
+                <TouchableOpacity
+                  style={styles.modalOverlay}
+                  activeOpacity={1}
+                  onPress={() => this.setState({ sortMenuVisible: false })}
+                >
+                  <View style={styles.sortMenu}>
                     <TouchableOpacity
-                      key={property.house_id}
                       style={styles.sortMenuItem}
                       onPress={() => {
                         this.setState({
-                          selectedProperty: property,
+                          sortBy: "time",
+                          sortMenuVisible: false,
+                        });
+                      }}
+                    >
+                      <MaterialIcons name="schedule" size={20} color="#757575" />
+                      <Text style={styles.sortMenuText}>Sort by Time</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.sortMenuItem}
+                      onPress={() => {
+                        this.setState({
+                          sortBy: "priority",
+                          sortMenuVisible: false,
+                        });
+                      }}
+                    >
+                      <MaterialIcons name="flag" size={20} color="#757575" />
+                      <Text style={styles.sortMenuText}>Sort by Priority</Text>
+                    </TouchableOpacity>
+                  </View>
+                </TouchableOpacity>
+              </Modal>
+
+              <View style={styles.filterContainer}>
+                <View style={styles.searchContainer}>
+                  <MaterialIcons name="search" size={20} color="#757575" />
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder="Search requests..."
+                    value={searchQuery}
+                    onChangeText={(text) => this.setState({ searchQuery: text })}
+                  />
+                </View>
+
+                <TouchableOpacity
+                  style={styles.propertyButton}
+                  onPress={() => this.setState({ propertyMenuVisible: true })}
+                >
+                  <MaterialIcons name="home" size={20} color="#757575" />
+                  <Text style={styles.propertyButtonText}>
+                    {selectedProperty
+                      ? selectedProperty.street_address
+                      : "All Properties"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <Modal
+                visible={propertyMenuVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() =>
+                  this.setState({ propertyMenuVisible: false })
+                }
+              >
+                <TouchableOpacity
+                  style={styles.modalOverlay}
+                  activeOpacity={1}
+                  onPress={() => this.setState({ propertyMenuVisible: false })}
+                >
+                  <View style={[styles.sortMenu, styles.propertyMenu]}>
+                    <TouchableOpacity
+                      style={styles.sortMenuItem}
+                      onPress={() => {
+                        this.setState({
+                          selectedProperty: null,
                           propertyMenuVisible: false,
                         });
                       }}
                     >
-                      <Text style={styles.sortMenuText}>
-                        {property.street_address}
-                      </Text>
+                      <Text style={styles.sortMenuText}>All Properties</Text>
                     </TouchableOpacity>
-                  ))}
-                </View>
-              </TouchableOpacity>
-            </Modal>
-
-            <Modal
-              visible={statusInfoVisible}
-              transparent={true}
-              animationType="fade"
-              onRequestClose={() => this.setState({ statusInfoVisible: false })}
-            >
-              <TouchableOpacity
-                style={styles.modalOverlay}
-                activeOpacity={1}
-                onPress={() => this.setState({ statusInfoVisible: false })}
-              >
-                <View style={styles.statusInfoContainer}>
-                  <Text style={styles.statusInfoTitle}>
-                    Request Status Workflow
-                  </Text>
-                  {this.statusWorkflow.map((status, index) => {
-                    const currentStatusIndex =
-                      this.getStatusIndex(selectedStatus);
-                    const isNext = currentStatusIndex + 1 === index;
-                    const isClickable = isNext && status.status !== "completed";
-                    const shouldHighlight =
-                      isNext && status.status !== "completed";
-                    const statusIcon = this.getStatusIcon(status.status);
-
-                    return (
+                    {properties.map((property) => (
                       <TouchableOpacity
-                        key={status.status}
-                        style={[
-                          styles.statusInfoItem,
-                          selectedStatus === status.status &&
-                            styles.statusInfoItemActive,
-                          shouldHighlight && styles.statusInfoItemNext,
-                        ]}
+                        key={property.house_id}
+                        style={styles.sortMenuItem}
                         onPress={() => {
-                          if (isClickable) {
-                            this.setStatus(
-                              requests.find((r) => r.status === selectedStatus)
-                                .request_id,
-                              status.status
-                            );
-                            this.setState({ statusInfoVisible: false });
-                          }
+                          this.setState({
+                            selectedProperty: property,
+                            propertyMenuVisible: false,
+                          });
                         }}
-                        disabled={!isClickable}
                       >
-                        <View style={styles.statusInfoHeader}>
-                          <Text style={styles.statusInfoLabel}>
-                            {status.label}
-                          </Text>
-                          {index < this.statusWorkflow.length - 1 &&
-                          index < currentStatusIndex ? (
-                            <MaterialIcons
-                              name={statusIcon.name}
-                              size={20}
-                              color="#757575"
-                            />
-                          ) : null}
-                        </View>
-                        <Text style={styles.statusInfoDescription}>
-                          {status.description}
+                        <Text style={styles.sortMenuText}>
+                          {property.street_address}
                         </Text>
                       </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </TouchableOpacity>
-            </Modal>
+                    ))}
+                  </View>
+                </TouchableOpacity>
+              </Modal>
 
-            <FlatList
-              data={this.sortRequests(
-                this.filterRequests(
-                  requests.filter(
-                    (r) =>
-                      (r.status === "completed") === (activeTab === "completed")
+              <Modal
+                visible={statusInfoVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => this.setState({ statusInfoVisible: false })}
+              >
+                <TouchableOpacity
+                  style={styles.modalOverlay}
+                  activeOpacity={1}
+                  onPress={() => this.setState({ statusInfoVisible: false })}
+                >
+                  <View style={styles.statusInfoContainer}>
+                    <Text style={styles.statusInfoTitle}>Request Status Workflow</Text>
+                    {this.statusWorkflow.map((status, index) => {
+                      const currentStatusIndex = this.getStatusIndex(selectedStatus);
+                      const isNext = currentStatusIndex + 1 === index;
+                      const isClickable = isNext;
+                      const shouldHighlight = isNext;
+
+                      return (
+                        <TouchableOpacity
+                          key={status.status}
+                          style={[
+                            styles.statusInfoItem,
+                            selectedStatus === status.status &&
+                              styles.statusInfoItemActive,
+                            shouldHighlight && styles.statusInfoItemNext,
+                          ]}
+                          onPress={() => {
+                            if (isClickable) {
+                              this.setStatus(selectedRequestId, status.status);
+                              this.setState({ statusInfoVisible: false });
+                            }
+                          }}
+                          disabled={!isClickable}
+                        >
+                          <View style={styles.statusInfoHeader}>
+                            <Text style={styles.statusInfoLabel}>{status.label}</Text>
+                            {index < this.statusWorkflow.length - 1 &&
+                            index < currentStatusIndex ? (
+                              <MaterialIcons
+                                name="arrow-downward"
+                                size={20}
+                                color="#757575"
+                              />
+                            ) : null}
+                          </View>
+                          <Text style={styles.statusInfoDescription}>
+                            {status.description}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </TouchableOpacity>
+              </Modal>
+
+              <FlatList
+                data={this.sortRequests(
+                  this.filterRequests(
+                    requests.filter(
+                      (r) =>
+                        (r.status === "completed") === (activeTab === "completed")
+                    )
                   )
-                )
-              )}
-              renderItem={this.renderRequest}
-              keyExtractor={(item) => item.request_id}
-              style={styles.list}
-              contentContainerStyle={[
-                styles.listContent,
-                !requests.length && styles.emptyListContent,
-              ]}
-              showsVerticalScrollIndicator={false}
-              initialNumToRender={10}
-              maxToRenderPerBatch={10}
-              windowSize={10}
-              removeClippedSubviews={true}
-              ListEmptyComponent={() => (
-                <View style={styles.emptyState}>
-                  <MaterialIcons
-                    name="inbox"
-                    size={64}
-                    color={this.theme.colors.placeholder}
-                  />
-                  <Text style={styles.emptyStateTitle}>No requests found</Text>
-                  <Text style={styles.emptyStateText}>
-                    {activeTab === "pending"
-                      ? "There are no pending maintenance requests."
-                      : "There are no completed maintenance requests."}
-                  </Text>
-                </View>
-              )}
-            />
-          </SafeAreaView>
-        )}
-      </SafeAreaInsetsContext.Consumer>
+                )}
+                renderItem={this.renderRequest}
+                keyExtractor={(item) => item.request_id}
+                style={styles.list}
+                contentContainerStyle={[
+                  styles.listContent,
+                  !requests.length && styles.emptyListContent,
+                ]}
+                showsVerticalScrollIndicator={false}
+                initialNumToRender={10}
+                maxToRenderPerBatch={10}
+                windowSize={10}
+                removeClippedSubviews={true}
+                ListEmptyComponent={() => (
+                  <View style={styles.emptyState}>
+                    <MaterialIcons
+                      name="inbox"
+                      size={64}
+                      color={this.theme.colors.placeholder}
+                    />
+                    <Text style={styles.emptyStateTitle}>No requests found</Text>
+                    <Text style={styles.emptyStateText}>
+                      {activeTab === "pending"
+                        ? "There are no pending maintenance requests."
+                        : "There are no completed maintenance requests."}
+                    </Text>
+                  </View>
+                )}
+              />
+            </SafeAreaView>
+          )}
+        </SafeAreaInsetsContext.Consumer>
+      </GestureHandlerRootView>
     );
   }
 }
@@ -1018,5 +1048,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: defaultTheme.colors.placeholder,
     textAlign: "center",
+  },
+  swipeActionContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    padding: 10,
+  },
+  swipeAction: {
+    backgroundColor: defaultTheme.colors.primary,
+    padding: 10,
+    borderRadius: 10,
   },
 });
