@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import {
   View,
   SafeAreaView,
@@ -11,50 +11,67 @@ import {
   Image,
   ActivityIndicator,
   Alert,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { supabase } from '@/lib/supabase';
-import { Context as AuthContext } from '@/context/AuthContext';
-import { useContext } from 'react';
-import * as ImagePicker from 'expo-image-picker';
-import { useTheme } from '@/context/ThemeContext';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { supabase } from "@/lib/supabase";
+import { Context as AuthContext } from "@/context/AuthContext";
+import { useContext } from "react";
+import * as ImagePicker from "expo-image-picker";
+import { useTheme } from "@/context/ThemeContext";
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
 
 const MessageBubble = ({ message, isOwnMessage }) => {
   const theme = useTheme();
-  
+
   return (
-    <View style={[
-      styles.messageBubble,
-      isOwnMessage ? [styles.ownMessage, { backgroundColor: theme.colors.primary }] : [styles.otherMessage, { backgroundColor: theme.colors.surface }]
-    ]}>
+    <View
+      style={[
+        styles.messageBubble,
+        isOwnMessage
+          ? [styles.ownMessage, { backgroundColor: theme.colors.primary }]
+          : [styles.otherMessage, { backgroundColor: theme.colors.surface }],
+      ]}
+    >
       {!isOwnMessage && (
-        <ThemedText style={[styles.senderName, { color: theme.colors.primary }]}>
-          {message.sender_name || 'Unknown User'}
+        <ThemedText
+          style={[styles.senderName, { color: theme.colors.primary }]}
+        >
+          {message.sender_name || "Unknown User"}
         </ThemedText>
       )}
       {message.attachment && (
-        <Image 
-          source={{ uri: message.attachment }} 
+        <Image
+          source={{ uri: message.attachment }}
           style={styles.messageImage}
           resizeMode="cover"
         />
       )}
       {message.content && (
-        <ThemedText style={[
-          styles.messageText,
-          isOwnMessage ? { color: '#FFFFFF' } : { color: theme.colors.onSurface }
-        ]}>
+        <ThemedText
+          style={[
+            styles.messageText,
+            isOwnMessage
+              ? { color: "#FFFFFF" }
+              : { color: theme.colors.onSurface },
+          ]}
+        >
           {message.content}
         </ThemedText>
       )}
-      <ThemedText style={[
-        styles.messageTime,
-        isOwnMessage ? { color: 'rgba(255, 255, 255, 0.7)' } : { color: theme.colors.placeholder }
-      ]}>
-        {new Date(message.sent).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+      <ThemedText
+        style={[
+          styles.messageTime,
+          isOwnMessage
+            ? { color: "rgba(255, 255, 255, 0.7)" }
+            : { color: theme.colors.placeholder },
+        ]}
+      >
+        {new Date(message.sent).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        })}
       </ThemedText>
     </View>
   );
@@ -63,51 +80,85 @@ const MessageBubble = ({ message, isOwnMessage }) => {
 const ChatHeader = ({ group }) => {
   const router = useRouter();
   const theme = useTheme();
-  
+
   if (!group) {
     return (
-      <ThemedView style={[styles.header, { borderBottomColor: theme.colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.onBackground} />
+      <ThemedView
+        style={[styles.header, { borderBottomColor: theme.colors.border }]}
+      >
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
+          <Ionicons
+            name="arrow-back"
+            size={24}
+            color={theme.colors.onBackground}
+          />
         </TouchableOpacity>
         <View style={styles.headerInfo}>
-          <ThemedText type="defaultSemiBold" style={styles.groupName}>Loading...</ThemedText>
+          <ThemedText type="defaultSemiBold" style={styles.groupName}>
+            Loading...
+          </ThemedText>
         </View>
       </ThemedView>
     );
   }
-  
+
   return (
-    <ThemedView style={[styles.header, { borderBottomColor: theme.colors.border }]}>
+    <ThemedView
+      style={[styles.header, { borderBottomColor: theme.colors.border }]}
+    >
       <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-        <Ionicons name="arrow-back" size={24} color={theme.colors.onBackground} />
+        <Ionicons
+          name="arrow-back"
+          size={24}
+          color={theme.colors.onBackground}
+        />
       </TouchableOpacity>
       <View style={styles.headerInfo}>
-        <ThemedText type="defaultSemiBold" style={styles.groupName}>{group.name}</ThemedText>
-        <ThemedText type="default" style={[styles.memberCount, { color: theme.colors.placeholder }]}>
+        <ThemedText type="defaultSemiBold" style={styles.groupName}>
+          {group.name}
+        </ThemedText>
+        <ThemedText
+          type="default"
+          style={[styles.memberCount, { color: theme.colors.placeholder }]}
+        >
           {group.members?.length || 0} members
         </ThemedText>
       </View>
       <TouchableOpacity style={styles.settingsButton}>
-        <Ionicons name="settings-outline" size={24} color={theme.colors.onBackground} />
+        <Ionicons
+          name="settings-outline"
+          size={24}
+          color={theme.colors.onBackground}
+        />
       </TouchableOpacity>
     </ThemedView>
   );
 };
 
-const InputArea = ({ onSend, onAttach, selectedImage, onRemoveImage, isUploading }) => {
-  const [message, setMessage] = useState('');
+const InputArea = ({
+  onSend,
+  onAttach,
+  selectedImage,
+  onRemoveImage,
+  isUploading,
+}) => {
+  const [message, setMessage] = useState("");
   const theme = useTheme();
 
   const handleSend = () => {
     if (message.trim() || selectedImage) {
       onSend(message, selectedImage);
-      setMessage('');
+      setMessage("");
     }
   };
 
   return (
-    <ThemedView style={[styles.inputContainer, { borderTopColor: theme.colors.border }]}>
+    <ThemedView
+      style={[styles.inputContainer, { borderTopColor: theme.colors.border }]}
+    >
       <TouchableOpacity onPress={onAttach} style={styles.attachButton}>
         <Ionicons name="attach" size={24} color={theme.colors.placeholder} />
       </TouchableOpacity>
@@ -123,23 +174,33 @@ const InputArea = ({ onSend, onAttach, selectedImage, onRemoveImage, isUploading
       {selectedImage && (
         <View style={styles.imagePreviewContainer}>
           <Image source={{ uri: selectedImage }} style={styles.imagePreview} />
-          <TouchableOpacity onPress={onRemoveImage} style={styles.removeImageButton}>
+          <TouchableOpacity
+            onPress={onRemoveImage}
+            style={styles.removeImageButton}
+          >
             <Ionicons name="close-circle" size={24} color="#fff" />
           </TouchableOpacity>
         </View>
       )}
-      <TouchableOpacity 
+      <TouchableOpacity
         onPress={handleSend}
-        style={[styles.sendButton, (!message.trim() && !selectedImage) && styles.sendButtonDisabled]}
-        disabled={!message.trim() && !selectedImage || isUploading}
+        style={[
+          styles.sendButton,
+          !message.trim() && !selectedImage && styles.sendButtonDisabled,
+        ]}
+        disabled={(!message.trim() && !selectedImage) || isUploading}
       >
         {isUploading ? (
           <ActivityIndicator size="small" color={theme.colors.primary} />
         ) : (
-          <Ionicons 
-            name="send" 
-            size={24} 
-            color={(message.trim() || selectedImage) ? theme.colors.primary : theme.colors.placeholder} 
+          <Ionicons
+            name="send"
+            size={24}
+            color={
+              message.trim() || selectedImage
+                ? theme.colors.primary
+                : theme.colors.placeholder
+            }
           />
         )}
       </TouchableOpacity>
@@ -164,50 +225,55 @@ export default function ChatWindow() {
   useEffect(() => {
     if (!id) return;
 
-    console.log('Setting up real-time subscription for chat:', id);
-    
+    console.log("Setting up real-time subscription for chat:", id);
+
     const setupSubscription = () => {
       const channel = supabase
         .channel(`chat-${id}`, {
           config: {
             broadcast: { self: true },
-            presence: { key: '' },
+            presence: { key: "" },
           },
         })
         .on(
-          'postgres_changes',
+          "postgres_changes",
           {
-            event: '*',
-            schema: 'public',
-            table: 'messages',
-            filter: `group_id=eq.${id}`
+            event: "*",
+            schema: "public",
+            table: "messages",
+            filter: `group_id=eq.${id}`,
           },
           async (payload) => {
-            console.log('Real-time update received:', payload);
-            
-            if (payload.eventType === 'INSERT') {
+            console.log("Real-time update received:", payload);
+
+            if (payload.eventType === "INSERT") {
               // Fetch user information for the new message
               const { data: userData, error: userError } = await supabase
-                .from('users')
-                .select('first_name, last_name')
-                .eq('id', payload.new.sender)
+                .from("users")
+                .select("first_name, last_name")
+                .eq("id", payload.new.sender)
                 .single();
 
               if (userError) {
-                console.error('Error fetching user for new message:', userError);
+                console.error(
+                  "Error fetching user for new message:",
+                  userError
+                );
               }
 
               const newMessage = {
                 ...payload.new,
-                sender_name: userData ? `${userData.first_name} ${userData.last_name}`.trim() : 'Unknown User'
+                sender_name: userData
+                  ? `${userData.first_name} ${userData.last_name}`.trim()
+                  : "Unknown User",
               };
 
-              console.log('Adding new message:', newMessage);
-              setMessages(prevMessages => [newMessage, ...prevMessages]);
-            } else if (payload.eventType === 'UPDATE') {
-              console.log('Updating message:', payload.new);
-              setMessages(prevMessages => 
-                prevMessages.map(msg => 
+              console.log("Adding new message:", newMessage);
+              setMessages((prevMessages) => [newMessage, ...prevMessages]);
+            } else if (payload.eventType === "UPDATE") {
+              console.log("Updating message:", payload.new);
+              setMessages((prevMessages) =>
+                prevMessages.map((msg) =>
                   msg.message_id === payload.new.message_id ? payload.new : msg
                 )
               );
@@ -215,9 +281,11 @@ export default function ChatWindow() {
           }
         )
         .subscribe((status) => {
-          console.log('Subscription status:', status);
-          if (status === 'TIMED_OUT' || status === 'CLOSED') {
-            console.log('Subscription timed out or closed, attempting to reconnect...');
+          console.log("Subscription status:", status);
+          if (status === "TIMED_OUT" || status === "CLOSED") {
+            console.log(
+              "Subscription timed out or closed, attempting to reconnect..."
+            );
             setTimeout(setupSubscription, 1000); // Retry after 1 second
           }
         });
@@ -229,103 +297,107 @@ export default function ChatWindow() {
 
     // Cleanup subscription on unmount
     return () => {
-      console.log('Cleaning up real-time subscription for chat:', id);
+      console.log("Cleaning up real-time subscription for chat:", id);
       supabase.removeChannel(channel);
     };
   }, [id]);
 
   const fetchMessages = useCallback(async () => {
     if (!id) return;
-    
+
     try {
-      console.log('Fetching messages for group:', id);
+      console.log("Fetching messages for group:", id);
       const { data: messagesData, error: messagesError } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('group_id', id)
-        .order('sent', { ascending: false });
+        .from("messages")
+        .select("*")
+        .eq("group_id", id)
+        .order("sent", { ascending: false });
 
       if (messagesError) {
-        console.error('Error fetching messages:', messagesError);
+        console.error("Error fetching messages:", messagesError);
         throw messagesError;
       }
 
-      console.log('Messages fetched:', messagesData?.length || 0);
-      
+      console.log("Messages fetched:", messagesData?.length || 0);
+
       // Get user information for each message
       const messagesWithUsers = await Promise.all(
         (messagesData || []).map(async (message) => {
           const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('first_name, last_name')
-            .eq('id', message.sender)
+            .from("users")
+            .select("first_name, last_name")
+            .eq("id", message.sender)
             .single();
 
           if (userError) {
-            console.error('Error fetching user:', userError);
+            console.error("Error fetching user:", userError);
             return {
               ...message,
-              sender_name: 'Unknown User'
+              sender_name: "Unknown User",
             };
           }
 
           return {
             ...message,
-            sender_name: userData ? `${userData.first_name} ${userData.last_name}`.trim() : 'Unknown User'
+            sender_name: userData
+              ? `${userData.first_name} ${userData.last_name}`.trim()
+              : "Unknown User",
           };
         })
       );
 
-      console.log('Messages with users:', messagesWithUsers.length);
+      console.log("Messages with users:", messagesWithUsers.length);
       setMessages(messagesWithUsers);
     } catch (error) {
-      console.error('Error in fetchMessages:', error);
-      Alert.alert('Error', 'Failed to load messages');
+      console.error("Error in fetchMessages:", error);
+      Alert.alert("Error", "Failed to load messages");
     }
   }, [id]);
 
   const fetchGroupInfo = useCallback(async () => {
     if (!id) return;
-    
+
     try {
-      console.log('Fetching group info for:', id);
+      console.log("Fetching group info for:", id);
       const { data: groupData, error: groupError } = await supabase
-        .from('chats')
-        .select(`
+        .from("chats")
+        .select(
+          `
           *,
           houses (
             street_address,
             postcode
           )
-        `)
-        .eq('group_id', id)
+        `
+        )
+        .eq("group_id", id)
         .single();
 
       if (groupError) {
-        console.error('Error fetching group:', groupError);
+        console.error("Error fetching group:", groupError);
         throw groupError;
       }
-      
+
       // Get members of the chat
       const { data: membersData, error: membersError } = await supabase
-        .from('tenants')
-        .select('tenant_id')
-        .eq('house_id', groupData.house_id);
+        .from("tenants")
+        .select("tenant_id")
+        .eq("house_id", groupData.house_id);
 
       if (membersError) {
-        console.error('Error fetching members:', membersError);
+        console.error("Error fetching members:", membersError);
         throw membersError;
       }
 
-      console.log('Group info fetched:', groupData);
+      console.log("Group info fetched:", groupData);
       setGroup({
         ...groupData,
-        name: groupData.houses?.street_address || 'Chat',
-        members: [...(membersData?.map(m => m.tenant_id) || []), userId]
+        name: groupData.houses?.street_address || "Chat",
+        members: [...(membersData?.map((m) => m.tenant_id) || []), userId],
       });
     } catch (error) {
-      console.error('Error in fetchGroupInfo:', error);
-      Alert.alert('Error', 'Failed to load chat information');
+      console.error("Error in fetchGroupInfo:", error);
+      Alert.alert("Error", "Failed to load chat information");
     }
   }, [id, userId]);
 
@@ -334,7 +406,7 @@ export default function ChatWindow() {
       router.back();
       return;
     }
-    console.log('Starting to fetch data for chat:', id);
+    console.log("Starting to fetch data for chat:", id);
     fetchGroupInfo();
     fetchMessages();
   }, [fetchGroupInfo, fetchMessages, id, router]);
@@ -349,19 +421,19 @@ export default function ChatWindow() {
 
     try {
       const uri = asset.uri;
-      const fileExt = uri.split('.').pop();
+      const fileExt = uri.split(".").pop();
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `chats/${fileName}`;
 
       const formData = new FormData();
-      formData.append('file', {
+      formData.append("file", {
         uri: asset.uri,
         name: fileName,
         type: `image/${fileExt}`,
       });
 
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('chats')
+        .from("chats")
         .upload(filePath, formData, {
           upsert: false,
         });
@@ -369,24 +441,25 @@ export default function ChatWindow() {
       if (uploadError) throw uploadError;
 
       const { data: publicUrlData } = await supabase.storage
-        .from('chats')
+        .from("chats")
         .getPublicUrl(filePath);
 
       setIsUploading(false);
       return publicUrlData.publicUrl;
     } catch (error) {
-      console.error('Error uploading image:', error);
-      Alert.alert('Error', 'Failed to upload image');
+      console.error("Error uploading image:", error);
+      Alert.alert("Error", "Failed to upload image");
       setIsUploading(false);
       return null;
     }
   };
 
   const handleAttach = async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+
     if (permissionResult.granted === false) {
-      Alert.alert('Permission Required', 'Please allow access to your photos');
+      Alert.alert("Permission Required", "Please allow access to your photos");
       return;
     }
 
@@ -404,63 +477,68 @@ export default function ChatWindow() {
 
   const handleSend = async (content, imageUri) => {
     if (!id) return;
-    
+
     try {
       let attachment = null;
       if (imageUri) {
         attachment = await uploadImage({ uri: imageUri });
       }
 
-      const { error } = await supabase
-        .from('messages')
-        .insert({
-          group_id: id,
-          sender: userId,
-          content: content,
-          attachment: attachment,
-          sent: new Date().toISOString(),
-        });
+      const { error } = await supabase.from("messages").insert({
+        group_id: id,
+        sender: userId,
+        content: content,
+        attachment: attachment,
+        sent: new Date().toISOString(),
+      });
 
       if (error) throw error;
 
       setSelectedImage(null);
       fetchMessages();
     } catch (error) {
-      console.error('Error sending message:', error);
-      Alert.alert('Error', 'Failed to send message');
+      console.error("Error sending message:", error);
+      Alert.alert("Error", "Failed to send message");
     }
   };
 
-  const renderMessage = useCallback(({ item }) => (
-    <MessageBubble
-      key={item.message_id}
-      message={item}
-      isOwnMessage={item.sender === userId}
-    />
-  ), [userId]);
+  const renderMessage = useCallback(
+    ({ item }) => (
+      <MessageBubble
+        key={item.message_id}
+        message={item}
+        isOwnMessage={item.sender === userId}
+      />
+    ),
+    [userId]
+  );
 
   if (!id) {
     return null;
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
       <ChatHeader group={group} />
       <KeyboardAvoidingView
         style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 0}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0}
       >
         <View style={styles.mainContainer}>
           <FlatList
             ref={flatListRef}
             data={messages}
             renderItem={renderMessage}
-            keyExtractor={item => item.message_id?.toString() || Math.random().toString()}
+            keyExtractor={(item) =>
+              item.message_id?.toString() || Math.random().toString()
+            }
             inverted
             contentContainerStyle={[
               styles.messagesList,
-              { paddingBottom: 100 }
+              { paddingBottom: 100 },
             ]}
           />
           <View style={styles.inputWrapper}>
@@ -492,13 +570,13 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   inputWrapper: {
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.1)',
+    borderTopColor: "rgba(0, 0, 0, 0.1)",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 16,
     borderBottomWidth: 1,
   },
@@ -518,22 +596,22 @@ const styles = StyleSheet.create({
     marginLeft: 16,
   },
   messageBubble: {
-    maxWidth: '80%',
+    maxWidth: "80%",
     padding: 12,
     borderRadius: 16,
     marginBottom: 8,
     elevation: 1,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 1,
   },
   ownMessage: {
-    alignSelf: 'flex-end',
+    alignSelf: "flex-end",
     borderBottomRightRadius: 4,
   },
   otherMessage: {
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
     borderBottomLeftRadius: 4,
   },
   messageText: {
@@ -542,11 +620,11 @@ const styles = StyleSheet.create({
   },
   messageTime: {
     fontSize: 12,
-    alignSelf: 'flex-end',
+    alignSelf: "flex-end",
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 8,
   },
   attachButton: {
@@ -565,7 +643,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   imagePreviewContainer: {
-    position: 'relative',
+    position: "relative",
     marginRight: 8,
   },
   imagePreview: {
@@ -574,10 +652,10 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   removeImageButton: {
-    position: 'absolute',
+    position: "absolute",
     top: -8,
     right: -8,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
     borderRadius: 12,
   },
   messageImage: {
@@ -588,7 +666,7 @@ const styles = StyleSheet.create({
   },
   senderName: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 4,
   },
-}); 
+});
