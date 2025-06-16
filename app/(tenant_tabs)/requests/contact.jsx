@@ -337,20 +337,77 @@ export default function Contact() {
       return;
     }
 
+    // Get tenant's house information
+    const { data: tenantData, error: tenantError } = await supabase
+      .from("tenants")
+      .select("house_id")
+      .eq("tenant_id", user.id)
+      .single();
+
+    if (tenantError) {
+      console.error("Error getting tenant's house:", tenantError);
+      Alert.alert("Error", "Could not find your housing information");
+      return;
+    }
+
+    // Create the maintenance request
     const requestData = {
       user_id: user.id,
       reason: reason,
       priority: priority,
       description: message,
-      image: uploadedFileUrl, // This field will now store URL for image or video
+      image: uploadedFileUrl,
     };
 
-    const { error } = await supabase.from("requests").insert([requestData]);
+    const { data: requestResult, error: requestError } = await supabase
+      .from("requests")
+      .insert([requestData])
+      .select()
+      .single();
 
-    if (error) {
-      console.error("Error adding request:", error);
-      Alert.alert("Error", `Failed to send message: ${error.message}`);
+    if (requestError) {
+      console.error("Error adding request:", requestError);
+      Alert.alert("Error", `Failed to send message: ${requestError.message}`);
       return;
+    }
+    console.log(requestData);
+    // Create a group chat for this maintenance request
+    const chatData = {
+      house_id: tenantData.house_id,
+      group_id: requestResult.request_id,
+      tenants_only: false,
+    };
+
+    const { data: chatResult, error: chatError } = await supabase
+      .from("chats")
+      .insert([chatData])
+      .select()
+      .single();
+
+    if (chatError) {
+      console.error("Error creating chat:", chatError);
+      // Don't alert the user since the request was still created successfully
+    } else {
+      // Send initial message in the chat
+      const initialMessage = {
+        group_id: chatResult.group_id,
+        sender: user.id,
+        content: `Maintenance request submitted:\n\nReason: ${
+          reasons.find((r) => r.value === reason)?.label
+        }\nPriority: ${
+          priorities.find((p) => p.value === priority)?.label
+        }\n\n${message}`,
+        attachment: uploadedFileUrl,
+        sent: new Date().toISOString(),
+      };
+
+      const { error: messageError } = await supabase
+        .from("messages")
+        .insert([initialMessage]);
+
+      if (messageError) {
+        console.error("Error sending initial message:", messageError);
+      }
     }
 
     setReason("");
@@ -358,7 +415,10 @@ export default function Contact() {
     setMessage("");
     setSelectedImageUri(null);
     setUploadedFileUrl(null);
-    Alert.alert("Success", "Message sent successfully!");
+    Alert.alert(
+      "Success",
+      "Maintenance request submitted successfully! A chat group has been created for this request."
+    );
   };
 
   const dismissKeyboard = () => {
@@ -532,7 +592,9 @@ export default function Contact() {
                 size={24}
                 color="#000"
               />
-              <Text style={[styles.dropdownText, { marginLeft: 8 }]}>Always available</Text>
+              <Text style={[styles.dropdownText, { marginLeft: 8 }]}>
+                Always available
+              </Text>
             </TouchableOpacity>
           </View>
 
