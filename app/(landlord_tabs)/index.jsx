@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -15,6 +15,8 @@ import FinancialBarChart from "./data_analytics_.jsx";
 import { useData } from "../components/DataProvider";
 import DataProvider from "../components/DataProvider";
 import { colors } from "../theme/colors";
+import { supabase } from "@/lib/supabase";
+import { Context as AuthContext } from "@/context/AuthContext";
 
 const { width } = Dimensions.get("window");
 const cardWidth = width * 0.42;
@@ -22,6 +24,31 @@ const cardWidth = width * 0.42;
 function LandlordDashboardContent() {
   const router = useRouter();
   const data = useData();
+  const [userData, setUserData] = useState(null);
+  const { state: { userId } } = React.useContext(AuthContext);
+  
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('first_name')
+          .eq('id', userId)
+          .single();
+
+        if (error) {
+          console.error('Error fetching user data:', error);
+          return;
+        }
+
+        setUserData(data);
+      } catch (error) {
+        console.error('Error in fetchUserData:', error);
+      }
+    };
+
+    fetchUserData();
+  }, [userId]);
   
   // Add debugging and safety checks
   console.log("Data from context:", data);
@@ -160,7 +187,7 @@ function LandlordDashboardContent() {
         {/* Welcome Section */}
         <View style={styles.welcomeSection}>
           <View style={styles.welcomeContent}>
-            <Text style={styles.welcomeTitle}>Hello, Landlord</Text>
+            <Text style={styles.welcomeTitle}>Hello, {userData?.first_name || 'Landlord'}</Text>
             <Text style={styles.welcomeSubtitle}>
               {new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' })}
             </Text>
