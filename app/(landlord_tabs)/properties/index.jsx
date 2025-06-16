@@ -30,11 +30,28 @@ export default function Properties() {
   const getProperties = useCallback(async () => {
     setRefreshing(true);
     try {
-      const { data, error } = await supabase.rpc("get_landlord_houses", {
-        p_landlord_id: userId,
-      });
+      const { data, error } = await supabase
+        .from('houses')
+        .select(`
+          house_id,
+          street_address,
+          postcode,
+          image,
+          tenants:tenants(count)
+        `)
+        .eq('landlord_id', userId);
+
       if (data) {
-        setProperties(data);
+        // Transform the data to match the expected format and sort by number of tenants
+        const transformedData = data
+          .map(house => ({
+            ...house,
+            num_tenants: house.tenants[0]?.count || 0
+          }))
+          .sort((a, b) => b.num_tenants - a.num_tenants); // Sort in descending order
+        
+        console.log('Properties data:', JSON.stringify(transformedData, null, 2));
+        setProperties(transformedData);
         return;
       }
       console.error(error);
@@ -51,42 +68,46 @@ export default function Properties() {
     }, [getProperties])
   );
 
-  const renderProperty = ({ item }) => (
-    <TouchableOpacity
-      onPress={() =>
-        router.push({
-          pathname: "/properties/property_details",
-          params: { houseId: item.house_id },
-        })
-      }
-      style={styles.propertyCard}
-    >
-      <View style={styles.propertyImageContainer}>
-        <Image
-          source={{ uri: item.image_url || 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTapw_XWWJYkuY2JzBMXZsmTWtaGHL3p60_kw&s' }}
-          style={styles.propertyImage}
-        />
-        <View style={styles.propertyStatus}>
-          <Text style={styles.propertyStatusText}>
-            {item.num_tenants > 0 ? 'Occupied' : 'Vacant'}
-          </Text>
-        </View>
-      </View>
-      <View style={styles.propertyInfo}>
-        <Text style={styles.propertyTitle}>{item.street_address}</Text>
-        <View style={styles.propertyDetailsContainer}>
-          <View style={styles.propertyDetail}>
-            <Ionicons name="location-outline" size={16} color={colors.primary} />
-            <Text style={styles.propertyDetails}>{item.postcode}</Text>
-          </View>
-          <View style={styles.propertyDetail}>
-            <Ionicons name="people-outline" size={16} color={colors.primary} />
-            <Text style={styles.propertyDetails}>{item.num_tenants} Tenants</Text>
+  const renderProperty = ({ item }) => {
+    console.log('Rendering property:', item);
+    return (
+      <TouchableOpacity
+        onPress={() =>
+          router.push({
+            pathname: "/properties/property_details",
+            params: { houseId: item.house_id },
+          })
+        }
+        style={styles.propertyCard}
+      >
+        <View style={styles.propertyImageContainer}>
+          <Image
+            source={{ uri: item.image || 'https://gjfyiqdpysudxfiodvbf.supabase.co/storage/v1/object/public/houses//how-to-design-a-house.jpg' }}
+            style={styles.propertyImage}
+            onError={(e) => console.log('Image loading error:', e.nativeEvent.error)}
+          />
+          <View style={styles.propertyStatus}>
+            <Text style={styles.propertyStatusText}>
+              {item.num_tenants > 0 ? 'Occupied' : 'Vacant'}
+            </Text>
           </View>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+        <View style={styles.propertyInfo}>
+          <Text style={styles.propertyTitle}>{item.street_address}</Text>
+          <View style={styles.propertyDetailsContainer}>
+            <View style={styles.propertyDetail}>
+              <Ionicons name="location-outline" size={16} color={colors.primary} />
+              <Text style={styles.propertyDetails}>{item.postcode}</Text>
+            </View>
+            <View style={styles.propertyDetail}>
+              <Ionicons name="people-outline" size={16} color={colors.primary} />
+              <Text style={styles.propertyDetails}>{item.num_tenants} Tenants</Text>
+            </View>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView
