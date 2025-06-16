@@ -6,7 +6,7 @@ import {
 import { useFonts } from "expo-font";
 import { Stack, useRouter } from "expo-router";
 import "react-native-reanimated";
-import { useContext, useEffect } from "react";
+import React, { useContext, useEffect } from "react";
 import { View, ActivityIndicator } from "react-native";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import {
