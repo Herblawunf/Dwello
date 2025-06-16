@@ -51,7 +51,7 @@ function LandlordDashboardContent() {
   }, [userId]);
   
   // Add debugging and safety checks
-  console.log("Data from context:", data);
+  // console.log("Data from context:", data);
   
   if (!data) {
     console.error("DataProvider context is not available. Make sure this component is wrapped with DataProvider.");

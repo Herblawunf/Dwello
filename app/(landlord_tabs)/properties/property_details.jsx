@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useGlobalSearchParams } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { MaterialIcons } from "@expo/vector-icons";
-import ExpenseModal from "../components/ExpenseModal";
+import ExpenseModal from "@/app/components/ExpenseModal";
 
 export default function PropertyDetails() {
   const insets = useSafeAreaInsets();

@@ -683,7 +683,7 @@ export default function Requests() {
               <MaterialIcons name="flag" size={20} color="#757575" />
               <Text style={styles.sortMenuText}>Sort by Priority</Text>
             </TouchableOpacity>
-            </ThemedView>
+          </View>
         </TouchableOpacity>
       </Modal>
 

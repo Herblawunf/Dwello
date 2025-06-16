@@ -12,8 +12,8 @@ import {
   Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { ThemedTouchableOpacity } from '../../../components/ThemedTouchableOpacity';
-import { analyticsApi } from '../../../lib/supabase';
+import { ThemedTouchableOpacity } from '@/components/ThemedTouchableOpacity';
+import { analyticsApi } from '@/lib/supabase';
 
 const EXPENSE_CATEGORIES = [
   { label: 'Maintenance', value: 'maintenance' },

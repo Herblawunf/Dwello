@@ -13,7 +13,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useData } from '../components/DataProvider';
 import { LinearGradient } from 'expo-linear-gradient';
-import ExpenseModal from './components/ExpenseModal';
+import ExpenseModal from '@/app/components/ExpenseModal';
 
 const { width } = Dimensions.get('window');
 const cardWidth = width * 0.44;
