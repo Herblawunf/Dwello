@@ -18,32 +18,33 @@ import { SafeAreaInsetsContext } from "react-native-safe-area-context";
 import { Context as AuthContext } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import { colors } from "../../theme/colors";
 
 // Define a default theme object with more modern colors
 const defaultTheme = {
   colors: {
-    primary: '#3498db', // Modern blue
-    primaryVariant: '#2980b9',
-    secondary: '#2ecc71', // Modern green
-    secondaryVariant: '#27ae60',
-    background: '#FFFFFF',
-    surface: '#FFFFFF',
-    error: '#e74c3c',
-    onPrimary: '#FFFFFF',
-    onSecondary: '#FFFFFF',
-    onBackground: '#2c3e50',
-    onSurface: '#2c3e50',
-    onError: '#FFFFFF',
-    divider: 'rgba(0, 0, 0, 0.08)',
-    disabled: 'rgba(0, 0, 0, 0.38)',
-    placeholder: '#95a5a6',
-    backdrop: 'rgba(0, 0, 0, 0.5)',
-    success: '#2ecc71',
-    warning: '#f39c12',
-    info: '#3498db',
-    priorityLow: '#2ecc71',
-    priorityMedium: '#f39c12',
-    priorityHigh: '#e74c3c',
+    primary: colors.primary, // Use theme primary color
+    primaryVariant: colors.primaryVariant,
+    secondary: colors.secondary,
+    secondaryVariant: colors.secondaryVariant,
+    background: colors.background,
+    surface: colors.surface,
+    error: colors.error,
+    onPrimary: colors.onPrimary,
+    onSecondary: colors.onSecondary,
+    onBackground: colors.onBackground,
+    onSurface: colors.onSurface,
+    onError: colors.onError,
+    divider: colors.divider,
+    disabled: colors.disabled,
+    placeholder: colors.placeholder,
+    backdrop: colors.backdrop,
+    success: colors.success,
+    warning: colors.warning,
+    info: colors.info,
+    priorityLow: colors.priorityLow,
+    priorityMedium: colors.priorityMedium,
+    priorityHigh: colors.priorityHigh,
   },
   spacing: {
     xs: 4,
@@ -245,15 +246,15 @@ export default class Requests extends Component {
   getStatusIcon = (status) => {
     switch (status) {
       case "sent":
-        return { name: "send", color: "#2ecc71" }; // Modern green
+        return { name: "send", color: this.theme.colors.success }; // Success color
       case "seen":
-        return { name: "visibility", color: "#3498db" }; // Modern blue
+        return { name: "visibility", color: this.theme.colors.primary }; // Primary color
       case "contractor sent":
-        return { name: "engineering", color: "#f39c12" }; // Modern orange
+        return { name: "engineering", color: this.theme.colors.warning }; // Warning color
       case "completed":
-        return { name: "check-circle", color: "#1abc9c" }; // Modern teal
+        return { name: "check-circle", color: this.theme.colors.success }; // Success color
       default:
-        return { name: "info", color: "#95a5a6" }; // Modern gray
+        return { name: "info", color: this.theme.colors.placeholder }; // Placeholder color
     }
   };
 
@@ -350,7 +351,7 @@ export default class Requests extends Component {
                 }
               >
                 <Text style={styles.viewButtonText}>View</Text>
-                <MaterialIcons name="chevron-right" size={14} color={this.theme.colors.info} />
+                <MaterialIcons name="chevron-right" size={14} color={this.theme.colors.primary} />
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
@@ -417,7 +418,7 @@ export default class Requests extends Component {
                 style={styles.sortButton}
                 onPress={() => this.setState({ sortMenuVisible: true })}
               >
-                <MaterialIcons name="sort" size={24} color={this.theme.colors.primary} />
+                <MaterialIcons name="sort" size={24} color={defaultTheme.colors.primary} />
               </TouchableOpacity>
             </View>
 
@@ -622,13 +623,6 @@ export default class Requests extends Component {
                 </View>
               )}
             />
-            
-            <TouchableOpacity 
-              style={styles.createButton}
-              onPress={() => router.push("/create_maintenance_request/")}
-            >
-              <MaterialIcons name="add" size={24} color="#FFFFFF" />
-            </TouchableOpacity>
           </SafeAreaView>
         )}
       </SafeAreaInsetsContext.Consumer>
@@ -643,18 +637,20 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: defaultTheme.colors.surface,
-    paddingVertical: defaultTheme.spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: defaultTheme.colors.divider,
-    elevation: 0,
   },
   tabBar: {
     flex: 1,
     flexDirection: "row",
     backgroundColor: defaultTheme.colors.surface,
     paddingHorizontal: 12,
+    marginRight: 12,
   },
   tab: {
     flex: 1,
@@ -678,7 +674,6 @@ const styles = StyleSheet.create({
   },
   sortButton: {
     padding: defaultTheme.spacing.sm,
-    marginRight: defaultTheme.spacing.sm,
     backgroundColor: defaultTheme.colors.surface,
     borderRadius: 8,
     borderWidth: 1,
@@ -819,34 +814,18 @@ const styles = StyleSheet.create({
   viewButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: defaultTheme.colors.info + '10',
+    backgroundColor: defaultTheme.colors.primary + '10',
     paddingVertical: 4,
     paddingHorizontal: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: defaultTheme.colors.info + '20',
+    borderColor: defaultTheme.colors.primary + '20',
   },
   viewButtonText: {
     fontSize: 12,
-    color: defaultTheme.colors.info,
+    color: defaultTheme.colors.primary,
     fontWeight: '600',
     marginRight: 3,
-  },
-  createButton: {
-    position: 'absolute',
-    bottom: 20,
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: defaultTheme.colors.info,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 6,
   },
   modalOverlay: {
     flex: 1,

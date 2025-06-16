@@ -9,12 +9,15 @@ import {
   TouchableOpacity,
   Platform,
   StatusBar,
+  Image,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Context as AuthContext } from "@/context/AuthContext";
 import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "@/lib/supabase";
+import { colors } from "../../theme/colors";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function Properties() {
   const insets = useSafeAreaInsets();
@@ -27,11 +30,28 @@ export default function Properties() {
   const getProperties = useCallback(async () => {
     setRefreshing(true);
     try {
-      const { data, error } = await supabase.rpc("get_landlord_houses", {
-        p_landlord_id: userId,
-      });
+      const { data, error } = await supabase
+        .from('houses')
+        .select(`
+          house_id,
+          street_address,
+          postcode,
+          image,
+          tenants:tenants(count)
+        `)
+        .eq('landlord_id', userId);
+
       if (data) {
-        setProperties(data);
+        // Transform the data to match the expected format and sort by number of tenants
+        const transformedData = data
+          .map(house => ({
+            ...house,
+            num_tenants: house.tenants[0]?.count || 0
+          }))
+          .sort((a, b) => b.num_tenants - a.num_tenants); // Sort in descending order
+        
+        console.log('Properties data:', JSON.stringify(transformedData, null, 2));
+        setProperties(transformedData);
         return;
       }
       console.error(error);
@@ -48,21 +68,46 @@ export default function Properties() {
     }, [getProperties])
   );
 
-  const renderProperty = ({ item }) => (
-    <TouchableOpacity
-      onPress={() =>
-        router.push({
-          pathname: "/properties/property_details",
-          params: { houseId: item.house_id },
-        })
-      }
-      style={styles.propertyCard}
-    >
-      <Text style={styles.propertyTitle}>{item.street_address}</Text>
-      <Text style={styles.propertyDetails}>Postcode: {item.postcode}</Text>
-      <Text style={styles.propertyDetails}>Tenants: {item.num_tenants}</Text>
-    </TouchableOpacity>
-  );
+  const renderProperty = ({ item }) => {
+    console.log('Rendering property:', item);
+    return (
+      <TouchableOpacity
+        onPress={() =>
+          router.push({
+            pathname: "/properties/property_details",
+            params: { houseId: item.house_id },
+          })
+        }
+        style={styles.propertyCard}
+      >
+        <View style={styles.propertyImageContainer}>
+          <Image
+            source={{ uri: item.image || 'https://gjfyiqdpysudxfiodvbf.supabase.co/storage/v1/object/public/houses//how-to-design-a-house.jpg' }}
+            style={styles.propertyImage}
+            onError={(e) => console.log('Image loading error:', e.nativeEvent.error)}
+          />
+          <View style={styles.propertyStatus}>
+            <Text style={styles.propertyStatusText}>
+              {item.num_tenants > 0 ? 'Occupied' : 'Vacant'}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.propertyInfo}>
+          <Text style={styles.propertyTitle}>{item.street_address}</Text>
+          <View style={styles.propertyDetailsContainer}>
+            <View style={styles.propertyDetail}>
+              <Ionicons name="location-outline" size={16} color={colors.primary} />
+              <Text style={styles.propertyDetails}>{item.postcode}</Text>
+            </View>
+            <View style={styles.propertyDetail}>
+              <Ionicons name="people-outline" size={16} color={colors.primary} />
+              <Text style={styles.propertyDetails}>{item.num_tenants} Tenants</Text>
+            </View>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView
@@ -76,6 +121,12 @@ export default function Properties() {
     >
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Properties</Text>
+        <TouchableOpacity 
+          style={styles.addButton}
+          onPress={() => router.push('/add-property')}
+        >
+          <Ionicons name="add-circle" size={24} color={colors.primary} />
+        </TouchableOpacity>
       </View>
       <FlatList
         data={properties}
@@ -83,8 +134,14 @@ export default function Properties() {
         keyExtractor={(item) => item.house_id.toString()}
         style={styles.list}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={getProperties} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={getProperties}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
         }
       />
     </SafeAreaView>
@@ -94,7 +151,7 @@ export default function Properties() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: "row",
@@ -102,39 +159,79 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
+    borderBottomColor: colors.divider,
   },
   headerTitle: {
     fontSize: 28,
     fontWeight: "bold",
-    color: "#333",
+    color: colors.onSurface,
+  },
+  addButton: {
+    padding: 8,
   },
   list: {
     flex: 1,
-    paddingHorizontal: 20,
+  },
+  listContent: {
+    padding: 16,
   },
   propertyCard: {
-    backgroundColor: "#fff",
-    padding: 16,
-    marginVertical: 8,
-    borderRadius: 12,
-    shadowColor: "#000",
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    marginBottom: 16,
+    overflow: 'hidden',
+    shadowColor: colors.onBackground,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  propertyImageContainer: {
+    position: 'relative',
+    height: 160,
+  },
+  propertyImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  propertyStatus: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  propertyStatusText: {
+    color: colors.onPrimary,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  propertyInfo: {
+    padding: 16,
   },
   propertyTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "bold",
-    color: "#333",
-    marginBottom: 4,
+    color: colors.onSurface,
+    marginBottom: 8,
+  },
+  propertyDetailsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  propertyDetail: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   propertyDetails: {
     fontSize: 14,
-    color: "#666",
-    marginBottom: 2,
+    color: colors.placeholder,
   },
 });

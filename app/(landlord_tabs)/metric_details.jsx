@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useData } from './components/DataProvider';
+import { useData } from '../components/DataProvider';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '@/lib/supabase';
 
@@ -728,15 +728,6 @@ export default function MetricDetailsScreen() {
           )}
         </View>
       </ScrollView>
-      
-      {/* Floating Back Button */}
-      <TouchableOpacity 
-        style={styles.floatingBackButton}
-        onPress={handleGoBack}
-      >
-        <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
-        <Text style={styles.floatingBackButtonText}>Back to Insights</Text>
-      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -757,7 +748,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    paddingTop: 50,
+    paddingTop: 16,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
@@ -988,134 +979,5 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 16,
     color: '#666',
-  },
-  floatingBackButton: {
-    position: 'absolute',
-    bottom: 20,
-    left: 20,
-    right: 20,
-    backgroundColor: '#007AFF',
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  floatingBackButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginLeft: 8,
-  },
-  analyticsTable: {
-    width: '100%',
-    marginTop: 10,
-    marginBottom: 20,
-  },
-  tableHeader: {
-    flexDirection: 'row',
-    backgroundColor: '#F5F5F5',
-    paddingVertical: 10,
-    paddingHorizontal: 5,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  tableHeaderText: {
-    flex: 1,
-    fontWeight: 'bold',
-    fontSize: 14,
-    color: '#333',
-    textAlign: 'left',
-  },
-  tableRow: {
-    flexDirection: 'row',
-    paddingVertical: 10,
-    paddingHorizontal: 5,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
-  },
-  tableCell: {
-    flex: 1,
-    fontSize: 14,
-    color: '#555',
-  },
-  tableCellValue: {
-    flex: 1,
-    fontSize: 14,
-    color: '#333',
-    fontWeight: '500',
-  },
-  noDataText: {
-    marginVertical: 20,
-    textAlign: 'center',
-    fontSize: 16,
-    color: '#888',
-  },
-  propertyCardsContainer: {
-    padding: 16,
-  },
-  propertyCardsList: {
-    paddingRight: 8,
-  },
-  chartLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 16,
-  },
-  summaryContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 8,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  summaryCard: {
-    alignItems: 'center',
-    marginBottom: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
-  },
-  summaryLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
-  },
-  summaryValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  summaryItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  summaryItemLabel: {
-    fontSize: 12,
-    color: '#888',
-    marginBottom: 4,
-  },
-  summaryItemValue: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
-  },
-  periodBreakdownContainer: {
-    marginTop: 10,
-    marginBottom: 20,
   },
 }); 

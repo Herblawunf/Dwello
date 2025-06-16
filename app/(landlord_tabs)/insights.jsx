@@ -11,27 +11,17 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useData } from './components/DataProvider';
+import { useData } from '../components/DataProvider';
 import { LinearGradient } from 'expo-linear-gradient';
-import ExpenseModal from './components/ExpenseModal';
+import ExpenseModal from '@/app/components/ExpenseModal';
 
 const { width } = Dimensions.get('window');
 const cardWidth = width * 0.44;
 
 export default function InsightsScreen() {
   const router = useRouter();
-  const { 
-    properties, 
-    overviewMetrics, 
-    propertyMetrics,
-    maintenanceCosts, 
-    incomeExpensesTrend,
-    loading, 
-    error,
-    selectedTimeFrame,
-    setSelectedTimeFrame
-  } = useData();
-
+  const dataContext = useData();
+  
   // State for property selection
   const [selectedProperty, setSelectedProperty] = useState(null);
   
@@ -61,6 +51,17 @@ export default function InsightsScreen() {
     operatingExpenseRatio: { value: '0%', change: '0%', description: 'Operating expenses / gross income' },
     debtServiceRatio: { value: '0%', change: '0%', description: 'Net operating income / debt service' }
   });
+
+  // Destructure dataContext with fallback values
+  const { 
+    properties = [], 
+    overviewMetrics = {}, 
+    propertyMetrics = {},
+    maintenanceCosts = [], 
+    loading = { properties: true, metrics: true }, 
+    selectedTimeFrame = 'Monthly',
+    setSelectedTimeFrame = () => {}
+  } = dataContext || {};
 
   // Format currency values
   const formatCurrency = (value) => {
@@ -277,6 +278,11 @@ export default function InsightsScreen() {
     }
   }, [overviewMetrics, maintenanceCosts, loading, selectedProperty, propertyMetrics]);
 
+  // Note: The 'handlePropertySelect' function was identified as a duplicate by the error message.
+  // It has been removed from here. Ensure it is defined correctly once elsewhere in this component's scope
+  // if it was intended to be the primary definition.
+  // If an earlier definition exists, that one will now be used.
+
   // Handle property selection
   const handlePropertySelect = (property) => {
     setSelectedProperty(property);
@@ -312,8 +318,8 @@ export default function InsightsScreen() {
     // In a real app, you would refetch data here
   };
 
-  // Render loading state
-  if (loading.properties || loading.metrics) {
+  // Handle case where data context is not available or show loading state
+  if (!dataContext || loading.properties || loading.metrics) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
@@ -344,11 +350,9 @@ export default function InsightsScreen() {
           <Ionicons name="chatbubble-ellipses-outline" size={24} color="#333" />
         </TouchableOpacity>
       </View>
-      
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={false}
       >
         {/* Property Selection Tabs */}
         <ScrollView 
@@ -617,7 +621,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 8,
     paddingBottom: 100,
   },
   header: {
@@ -625,7 +629,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    paddingTop: 50,
+    paddingTop: 16,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',

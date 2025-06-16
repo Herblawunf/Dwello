@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { View, StyleSheet } from "react-native";
-import { NotionCalendar } from "./components";
+import { NotionCalendar } from "../components";
 
 // Sample maintenance events
 const INITIAL_MAINTENANCE_EVENTS = [

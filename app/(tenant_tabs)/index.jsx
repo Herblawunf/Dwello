@@ -120,7 +120,7 @@ export default function HomeScreen() {
   };
 
   const handleGoToChat = () => {
-    router.push("/chats");
+    router.push("/(tenant_tabs)/chat");
   };
 
   const handleRentInfoPress = () => {

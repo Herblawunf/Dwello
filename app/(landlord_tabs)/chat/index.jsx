@@ -113,7 +113,14 @@ export default function ChatScreen() {
         })
       );
 
-      setGroups(groupsWithMessages);
+      // Sort groups by last message timestamp, with groups without messages at the end
+      const sortedGroups = groupsWithMessages.sort((a, b) => {
+        if (!a.lastMessage) return 1;
+        if (!b.lastMessage) return -1;
+        return new Date(b.lastMessage.sent) - new Date(a.lastMessage.sent);
+      });
+
+      setGroups(sortedGroups);
     } catch (error) {
       console.error('Error fetching chats:', error);
     }
