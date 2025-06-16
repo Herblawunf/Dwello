@@ -14,9 +14,11 @@ import { useRouter } from "expo-router";
 import FinancialBarChart from "./data_analytics_.jsx";
 import { useData } from "../components/DataProvider";
 import DataProvider from "../components/DataProvider";
+import { colors } from "../theme/colors";
 
 const { width } = Dimensions.get("window");
 const cardWidth = width * 0.42;
+
 function LandlordDashboardContent() {
   const router = useRouter();
   const data = useData();
@@ -132,7 +134,6 @@ function LandlordDashboardContent() {
     });
   };
   
-  
   const handleGoToUpkeep = () => {
     router.push("/(landlord_tabs)/upkeep");
   };
@@ -151,7 +152,7 @@ function LandlordDashboardContent() {
             <Ionicons
               name="chatbubble-ellipses-outline"
               size={24}
-              color="#333"
+              color={colors.primary}
             />
           </TouchableOpacity>
         </View>
@@ -174,8 +175,8 @@ function LandlordDashboardContent() {
         <Text style={styles.sectionTitle}>Key Metrics</Text>
         <View style={styles.metricsGrid}>
           <TouchableOpacity style={styles.metricCard} onPress={() => handleGoToMetricDetails('grossIncome', 'Monthly Income')}>
-            <View style={[styles.metricIconContainer, { backgroundColor: '#E3F2FD' }]}>
-              <Ionicons name="cash-outline" size={24} color="#1976D2" />
+            <View style={[styles.metricIconContainer, { backgroundColor: colors.primary + '15' }]}>
+              <Ionicons name="cash-outline" size={24} color={colors.primary} />
             </View>
             <Text style={styles.metricLabel}>Monthly Income</Text>
             <Text style={styles.metricValue}>£{formatCurrency(totalIncome)}</Text>
@@ -183,8 +184,8 @@ function LandlordDashboardContent() {
           </TouchableOpacity>
           
           <TouchableOpacity style={styles.metricCard} onPress={() => handleGoToMetricDetails('totalExpenses', 'Expenses')}>
-            <View style={[styles.metricIconContainer, { backgroundColor: '#FFEBEE' }]}>
-              <Ionicons name="wallet-outline" size={24} color="#D32F2F" />
+            <View style={[styles.metricIconContainer, { backgroundColor: colors.error + '15' }]}>
+              <Ionicons name="wallet-outline" size={24} color={colors.error} />
             </View>
             <Text style={styles.metricLabel}>Expenses</Text>
             <Text style={styles.metricValue}>£{formatCurrency(totalExpenses)}</Text>
@@ -192,8 +193,8 @@ function LandlordDashboardContent() {
           </TouchableOpacity>
           
           <TouchableOpacity style={styles.metricCard} onPress={() => handleGoToMetricDetails('netProfit', 'Net Profit')}>
-            <View style={[styles.metricIconContainer, { backgroundColor: '#E8F5E9' }]}>
-              <Ionicons name="trending-up-outline" size={24} color="#388E3C" />
+            <View style={[styles.metricIconContainer, { backgroundColor: colors.success + '15' }]}>
+              <Ionicons name="trending-up-outline" size={24} color={colors.success} />
             </View>
             <Text style={styles.metricLabel}>Net Profit</Text>
             <Text style={styles.metricValue}>£{formatCurrency(netProfit)}</Text>
@@ -201,8 +202,8 @@ function LandlordDashboardContent() {
           </TouchableOpacity>
           
           <TouchableOpacity style={styles.metricCard} onPress={() => handleGoToMetricDetails('occupancyRate', 'Occupancy Rate')}>
-            <View style={[styles.metricIconContainer, { backgroundColor: '#E0F7FA' }]}>
-              <Ionicons name="home-outline" size={24} color="#0097A7" />
+            <View style={[styles.metricIconContainer, { backgroundColor: colors.info + '15' }]}>
+              <Ionicons name="home-outline" size={24} color={colors.info} />
             </View>
             <Text style={styles.metricLabel}>Occupancy</Text>
             <Text style={styles.metricValue}>{formatPercentage(occupancyRate)}%</Text>
@@ -221,7 +222,7 @@ function LandlordDashboardContent() {
           <View style={styles.chartContainer}>
             {safeLoading.incomeExpenses ? (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#007AFF" />
+                <ActivityIndicator size="large" color={colors.primary} />
                 <Text style={styles.loadingText}>Loading financial data...</Text>
               </View>
             ) : incomeExpensesTrend && incomeExpensesTrend.length > 0 ? (
@@ -251,14 +252,13 @@ function LandlordDashboardContent() {
               <View key={index} style={styles.paymentCard}>
                 <View style={styles.paymentInfo}>
                   <Text style={styles.paymentProperty}>{payment.property}</Text>
-                  <Text style={styles.paymentDate}>Due: {payment.dueDate}</Text>
+                  <Text style={styles.paymentAmount}>£{payment.amount}</Text>
                 </View>
-                <View style={styles.paymentAmount}>
-                  <Text style={styles.paymentAmountText}>£{formatCurrency(payment.amount)}</Text>
-                  <View style={[styles.paymentStatus, 
-                    payment.status === "paid" ? styles.statusPaid : styles.statusPending]}>
-                    <Text style={styles.paymentStatusText}>
-                      {payment.status === "paid" ? "Paid" : "Pending"}
+                <View style={styles.paymentDetails}>
+                  <Text style={styles.paymentDueDate}>Due {payment.dueDate}</Text>
+                  <View style={[styles.paymentStatus, { backgroundColor: colors.warning + '15' }]}>
+                    <Text style={[styles.paymentStatusText, { color: colors.warning }]}>
+                      {payment.status}
                     </Text>
                   </View>
                 </View>
@@ -345,7 +345,6 @@ export default function LandlordDashboardScreen() {
 }
 
 // Helper function to get color for maintenance category
-// Helper function to get color for maintenance category
 function getCategoryColor(category) {
   switch (category) {
     case 'Plumbing': return '#2196F3';
@@ -370,75 +369,109 @@ function getCategoryIcon(category) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.background,
   },
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 20,
+    backgroundColor: colors.background,
   },
   contentContainer: {
-    paddingTop: 50,
-    paddingBottom: 100, // Add extra padding at the bottom to ensure content is visible above tab bar
+    padding: 16,
   },
   topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
   },
   header: {
     fontSize: 28,
-    fontWeight: "bold",
-    color: "#333",
+    fontWeight: 'bold',
+    color: colors.primary,
   },
   chatButton: {
-    padding: 10,
+    padding: 8,
   },
   welcomeSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 24,
-    backgroundColor: '#F8F9FA',
-    padding: 16,
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
   },
   welcomeContent: {
     flex: 1,
   },
   welcomeTitle: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#333',
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: colors.onBackground,
     marginBottom: 4,
   },
   welcomeSubtitle: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 16,
+    color: colors.placeholder,
   },
   propertiesCount: {
-    backgroundColor: '#007AFF',
-    borderRadius: 12,
-    padding: 12,
     alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 80,
+    backgroundColor: colors.primary + '15',
+    padding: 12,
+    borderRadius: 12,
   },
   propertiesCountNumber: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: colors.primary,
   },
   propertiesCountLabel: {
     fontSize: 12,
-    color: '#FFF',
-    opacity: 0.9,
+    color: colors.primary,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: colors.onBackground,
+    marginBottom: 16,
+  },
+  metricsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  metricCard: {
+    width: cardWidth,
+    backgroundColor: colors.surface,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    shadowColor: colors.onBackground,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  metricIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  metricLabel: {
+    fontSize: 14,
+    color: colors.placeholder,
+    marginBottom: 4,
+  },
+  metricValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: colors.onBackground,
+    marginBottom: 4,
+  },
+  metricChange: {
+    fontSize: 12,
+    color: colors.success,
   },
   section: {
     marginBottom: 24,
@@ -449,117 +482,73 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 16,
-  },
   seeAllText: {
+    color: colors.primary,
     fontSize: 14,
-    color: '#007AFF',
-    fontWeight: '500',
-  },
-  metricsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-  },
-  metricCard: {
-    width: cardWidth,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  metricIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  metricLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
-  },
-  metricValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  metricChange: {
-    fontSize: 12,
-    color: '#4CAF50',
-    marginTop: 4,
   },
   chartContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#000',
+    backgroundColor: colors.surface,
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: colors.onBackground,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 8,
+    color: colors.placeholder,
+  },
+  errorText: {
+    color: colors.error,
   },
   upcomingPaymentsContainer: {
-    marginBottom: 8,
+    gap: 12,
   },
   paymentCard: {
+    backgroundColor: colors.surface,
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: colors.onBackground,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  paymentInfo: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  paymentInfo: {
-    flex: 1,
+    marginBottom: 8,
   },
   paymentProperty: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 4,
-  },
-  paymentDate: {
-    fontSize: 12,
-    color: '#666',
+    fontWeight: '600',
+    color: colors.onBackground,
   },
   paymentAmount: {
-    alignItems: 'flex-end',
-  },
-  paymentAmountText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 4,
+    color: colors.primary,
+  },
+  paymentDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  paymentDueDate: {
+    fontSize: 14,
+    color: colors.placeholder,
   },
   paymentStatus: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
-  },
-  statusPaid: {
-    backgroundColor: '#E8F5E9',
-  },
-  statusPending: {
-    backgroundColor: '#FFF3E0',
   },
   paymentStatusText: {
     fontSize: 12,
@@ -646,21 +635,5 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#333',
     marginTop: 8,
-  },
-  loadingContainer: {
-    height: 300,
-    width: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingText: {
-    marginTop: 10,
-    color: "#666",
-    fontSize: 14,
-  },
-  errorText: {
-    color: "#FF3B30",
-    fontSize: 16,
-    textAlign: "center",
   },
 });
