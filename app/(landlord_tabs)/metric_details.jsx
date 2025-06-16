@@ -669,11 +669,32 @@ export default function MetricDetailsScreen() {
           )}
         </View>
 
+        {/* Property Comparison Section */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Property Summary</Text>
+          
+          {isLoading ? (
+            <ActivityIndicator size="large" color={metricInfo.color} />
+          ) : propertyComparison.length === 0 ? (
+            <Text style={styles.noDataText}>No data available for this time period.</Text>
+          ) : (
+            <View style={styles.propertyCardsContainer}>
+              <FlatList
+                data={propertyComparison}
+                renderItem={renderPropertyCard}
+                keyExtractor={(item) => item.id}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.propertyCardsList}
+              />
+            </View>
+          )}
+        </View>
+
         {/* Property Breakdown Table */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Property Breakdown</Text>
           
-          {/* Chart placeholder */}
           <View style={styles.chartContainer}>
             {isLoading ? (
               <ActivityIndicator size="large" color={metricInfo.color} />
@@ -704,28 +725,6 @@ export default function MetricDetailsScreen() {
               </View>
             )}
           </View>
-        </View>
-
-        {/* Property Comparison Section */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Property Summary</Text>
-          
-          {isLoading ? (
-            <ActivityIndicator size="large" color={metricInfo.color} />
-          ) : propertyComparison.length === 0 ? (
-            <Text style={styles.noDataText}>No data available for this time period.</Text>
-          ) : (
-            <View style={styles.propertyCardsContainer}>
-              <FlatList
-                data={propertyComparison}
-                renderItem={renderPropertyCard}
-                keyExtractor={(item) => item.id}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.propertyCardsList}
-              />
-            </View>
-          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -979,5 +978,105 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 16,
     color: '#666',
+  },
+  summaryContainer: {
+    gap: 16,
+  },
+  summaryCard: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 8,
+  },
+  summaryLabel: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
+  summaryValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  summaryItem: {
+    flex: 1,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+  },
+  summaryItemLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+  },
+  summaryItemValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  periodBreakdownContainer: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    backgroundColor: '#E9ECEF',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#DEE2E6',
+  },
+  tableHeaderText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#495057',
+  },
+  tableRow: {
+    flexDirection: 'row',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#DEE2E6',
+    backgroundColor: '#FFFFFF',
+  },
+  tableCell: {
+    flex: 1,
+    fontSize: 14,
+    color: '#495057',
+  },
+  tableCellValue: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+    textAlign: 'right',
+  },
+  analyticsTable: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  noDataText: {
+    textAlign: 'center',
+    color: '#666',
+    fontSize: 14,
+    padding: 20,
+  },
+  propertyCardsContainer: {
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 15,
+  },
+  propertyCardsList: {
+    paddingRight: 8,
   },
 }); 

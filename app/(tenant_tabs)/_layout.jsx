@@ -95,6 +95,14 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="chat"
+        options={{
+          presentation: "modal",
+          // Href null will hide it from the tab bar
+          href: null,
+        }}
+      />
       {/* Add the rent_info screen as a modal */}
       <Tabs.Screen
         name="rent_info"

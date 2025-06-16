@@ -1,8 +1,13 @@
 import React, { useState, useEffect, useCallback, useContext } from "react";
-import { View, StyleSheet, TouchableOpacity } from "react-native";
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  SafeAreaView,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
-import { getHousemates } from "../../context/utils";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { Context as AuthContext } from "@/context/AuthContext";
@@ -11,10 +16,8 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 
 const formatBalanceText = (balance) => {
-  if (balance > 0) {
-    return `+£${balance.toFixed(2)}`;
-  } else if (balance < 0) {
-    return `-£${Math.abs(balance).toFixed(2)}`;
+  if (balance != 0) {
+    return `£${Math.abs(balance).toFixed(2)}`;
   } else {
     return `£0.00`;
   }
@@ -66,10 +69,34 @@ export default function HomeScreen() {
   const [due, setDue] = useState(0);
   const [dueIn, setDueIn] = useState(-1);
   const [balance, setBalance] = useState(0);
+  const [userData, setUserData] = useState(null);
   const router = useRouter();
   const { state: authState } = useContext(AuthContext);
   const userId = authState.userId;
   const theme = useTheme();
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('first_name')
+          .eq('id', userId)
+          .single();
+
+        if (error) {
+          console.error('Error fetching user data:', error);
+          return;
+        }
+
+        setUserData(data);
+      } catch (error) {
+        console.error('Error in fetchUserData:', error);
+      }
+    };
+
+    fetchUserData();
+  }, [userId]);
 
   const getBalance = useCallback(async () => {
     try {
@@ -128,11 +155,16 @@ export default function HomeScreen() {
   };
 
   const styles = StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
     container: {
       flex: 1,
       backgroundColor: theme.colors.background,
+    },
+    contentContainer: {
       padding: theme.spacing.lg,
-      paddingTop: theme.spacing.xxl,
     },
     topBar: {
       flexDirection: "row",
@@ -149,6 +181,40 @@ export default function HomeScreen() {
       borderRadius: theme.borderRadius.round,
       padding: theme.spacing.sm,
       ...theme.elevation.sm,
+    },
+    welcomeSection: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: theme.spacing.lg,
+    },
+    welcomeContent: {
+      flex: 1,
+    },
+    welcomeTitle: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: theme.colors.onBackground,
+      marginBottom: 4,
+    },
+    welcomeSubtitle: {
+      fontSize: 16,
+      color: theme.colors.placeholder,
+    },
+    balanceCount: {
+      alignItems: 'center',
+      backgroundColor: theme.colors.primary + '15',
+      padding: 12,
+      borderRadius: 12,
+    },
+    balanceCountNumber: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: theme.colors.primary,
+    },
+    balanceCountLabel: {
+      fontSize: 12,
+      color: theme.colors.primary,
     },
     section: {
       backgroundColor: theme.colors.surface,
@@ -171,83 +237,105 @@ export default function HomeScreen() {
       color: theme.colors.warning,
     },
     quickActionsContainer: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      marginTop: theme.spacing.sm,
-      marginBottom: theme.spacing.lg,
-    },
-    actionButton: {
-      flex: 1,
-      alignItems: "center",
-      padding: theme.spacing.md,
-      backgroundColor: theme.colors.primary,
-      borderRadius: theme.borderRadius.md,
-      marginHorizontal: theme.spacing.xs,
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      backgroundColor: theme.colors.surface,
+      borderRadius: 16,
+      padding: 20,
+      marginBottom: 80,
+      marginTop: 10,
       ...theme.elevation.sm,
     },
-    actionText: {
-      color: theme.colors.onPrimary,
-      marginTop: theme.spacing.xs,
+    quickActionButton: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 10,
+    },
+    quickActionText: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: theme.colors.onSurface,
+      marginTop: 8,
     },
   });
 
   return (
-    <View style={styles.container}>
-      {/* HEADER WITH TITLE + CHAT ICON */}
-      <View style={styles.topBar}>
-        <ThemedText type="title" style={styles.header}>dwello</ThemedText>
-        <TouchableOpacity onPress={handleGoToChat} style={styles.chatButton}>
-          <Ionicons name="chatbubble-ellipses-outline" size={24} color={theme.colors.primary} />
-        </TouchableOpacity>
-      </View>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView 
+        style={styles.container} 
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* HEADER WITH TITLE + CHAT ICON */}
+        <View style={styles.topBar}>
+          <ThemedText type="title" style={styles.header}>dwello</ThemedText>
+          <TouchableOpacity onPress={handleGoToChat} style={styles.chatButton}>
+            <Ionicons name="chatbubble-ellipses-outline" size={24} color={theme.colors.primary} />
+          </TouchableOpacity>
+        </View>
 
-      {/* Balance Section */}
-      <ThemedView style={styles.section}>
-        <ThemedText type="subtitle" style={styles.sectionTitle}>Balance due</ThemedText>
-        <ThemedText type="title" style={styles.balanceAmount}>£{due.toFixed(2)}</ThemedText>
-      </ThemedView>
+        {/* Welcome Section */}
+        <View style={styles.welcomeSection}>
+          <View style={styles.welcomeContent}>
+            <ThemedText type="title" style={styles.welcomeTitle}>
+              Hello, {userData?.first_name || 'Tenant'}
+            </ThemedText>
+            <ThemedText type="default" style={styles.welcomeSubtitle}>
+              {new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' })}
+            </ThemedText>
+          </View>
+          <TouchableOpacity onPress={handleRentInfoPress} style={styles.balanceCount}>
+            <ThemedText type="title" style={styles.balanceCountNumber}>£{due.toFixed(2)}</ThemedText>
+            <ThemedText type="default" style={styles.balanceCountLabel}>Due</ThemedText>
+          </TouchableOpacity>
+        </View>
 
-      {/* Splits Section */}
-      <ThemedView style={styles.section}>
-        <ThemedText type="subtitle" style={styles.sectionTitle}>Splits</ThemedText>
-        <ThemedText type="default" style={styles.smallText}>{formatBalanceText(balance)}</ThemedText>
-      </ThemedView>
+        {/* Splits Section */}
+        <ThemedView style={styles.section}>
+          <ThemedText type="subtitle" style={styles.sectionTitle}>Household Expenses</ThemedText>
+          <ThemedText type="default" style={styles.smallText}>
+            {balance > 0 ? 'You are owed ' : balance < 0 ? 'You owe ' : 'No balance '}
+            {formatBalanceText(balance)}
+          </ThemedText>
+        </ThemedView>
 
-      {/* Notifications Section */}
-      <ThemedView style={styles.section}>
-        <ThemedText type="subtitle" style={styles.sectionTitle}>Notifications</ThemedText>
-        <TouchableOpacity onPress={handleRentInfoPress}>
+        {/* Notifications Section */}
+        <ThemedView style={styles.section}>
+          <ThemedText type="subtitle" style={styles.sectionTitle}>Notifications</ThemedText>
           <ThemedText type="defaultSemiBold" style={styles.notificationText}>
             Rent payment due {dueIn > 0 ? `in ${dueIn} days` : dueIn === 0 ? "today" : "now"}
           </ThemedText>
-        </TouchableOpacity>
-      </ThemedView>
+        </ThemedView>
 
-      {/* Quick Actions Section */}
-      <ThemedText type="subtitle" style={styles.sectionTitle}>Quick actions</ThemedText>
-      <View style={styles.quickActionsContainer}>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={handleReportRepair}
-        >
-          <Ionicons name="build-outline" size={24} color={theme.colors.onPrimary} />
-          <ThemedText type="default" style={styles.actionText}>Report repair</ThemedText>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={handleAddExpenses}
-        >
-          <Ionicons name="add-circle-outline" size={24} color={theme.colors.onPrimary} />
-          <ThemedText type="default" style={styles.actionText}>Add expenses</ThemedText>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionButton}>
-          <Ionicons name="document-text-outline" size={24} color={theme.colors.onPrimary} />
-          <ThemedText type="default" style={styles.actionText}>View documents</ThemedText>
-        </TouchableOpacity>
-      </View>
-    </View>
+        {/* Quick Actions */}
+        <View style={styles.quickActionsContainer}>
+          <TouchableOpacity 
+            style={styles.quickActionButton}
+            onPress={handleReportRepair}
+          >
+            <Ionicons name="construct-outline" size={24} color={theme.colors.primary} />
+            <ThemedText type="default" style={styles.quickActionText}>Report repair</ThemedText>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.quickActionButton}
+            onPress={handleAddExpenses}
+          >
+            <Ionicons name="add-circle-outline" size={24} color={theme.colors.primary} />
+            <ThemedText type="default" style={styles.quickActionText}>Add expenses</ThemedText>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.quickActionButton}
+            onPress={handleRentInfoPress}
+          >
+            <Ionicons name="document-text-outline" size={24} color={theme.colors.primary} />
+            <ThemedText type="default" style={styles.quickActionText}>Documents</ThemedText>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
+
 
