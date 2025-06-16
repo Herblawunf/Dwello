@@ -536,15 +536,6 @@ export default function MetricDetailsScreen() {
           />
         </View>
       </ScrollView>
-      
-      {/* Floating Back Button */}
-      <TouchableOpacity 
-        style={styles.floatingBackButton}
-        onPress={handleGoBack}
-      >
-        <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
-        <Text style={styles.floatingBackButtonText}>Back to Insights</Text>
-      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -565,7 +556,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    paddingTop: 50,
+    paddingTop: 16,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
@@ -796,28 +787,5 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 16,
     color: '#666',
-  },
-  floatingBackButton: {
-    position: 'absolute',
-    bottom: 20,
-    left: 20,
-    right: 20,
-    backgroundColor: '#007AFF',
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  floatingBackButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginLeft: 8,
   },
 }); 
