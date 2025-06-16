@@ -151,7 +151,7 @@ export default function ChatScreen() {
   }, [fetchChats]);
 
   const handleGroupPress = (group) => {
-    router.push(`/(tenant_tabs)/chat/${group.group_id}`);
+    router.push(`/chat/${group.group_id}`);
   };
 
   const renderGroupItem = useCallback(
