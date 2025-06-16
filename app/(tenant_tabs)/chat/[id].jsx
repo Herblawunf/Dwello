@@ -164,46 +164,72 @@ export default function ChatWindow() {
   useEffect(() => {
     if (!id) return;
 
-    const channel = supabase
-      .channel(`chat-${id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'messages',
-          filter: `group_id=eq.${id}`
-        },
-        async (payload) => {
-          console.log('Real-time update:', payload);
-          
-          if (payload.eventType === 'INSERT') {
-            // Fetch user information for the new message
-            const { data: userData, error: userError } = await supabase
-              .from('users')
-              .select('first_name, last_name')
-              .eq('id', payload.new.sender)
-              .single();
+    console.log('Setting up real-time subscription for chat:', id);
+    
+    const setupSubscription = () => {
+      const channel = supabase
+        .channel(`chat-${id}`, {
+          config: {
+            broadcast: { self: true },
+            presence: { key: '' },
+          },
+        })
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'messages',
+            filter: `group_id=eq.${id}`
+          },
+          async (payload) => {
+            console.log('Real-time update received:', payload);
+            
+            if (payload.eventType === 'INSERT') {
+              // Fetch user information for the new message
+              const { data: userData, error: userError } = await supabase
+                .from('users')
+                .select('first_name, last_name')
+                .eq('id', payload.new.sender)
+                .single();
 
-            const newMessage = {
-              ...payload.new,
-              sender_name: userData ? `${userData.first_name} ${userData.last_name}`.trim() : 'Unknown User'
-            };
+              if (userError) {
+                console.error('Error fetching user for new message:', userError);
+              }
 
-            setMessages(prevMessages => [newMessage, ...prevMessages]);
-          } else if (payload.eventType === 'UPDATE') {
-            setMessages(prevMessages => 
-              prevMessages.map(msg => 
-                msg.message_id === payload.new.message_id ? payload.new : msg
-              )
-            );
+              const newMessage = {
+                ...payload.new,
+                sender_name: userData ? `${userData.first_name} ${userData.last_name}`.trim() : 'Unknown User'
+              };
+
+              console.log('Adding new message:', newMessage);
+              setMessages(prevMessages => [newMessage, ...prevMessages]);
+            } else if (payload.eventType === 'UPDATE') {
+              console.log('Updating message:', payload.new);
+              setMessages(prevMessages => 
+                prevMessages.map(msg => 
+                  msg.message_id === payload.new.message_id ? payload.new : msg
+                )
+              );
+            }
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe((status) => {
+          console.log('Subscription status:', status);
+          if (status === 'TIMED_OUT' || status === 'CLOSED') {
+            console.log('Subscription timed out or closed, attempting to reconnect...');
+            setTimeout(setupSubscription, 1000); // Retry after 1 second
+          }
+        });
+
+      return channel;
+    };
+
+    const channel = setupSubscription();
 
     // Cleanup subscription on unmount
     return () => {
+      console.log('Cleaning up real-time subscription for chat:', id);
       supabase.removeChannel(channel);
     };
   }, [id]);
@@ -423,23 +449,30 @@ export default function ChatWindow() {
       <KeyboardAvoidingView
         style={styles.keyboardAvoidingView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 0}
       >
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          renderItem={renderMessage}
-          keyExtractor={item => item.message_id?.toString() || Math.random().toString()}
-          inverted
-          contentContainerStyle={styles.messagesList}
-        />
-        <InputArea
-          onSend={handleSend}
-          onAttach={handleAttach}
-          selectedImage={selectedImage}
-          onRemoveImage={() => setSelectedImage(null)}
-          isUploading={isUploading}
-        />
+        <View style={styles.mainContainer}>
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            renderItem={renderMessage}
+            keyExtractor={item => item.message_id?.toString() || Math.random().toString()}
+            inverted
+            contentContainerStyle={[
+              styles.messagesList,
+              { paddingBottom: 100 }
+            ]}
+          />
+          <View style={styles.inputWrapper}>
+            <InputArea
+              onSend={handleSend}
+              onAttach={handleAttach}
+              selectedImage={selectedImage}
+              onRemoveImage={() => setSelectedImage(null)}
+              isUploading={isUploading}
+            />
+          </View>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -451,6 +484,17 @@ const styles = StyleSheet.create({
   },
   keyboardAvoidingView: {
     flex: 1,
+  },
+  mainContainer: {
+    flex: 1,
+  },
+  messagesList: {
+    padding: 16,
+  },
+  inputWrapper: {
+    backgroundColor: 'transparent',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.1)',
   },
   header: {
     flexDirection: 'row',
@@ -472,9 +516,6 @@ const styles = StyleSheet.create({
   },
   settingsButton: {
     marginLeft: 16,
-  },
-  messagesList: {
-    padding: 16,
   },
   messageBubble: {
     maxWidth: '80%',
@@ -507,7 +548,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 8,
-    borderTopWidth: 1,
   },
   attachButton: {
     padding: 8,
