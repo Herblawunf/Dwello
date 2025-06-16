@@ -39,10 +39,10 @@ export default function DataProvider({ children }) {
         const data = await analyticsApi.getProperties();
         console.log("Fetched properties:", data);
         setProperties(data);
-        setLoading(prev => ({ ...prev, properties: false }));
       } catch (err) {
         console.error("Error fetching properties:", err);
         setError("Failed to load properties");
+      } finally {
         setLoading(prev => ({ ...prev, properties: false }));
       }
     }
@@ -71,10 +71,10 @@ export default function DataProvider({ children }) {
         }
         
         setOverviewMetrics(groupedMetrics);
-        setLoading(prev => ({ ...prev, metrics: false }));
       } catch (err) {
         console.error("Error fetching overview metrics:", err);
         setError("Failed to load metrics");
+      } finally {
         setLoading(prev => ({ ...prev, metrics: false }));
       }
     }

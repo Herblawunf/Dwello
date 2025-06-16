@@ -3,6 +3,7 @@ import React from "react";
 import { Platform, View } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "@/context/ThemeContext";
+import DataProvider from "./components/DataProvider";
 
 import { HapticTab } from "@/components/HapticTab";
 import TabBarBackground from "@/components/ui/TabBarBackground";
@@ -34,35 +35,36 @@ export default function TabLayout() {
   const theme = useTheme();
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarStyle: {
-          backgroundColor: theme.colors.primaryVariant,
-          borderTopWidth: 0,
-          elevation: 0,
-          shadowOpacity: 0,
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 8,
-        },
-        tabBarActiveTintColor: theme.colors.onPrimary,
-        tabBarInactiveTintColor: theme.colors.onPrimary + '80',
-        headerShown: false,
-        tabBarButton: HapticTab,
-        tabBarBackground: () => null,
-        tabBarShowLabel: false,
-      }}
-    >
-      {/* Home */}
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Home",
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name="home" color={color} focused={focused} />
-          ),
+    <DataProvider>
+      <Tabs
+        screenOptions={{
+          tabBarStyle: {
+            backgroundColor: theme.colors.primaryVariant,
+            borderTopWidth: 0,
+            elevation: 0,
+            shadowOpacity: 0,
+            height: 60,
+            paddingBottom: 8,
+            paddingTop: 8,
+          },
+          tabBarActiveTintColor: theme.colors.onPrimary,
+          tabBarInactiveTintColor: theme.colors.onPrimary + '80',
+          headerShown: false,
+          tabBarButton: HapticTab,
+          tabBarBackground: () => null,
+          tabBarShowLabel: false,
         }}
-      />
+      >
+        {/* Home */}
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: "Home",
+            tabBarIcon: ({ color, focused }) => (
+              <TabBarIcon name="home" color={color} focused={focused} />
+            ),
+          }}
+        />
 
         {/* Insights */}
         <Tabs.Screen
@@ -75,16 +77,16 @@ export default function TabLayout() {
           }}
         />
 
-      {/* Upkeep / Calendar */}
-      <Tabs.Screen
-        name="upkeep"
-        options={{
-          title: "Upkeep",
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name="calendar-today" color={color} focused={focused} />
-          ),
-        }}
-      />
+        {/* Upkeep / Calendar */}
+        <Tabs.Screen
+          name="upkeep"
+          options={{
+            title: "Upkeep",
+            tabBarIcon: ({ color, focused }) => (
+              <TabBarIcon name="calendar-today" color={color} focused={focused} />
+            ),
+          }}
+        />
 
         {/* Requests */}
         <Tabs.Screen
@@ -97,16 +99,16 @@ export default function TabLayout() {
           }}
         />
 
-      {/* Properties */}
-      <Tabs.Screen
-        name="properties"
-        options={{
-          title: "Properties",
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name="apartment" color={color} focused={focused} />
-          ),
-        }}
-      />
+        {/* Properties */}
+        <Tabs.Screen
+          name="properties"
+          options={{
+            title: "Properties",
+            tabBarIcon: ({ color, focused }) => (
+              <TabBarIcon name="apartment" color={color} focused={focused} />
+            ),
+          }}
+        />
 
         {/* Add Property (modal) */}
         <Tabs.Screen
@@ -128,43 +130,44 @@ export default function TabLayout() {
           }}
         />
 
-      {/* Settings */}
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: "Settings",
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name="settings" color={color} focused={focused} />
-          ),
-        }}
-      />
+        {/* Settings */}
+        <Tabs.Screen
+          name="settings"
+          options={{
+            title: "Settings",
+            tabBarIcon: ({ color, focused }) => (
+              <TabBarIcon name="settings" color={color} focused={focused} />
+            ),
+          }}
+        />
 
-      {/* ChatWindow (modal) */}
-      <Tabs.Screen
-        name="ChatWindow"
-        options={{
-          href: null,
-          presentation: 'modal',
-        }}
-      />
+        {/* ChatWindow (modal) */}
+        <Tabs.Screen
+          name="ChatWindow"
+          options={{
+            href: null,
+            presentation: 'modal',
+          }}
+        />
 
-      {/* data_analytics_ (modal) */}
-      <Tabs.Screen
-        name="data_analytics_"
-        options={{
-          href: null,
-          presentation: 'modal',
-        }}
-      />
+        {/* data_analytics_ (modal) */}
+        <Tabs.Screen
+          name="data_analytics_"
+          options={{
+            href: null,
+            presentation: 'modal',
+          }}
+        />
 
-      {/* detailed_analytics (modal) */}
-      <Tabs.Screen
-        name="detailed_analytics"
-        options={{
-          href: null,
-          presentation: 'modal',
-        }}
-      />
-    </Tabs>
+        {/* detailed_analytics (modal) */}
+        <Tabs.Screen
+          name="detailed_analytics"
+          options={{
+            href: null,
+            presentation: 'modal',
+          }}
+        />
+      </Tabs>
+    </DataProvider>
   );
 }
