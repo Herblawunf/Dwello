@@ -121,7 +121,10 @@ export default function Properties() {
     >
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Properties</Text>
-        <TouchableOpacity style={styles.addButton}>
+        <TouchableOpacity 
+          style={styles.addButton}
+          onPress={() => router.push('/add-property')}
+        >
           <Ionicons name="add-circle" size={24} color={colors.primary} />
         </TouchableOpacity>
       </View>
