@@ -13,11 +13,15 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
   ScrollView,
+  Platform,
 } from "react-native";
 import { Context as AuthContext } from "@/context/AuthContext";
 import { colors } from "@/app/theme/colors";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 
 const RentScreen = () => {
+  const router = useRouter();
   const [rentInfo, setRentInfo] = useState({});
   const [rentExtensions, setRentExtensions] = useState([]);
   const [isDelayModalVisible, setIsDelayModalVisible] = useState(false);
@@ -305,245 +309,274 @@ const RentScreen = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView style={styles.container}>
-        <View style={styles.contentContainer}>
+      <ScrollView 
+        style={styles.container}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="chevron-back" size={24} color={colors.primary} />
+          </TouchableOpacity>
           <Text style={styles.title}>Rent Information</Text>
+          <View style={styles.backButton} />
+        </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Rent Balance Owed</Text>
-            <Text style={styles.amountText}>
-              £
-              {rentInfo.isPastDue
-                ? rentInfo.monthly_rent.toFixed(2) * rentInfo.months_per_payment
-                : 0}
-            </Text>
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Next Rent Due</Text>
-            <Text
-              style={[
-                styles.dateText,
-                rentInfo.isPastDue && styles.pastDueDate,
-              ]}
-            >
-              {formatDate(new Date(rentInfo.next_payment))}
-            </Text>
-            <Text style={styles.frequencyText}>
-              Paid every{" "}
-              {rentInfo.months_per_payment === 1
-                ? "month"
-                : rentInfo.months_per_payment + " months"}
-            </Text>
-          </View>
-
-          {/* Collapsible Contract Terms Section */}
-          <View style={styles.section}>
-            <TouchableOpacity 
-              style={styles.contractHeader}
-              onPress={() => setIsContractTermsExpanded(!isContractTermsExpanded)}
-            >
-              <Text style={styles.sectionTitle}>Contract Terms</Text>
-              <Text style={styles.expandIcon}>
-                {isContractTermsExpanded ? '▼' : '▶'}
+        {/* Main Balance Card */}
+        <View style={styles.mainCard}>
+          <Text style={styles.balanceLabel}>Current Balance</Text>
+          <Text style={styles.balanceAmount}>
+            £{rentInfo.isPastDue ? (rentInfo.monthly_rent * rentInfo.months_per_payment).toFixed(2) : "0.00"}
+          </Text>
+          <View style={styles.balanceDetails}>
+            <View style={styles.balanceDetailItem}>
+              <Text style={styles.detailLabel}>Next Payment</Text>
+              <Text style={[styles.detailValue, rentInfo.isPastDue && styles.pastDueText]}>
+                {formatDate(new Date(rentInfo.next_payment))}
               </Text>
-            </TouchableOpacity>
-            
-            {isContractTermsExpanded && (
-              <>
-                {/* Late Fees Section */}
-                <View style={styles.contractSubsection}>
-                  <Text style={styles.subsectionTitle}>Late Payment Fees</Text>
-                  <View style={styles.contractDetailRow}>
-                    <Text style={styles.contractDetailLabel}>Daily Rate:</Text>
-                    <Text style={styles.contractDetailValue}>£{lateFees.dailyRate.toFixed(2)}</Text>
-                  </View>
-                  <View style={styles.contractDetailRow}>
-                    <Text style={styles.contractDetailLabel}>Grace Period:</Text>
-                    <Text style={styles.contractDetailValue}>{lateFees.gracePeriod} days</Text>
-                  </View>
-                  <View style={styles.contractDetailRow}>
-                    <Text style={styles.contractDetailLabel}>Maximum Fee:</Text>
-                    <Text style={styles.contractDetailValue}>£{lateFees.maxFee.toFixed(2)}</Text>
-                  </View>
-                </View>
-
-                {/* Escalation Clause Section */}
-                <View style={styles.contractSubsection}>
-                  <Text style={styles.subsectionTitle}>Rent Review</Text>
-                  <View style={styles.contractDetailRow}>
-                    <Text style={styles.contractDetailLabel}>Annual Increase:</Text>
-                    <Text style={styles.contractDetailValue}>{escalationClause.annualIncrease}%</Text>
-                  </View>
-                  <View style={styles.contractDetailRow}>
-                    <Text style={styles.contractDetailLabel}>Next Review:</Text>
-                    <Text style={styles.contractDetailValue}>
-                      {escalationClause.nextReviewDate ? formatDate(new Date(escalationClause.nextReviewDate)) : 'Not scheduled'}
-                    </Text>
-                  </View>
-                </View>
-              </>
-            )}
+            </View>
+            <View style={styles.balanceDetailItem}>
+              <Text style={styles.detailLabel}>Payment Frequency</Text>
+              <Text style={styles.detailValue}>
+                {rentInfo.months_per_payment === 1 ? "Monthly" : `Every ${rentInfo.months_per_payment} months`}
+              </Text>
+            </View>
           </View>
+        </View>
 
-          {!rentInfo.isPaid && (
-            <TouchableOpacity style={styles.button} onPress={handleRentPaid}>
-              <Text style={styles.buttonText}>Rent Paid</Text>
-            </TouchableOpacity>
-          )}
-
-          <TouchableOpacity
-            style={styles.secondaryButton}
+        {/* Action Buttons */}
+        <View style={styles.actionButtonsContainer}>
+          <TouchableOpacity 
+            style={[
+              styles.actionButton, 
+              styles.primaryAction,
+              !rentInfo.isPastDue && styles.disabledAction
+            ]} 
+            onPress={handleRentPaid}
+            disabled={!rentInfo.isPastDue}
+          >
+            <Ionicons 
+              name="checkmark-circle-outline" 
+              size={24} 
+              color={rentInfo.isPastDue ? colors.onPrimary : colors.disabled} 
+            />
+            <Text style={[
+              styles.actionButtonText,
+              !rentInfo.isPastDue && styles.disabledActionText
+            ]}>Mark as Paid</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.secondaryAction]} 
             onPress={handleOpenDelayModal}
           >
-            <Text style={styles.secondaryButtonText}>Request Rent Delay</Text>
+            <Ionicons name="time-outline" size={24} color={colors.onSecondary} />
+            <Text style={[styles.actionButtonText, { color: colors.onSecondary }]}>Request Delay</Text>
           </TouchableOpacity>
+        </View>
 
-          {/* Delay Request Log Section */}
-          <View style={styles.logContainer}>
-            <Text style={styles.logTitle}>Delay Request History</Text>
-            {rentExtensions.length > 0 ? (
-              rentExtensions.map((request) => (
-                <TouchableOpacity
-                  key={request.id}
-                  style={styles.logItem}
-                  onPress={() => handleOpenReasonModal(request)}
-                >
-                  {getStatusIcon(request.status)}
-                  <View style={styles.logItemTextContainer}>
-                    <Text style={styles.logItemTextPrimary}>
-                      {request.days} day(s) delay requested on{" "}
-                      {formatDate(new Date(request.created_at))}
-                    </Text>
-                    <Text style={styles.logItemTextSecondary}>
-                      Status:{" "}
-                      {request.status.charAt(0).toUpperCase() +
-                        request.status.slice(1)}
-                    </Text>
-                  </View>
-                  <Text style={styles.logItemChevron}>›</Text>
-                </TouchableOpacity>
-              ))
-            ) : (
-              <Text style={styles.noRequestsText}>
-                No delay requests found.
-              </Text>
-            )}
-          </View>
-
-          {/* Modal for Requesting Delay */}
-          <Modal
-            animationType="slide"
-            transparent={true}
-            visible={isDelayModalVisible}
-            onRequestClose={handleCloseDelayModal}
+        {/* Contract Terms Section */}
+        <View style={styles.section}>
+          <TouchableOpacity 
+            style={styles.sectionHeader}
+            onPress={() => setIsContractTermsExpanded(!isContractTermsExpanded)}
           >
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-              <View style={styles.modalOverlay}>
-                <TouchableWithoutFeedback>
-                  <View style={styles.modalView}>
-                    <Text style={styles.modalTitle}>
-                      Request Rent Payment Delay
-                    </Text>
-                    <Text style={styles.inputLabel}>
-                      Number of Days for Extension
-                    </Text>
-                    <TextInput
-                      style={styles.input}
-                      onChangeText={setDelayDays}
-                      value={delayDays}
-                      placeholder="e.g., 7"
-                      keyboardType="numeric"
-                    />
-                    <Text style={styles.inputLabel}>Reason for Delay</Text>
-                    <TextInput
-                      style={[styles.input, styles.reasonInput]}
-                      onChangeText={setDelayReason}
-                      value={delayReason}
-                      placeholder="Briefly explain your reason"
-                      multiline={true}
-                      numberOfLines={3}
-                    />
-                    <View style={styles.modalButtonContainer}>
-                      <TouchableOpacity
-                        style={[styles.modalButton, styles.cancelButton]}
-                        onPress={handleCloseDelayModal}
-                      >
-                        <Text style={styles.modalButtonText}>Cancel</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.modalButton, styles.submitButton]}
-                        onPress={handleSubmitDelayRequest}
-                      >
-                        <Text style={styles.modalButtonText}>Submit</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </TouchableWithoutFeedback>
-              </View>
-            </TouchableWithoutFeedback>
-          </Modal>
-
-          {/* Modal for Displaying Reason */}
-          {selectedRequest && (
-            <Modal
-              animationType="fade"
-              transparent={true}
-              visible={isReasonModalVisible}
-              onRequestClose={handleCloseReasonModal}
-            >
-              <View style={styles.reasonModalOverlay}>
-                <View style={styles.reasonModalView}>
-                  <Text style={styles.reasonModalTitle}>Request Details</Text>
-                  <Text style={styles.reasonModalDetail}>
-                    <Text style={styles.reasonModalDetailLabel}>
-                      Date Requested:
-                    </Text>
-                    <Text>
-                      {" "}
-                      {formatDate(new Date(selectedRequest.created_at))}
-                    </Text>
-                  </Text>
-                  <Text style={styles.reasonModalDetail}>
-                    <Text style={styles.reasonModalDetailLabel}>
-                      Days Requested:
-                    </Text>
-                    <Text> {selectedRequest.days}</Text>
-                  </Text>
-                  <Text style={styles.reasonModalDetail}>
-                    <Text style={styles.reasonModalDetailLabel}>Status:</Text>
-                    <Text>
-                      {" "}
-                      {selectedRequest.status.charAt(0).toUpperCase() +
-                        selectedRequest.status.slice(1)}
-                    </Text>
-                  </Text>
-                  <Text style={styles.reasonModalDetailLabel}>Reason:</Text>
-                  <Text style={styles.reasonModalReasonText}>
-                    {selectedRequest.reason}
-                  </Text>
-                  <TouchableOpacity
-                    style={styles.reasonModalCloseButton}
-                    onPress={handleCloseReasonModal}
-                  >
-                    <Text style={styles.modalButtonText}>Close</Text>
-                  </TouchableOpacity>
+            <View style={styles.sectionHeaderLeft}>
+              <Ionicons name="document-text-outline" size={24} color={colors.primary} />
+              <Text style={styles.sectionTitle}>Contract Terms</Text>
+            </View>
+            <Ionicons 
+              name={isContractTermsExpanded ? "chevron-up" : "chevron-down"} 
+              size={24} 
+              color={colors.primary} 
+            />
+          </TouchableOpacity>
+          
+          {isContractTermsExpanded && (
+            <View style={styles.contractContent}>
+              {/* Late Fees Section */}
+              <View style={styles.contractSubsection}>
+                <Text style={styles.subsectionTitle}>Late Payment Fees</Text>
+                <View style={styles.contractDetailRow}>
+                  <Text style={styles.contractDetailLabel}>Daily Rate</Text>
+                  <Text style={styles.contractDetailValue}>£{lateFees.dailyRate.toFixed(2)}</Text>
+                </View>
+                <View style={styles.contractDetailRow}>
+                  <Text style={styles.contractDetailLabel}>Grace Period</Text>
+                  <Text style={styles.contractDetailValue}>{lateFees.gracePeriod} days</Text>
+                </View>
+                <View style={styles.contractDetailRow}>
+                  <Text style={styles.contractDetailLabel}>Maximum Fee</Text>
+                  <Text style={styles.contractDetailValue}>£{lateFees.maxFee.toFixed(2)}</Text>
                 </View>
               </View>
-            </Modal>
+
+              {/* Escalation Clause Section */}
+              <View style={styles.contractSubsection}>
+                <Text style={styles.subsectionTitle}>Rent Review</Text>
+                <View style={styles.contractDetailRow}>
+                  <Text style={styles.contractDetailLabel}>Annual Increase</Text>
+                  <Text style={styles.contractDetailValue}>{escalationClause.annualIncrease}%</Text>
+                </View>
+                <View style={styles.contractDetailRow}>
+                  <Text style={styles.contractDetailLabel}>Next Review</Text>
+                  <Text style={styles.contractDetailValue}>
+                    {escalationClause.nextReviewDate ? formatDate(new Date(escalationClause.nextReviewDate)) : 'Not scheduled'}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          )}
+        </View>
+
+        {/* Delay Request History */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionHeaderLeft}>
+              <Ionicons name="time-outline" size={24} color={colors.primary} />
+              <Text style={styles.sectionTitle}>Delay Requests</Text>
+            </View>
+          </View>
+          
+          {rentExtensions.length > 0 ? (
+            rentExtensions.map((request) => (
+              <TouchableOpacity
+                key={request.id}
+                style={styles.requestItem}
+                onPress={() => handleOpenReasonModal(request)}
+              >
+                <View style={styles.requestStatus}>
+                  {getStatusIcon(request.status)}
+                </View>
+                <View style={styles.requestContent}>
+                  <Text style={styles.requestTitle}>
+                    {request.days} day{request.days !== 1 ? 's' : ''} delay requested
+                  </Text>
+                  <Text style={styles.requestDate}>
+                    {formatDate(new Date(request.created_at))}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={colors.placeholder} />
+              </TouchableOpacity>
+            ))
+          ) : (
+            <View style={styles.emptyState}>
+              <Ionicons name="checkmark-circle-outline" size={48} color={colors.success} />
+              <Text style={styles.emptyStateText}>No delay requests</Text>
+            </View>
           )}
         </View>
       </ScrollView>
+
+      {/* Modal for Requesting Delay */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isDelayModalVisible}
+        onRequestClose={handleCloseDelayModal}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.modalView}>
+                <Text style={styles.modalTitle}>
+                  Request Rent Payment Delay
+                </Text>
+                <Text style={styles.inputLabel}>
+                  Number of Days for Extension
+                </Text>
+                <TextInput
+                  style={styles.input}
+                  onChangeText={setDelayDays}
+                  value={delayDays}
+                  placeholder="e.g., 7"
+                  keyboardType="numeric"
+                />
+                <Text style={styles.inputLabel}>Reason for Delay</Text>
+                <TextInput
+                  style={[styles.input, styles.reasonInput]}
+                  onChangeText={setDelayReason}
+                  value={delayReason}
+                  placeholder="Briefly explain your reason"
+                  multiline={true}
+                  numberOfLines={3}
+                />
+                <View style={styles.modalButtonContainer}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.cancelButton]}
+                    onPress={handleCloseDelayModal}
+                  >
+                    <Text style={styles.modalButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.submitButton]}
+                    onPress={handleSubmitDelayRequest}
+                  >
+                    <Text style={styles.modalButtonText}>Submit</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* Modal for Displaying Reason */}
+      {selectedRequest && (
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={isReasonModalVisible}
+          onRequestClose={handleCloseReasonModal}
+        >
+          <View style={styles.reasonModalOverlay}>
+            <View style={styles.reasonModalView}>
+              <Text style={styles.reasonModalTitle}>Request Details</Text>
+              <Text style={styles.reasonModalDetail}>
+                <Text style={styles.reasonModalDetailLabel}>
+                  Date Requested:
+                </Text>
+                <Text>
+                  {" "}
+                  {formatDate(new Date(selectedRequest.created_at))}
+                </Text>
+              </Text>
+              <Text style={styles.reasonModalDetail}>
+                <Text style={styles.reasonModalDetailLabel}>
+                  Days Requested:
+                </Text>
+                <Text> {selectedRequest.days}</Text>
+              </Text>
+              <Text style={styles.reasonModalDetail}>
+                <Text style={styles.reasonModalDetailLabel}>Status:</Text>
+                <Text>
+                  {" "}
+                  {selectedRequest.status.charAt(0).toUpperCase() +
+                    selectedRequest.status.slice(1)}
+                </Text>
+              </Text>
+              <Text style={styles.reasonModalDetailLabel}>Reason:</Text>
+              <Text style={styles.reasonModalReasonText}>
+                {selectedRequest.reason}
+              </Text>
+              <TouchableOpacity
+                style={styles.reasonModalCloseButton}
+                onPress={handleCloseReasonModal}
+              >
+                <Text style={styles.modalButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  frequencyText: {
-    fontSize: 14,
-    color: colors.placeholder,
-    marginTop: 8,
-  },
   safeArea: {
     flex: 1,
     backgroundColor: colors.background,
@@ -553,74 +586,195 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   contentContainer: {
-    padding: 20,
+    padding: 16,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    marginBottom: 30,
+    fontSize: 24,
+    fontWeight: 'bold',
     color: colors.onBackground,
-    textAlign: "center",
   },
-  section: {
-    width: "100%",
-    paddingVertical: 15,
-    paddingHorizontal: 20,
+  mainCard: {
     backgroundColor: colors.surface,
-    borderRadius: 8,
-    marginBottom: 20,
-    shadowColor: colors.onBackground,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 3,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.onBackground,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
-  sectionTitle: {
+  balanceLabel: {
     fontSize: 16,
     color: colors.placeholder,
     marginBottom: 8,
   },
-  amountText: {
-    fontSize: 24,
-    fontWeight: "600",
+  balanceAmount: {
+    fontSize: 36,
+    fontWeight: 'bold',
     color: colors.onSurface,
+    marginBottom: 16,
   },
-  dateText: {
-    fontSize: 18,
-    fontWeight: "500",
+  balanceDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
+    paddingTop: 16,
+  },
+  balanceDetailItem: {
+    flex: 1,
+  },
+  detailLabel: {
+    fontSize: 14,
+    color: colors.placeholder,
+    marginBottom: 4,
+  },
+  detailValue: {
+    fontSize: 16,
     color: colors.onSurface,
+    fontWeight: '500',
   },
-  pastDueDate: {
+  pastDueText: {
     color: colors.error,
   },
-  button: {
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 24,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 12,
+    gap: 8,
+  },
+  primaryAction: {
     backgroundColor: colors.primary,
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: 8,
-    marginTop: 10,
-    width: "100%",
-    alignItems: "center",
   },
-  buttonText: {
-    color: colors.onPrimary,
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  secondaryButton: {
+  secondaryAction: {
     backgroundColor: colors.secondary,
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 8,
-    marginTop: 15,
-    width: "100%",
-    alignItems: "center",
-    marginBottom: 20,
   },
-  secondaryButtonText: {
-    color: colors.onSecondary,
+  actionButtonText: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: '600',
+    color: colors.onPrimary,
+  },
+  section: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    marginBottom: 24,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.onBackground,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+  },
+  sectionHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.onSurface,
+  },
+  contractContent: {
+    padding: 16,
+  },
+  contractSubsection: {
+    marginBottom: 24,
+  },
+  subsectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.onSurface,
+    marginBottom: 12,
+  },
+  contractDetailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  contractDetailLabel: {
+    fontSize: 14,
+    color: colors.placeholder,
+  },
+  contractDetailValue: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.onSurface,
+  },
+  requestItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+  },
+  requestStatus: {
+    width: 40,
+    alignItems: 'center',
+  },
+  requestContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  requestTitle: {
+    fontSize: 16,
+    color: colors.onSurface,
+    marginBottom: 4,
+  },
+  requestDate: {
+    fontSize: 14,
+    color: colors.placeholder,
+  },
+  emptyState: {
+    padding: 32,
+    alignItems: 'center',
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: colors.placeholder,
+    marginTop: 12,
   },
   modalOverlay: {
     flex: 1,
@@ -696,71 +850,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 16,
   },
-  logContainer: {
-    width: "100%",
-    marginTop: 10,
-    backgroundColor: colors.surface,
-    borderRadius: 8,
-    padding: 15,
-    shadowColor: colors.onBackground,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 3,
-  },
-  logTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: colors.onSurface,
-    marginBottom: 15,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.divider,
-  },
-  logItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.divider,
-  },
-  logItemTextContainer: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  logItemTextPrimary: {
-    fontSize: 15,
-    color: colors.onSurface,
-    marginBottom: 2,
-  },
-  logItemTextSecondary: {
-    fontSize: 13,
-    color: colors.placeholder,
-  },
-  logItemChevron: {
-    fontSize: 20,
-    color: colors.placeholder,
-  },
-  statusIcon: {
-    fontSize: 20,
-    width: 24,
-    textAlign: "center",
-  },
-  statusIconAccepted: {
-    color: colors.success,
-  },
-  statusIconOpen: {
-    color: colors.warning,
-  },
-  statusIconDenied: {
-    color: colors.error,
-  },
-  noRequestsText: {
-    textAlign: "center",
-    color: colors.placeholder,
-    paddingVertical: 10,
-    fontSize: 15,
-  },
   reasonModalOverlay: {
     flex: 1,
     justifyContent: "center",
@@ -816,42 +905,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 10,
   },
-  contractSubsection: {
-    marginTop: 15,
-    paddingTop: 15,
-    borderTopWidth: 1,
-    borderTopColor: colors.divider,
+  statusIcon: {
+    fontSize: 20,
+    width: 24,
+    textAlign: "center",
   },
-  subsectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.onSurface,
-    marginBottom: 12,
+  statusIconAccepted: {
+    color: colors.success,
   },
-  contractDetailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
+  statusIconOpen: {
+    color: colors.warning,
   },
-  contractDetailLabel: {
-    fontSize: 14,
-    color: colors.placeholder,
+  statusIconDenied: {
+    color: colors.error,
   },
-  contractDetailValue: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.onSurface,
+  disabledAction: {
+    backgroundColor: colors.primary + '15', // 15% opacity of primary color
+    borderWidth: 0,
   },
-  contractHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 5,
-  },
-  expandIcon: {
-    fontSize: 16,
-    color: colors.placeholder,
+  disabledActionText: {
+    color: colors.primary + '80', // 80% opacity of primary color
   },
 });
 
