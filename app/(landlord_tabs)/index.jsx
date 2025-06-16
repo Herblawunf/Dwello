@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   View,
   Text,
@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  Image,
   Dimensions,
   SafeAreaView,
 } from "react-native";
@@ -14,20 +13,44 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import FinancialBarChart from "./data_analytics_.jsx";
 import { useData } from "./components/DataProvider";
+import DataProvider from "./components/DataProvider";
 
 const { width } = Dimensions.get("window");
 const cardWidth = width * 0.42;
-
-export default function LandlordDashboardScreen() {
+function LandlordDashboardContent() {
   const router = useRouter();
+  const data = useData();
+  
+  // Add debugging and safety checks
+  console.log("Data from context:", data);
+  
+  if (!data) {
+    console.error("DataProvider context is not available. Make sure this component is wrapped with DataProvider.");
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.errorText}>Data provider not found</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+  
   const { 
     properties, 
     overviewMetrics, 
     incomeExpensesTrend, 
     maintenanceCosts,
-    loading 
-  } = useData();
-
+    loading,
+    error
+  } = data;
+  
+  // Handle error state
+  if (error) {
+    console.error("Data loading error:", error);
+  }
+  
+  // Provide default loading object if undefined
+  const safeLoading = loading || {};
   // Get month labels from the trend data
   const monthLabels = incomeExpensesTrend?.map(item => item.date) || [];
 
@@ -109,9 +132,6 @@ export default function LandlordDashboardScreen() {
     });
   };
   
-  const handleGoToProperties = () => {
-    router.push("/(landlord_tabs)/properties");
-  };
   
   const handleGoToUpkeep = () => {
     router.push("/(landlord_tabs)/upkeep");
@@ -199,7 +219,7 @@ export default function LandlordDashboardScreen() {
             </TouchableOpacity>
           </View>
           <View style={styles.chartContainer}>
-            {loading.incomeExpenses ? (
+            {safeLoading.incomeExpenses ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#007AFF" />
                 <Text style={styles.loadingText}>Loading financial data...</Text>
@@ -316,6 +336,15 @@ export default function LandlordDashboardScreen() {
   );
 }
 
+export default function LandlordDashboardScreen() {
+  return (
+    <DataProvider>
+      <LandlordDashboardContent />
+    </DataProvider>
+  );
+}
+
+// Helper function to get color for maintenance category
 // Helper function to get color for maintenance category
 function getCategoryColor(category) {
   switch (category) {
