@@ -675,6 +675,14 @@ export default class Requests extends Component {
                 </View>
               )}
             />
+
+            {/* Add Floating Action Button */}
+            <TouchableOpacity
+              style={styles.fab}
+              onPress={() => router.push("/requests/contact")}
+            >
+              <MaterialIcons name="add" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
           </SafeAreaView>
         )}
       </SafeAreaInsetsContext.Consumer>
@@ -1026,6 +1034,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: defaultTheme.colors.placeholder,
     textAlign: "center",
+  },
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: defaultTheme.colors.primaryVariant,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    zIndex: 1000,
   },
 });
 
