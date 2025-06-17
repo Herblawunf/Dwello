@@ -381,7 +381,7 @@ const ExpensesScreen = () => {
           housemate_id: paidExpense.payer_id, // Person who paid gets reimbursed
           is_paid: false,
           amount: originalExpense.amount,
-          description: `Reimbursement for deleted expense: ${originalExpense.description || "No description"}`,
+          description: `Reimbursement for: ${originalExpense.description || "No description"}`,
           deletable: false,
         };
 

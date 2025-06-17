@@ -317,7 +317,7 @@ export default function TenantDetails() {
             <Text style={styles.modalSubtitle}>
               Are you sure you want to accept this rent extension request? This
               will extend the payment date to{" "}
-              {selectedExtension && formatDate(selectedExtension.new_date)}.
+              {selectedExtension && formatDate(selectedExtension.new_date, (reverse = true))}.
             </Text>
             <View style={styles.modalActions}>
               <TouchableOpacity

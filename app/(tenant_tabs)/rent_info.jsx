@@ -19,6 +19,7 @@ import { Context as AuthContext } from "@/context/AuthContext";
 import { colors } from "@/app/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 
 const RentScreen = () => {
   const router = useRouter();
@@ -47,9 +48,14 @@ const RentScreen = () => {
 
   useEffect(() => {
     getRentInfo();
-    getRentExtensions();
     getContractDetails();
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      getRentExtensions();
+    }, [])
+  );
 
   const getRentInfo = async () => {
     try {
@@ -480,46 +486,44 @@ const RentScreen = () => {
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={styles.modalView}>
-                <Text style={styles.modalTitle}>
-                  Request Rent Payment Delay
-                </Text>
-                <Text style={styles.inputLabel}>
-                  Number of Days for Extension
-                </Text>
-                <TextInput
-                  style={styles.input}
-                  onChangeText={setDelayDays}
-                  value={delayDays}
-                  placeholder="e.g., 7"
-                  keyboardType="numeric"
-                />
-                <Text style={styles.inputLabel}>Reason for Delay</Text>
-                <TextInput
-                  style={[styles.input, styles.reasonInput]}
-                  onChangeText={setDelayReason}
-                  value={delayReason}
-                  placeholder="Briefly explain your reason"
-                  multiline={true}
-                  numberOfLines={3}
-                />
-                <View style={styles.modalButtonContainer}>
-                  <TouchableOpacity
-                    style={[styles.modalButton, styles.cancelButton]}
-                    onPress={handleCloseDelayModal}
-                  >
-                    <Text style={styles.modalButtonText}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.modalButton, styles.submitButton]}
-                    onPress={handleSubmitDelayRequest}
-                  >
-                    <Text style={styles.modalButtonText}>Submit</Text>
-                  </TouchableOpacity>
-                </View>
+            <View style={styles.modalView}>
+              <Text style={styles.modalTitle}>
+                Request Rent Payment Delay
+              </Text>
+              <Text style={styles.inputLabel}>
+                Number of Days for Extension
+              </Text>
+              <TextInput
+                style={styles.input}
+                onChangeText={setDelayDays}
+                value={delayDays}
+                placeholder="e.g., 7"
+                keyboardType="numeric"
+              />
+              <Text style={styles.inputLabel}>Reason for Delay</Text>
+              <TextInput
+                style={[styles.input, styles.reasonInput]}
+                onChangeText={setDelayReason}
+                value={delayReason}
+                placeholder="Briefly explain your reason"
+                multiline={true}
+                numberOfLines={3}
+              />
+              <View style={styles.modalButtonContainer}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={handleCloseDelayModal}
+                >
+                  <Text style={styles.modalButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.submitButton]}
+                  onPress={handleSubmitDelayRequest}
+                >
+                  <Text style={styles.modalButtonText}>Submit</Text>
+                </TouchableOpacity>
               </View>
-            </TouchableWithoutFeedback>
+            </View>
           </View>
         </TouchableWithoutFeedback>
       </Modal>
