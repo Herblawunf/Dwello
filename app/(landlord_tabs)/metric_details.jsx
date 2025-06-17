@@ -24,6 +24,7 @@ export default function MetricDetailsScreen() {
   const metricKey = params?.metricKey || 'occupancyRate';
   const metricName = params?.metricName || 'Occupancy Rate';
   const propertyId = params?.propertyId || null;
+  const propertyName = params?.propertyName || 'Overview';
   
   const { 
     properties, 
@@ -44,6 +45,7 @@ export default function MetricDetailsScreen() {
   const [totalMetrics, setTotalMetrics] = useState({});
   const [periodTotals, setPeriodTotals] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [houseNameMap, setHouseNameMap] = useState({});
 
   // Get metric info based on the metric key
   const getMetricInfo = () => {
@@ -215,7 +217,7 @@ export default function MetricDetailsScreen() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Fetch data from the property_analytics table
+        // Fetch data from the house_analytics table
         await fetchAnalyticsData();
         setIsLoading(false);
       } catch (error) {
@@ -227,7 +229,7 @@ export default function MetricDetailsScreen() {
     fetchData();
   }, [metricKey, timeFrame]);
 
-  // Fetch from property_analytics table
+  // Fetch from house_analytics table
   const fetchAnalyticsData = async () => {
     try {
       // Determine how many months to look back based on time frame
@@ -240,14 +242,14 @@ export default function MetricDetailsScreen() {
       
       // Query the database
       let query = supabase
-        .from('property_analytics')
+        .from('house_analytics')
         .select('*')
         .gte('record_date', startDate.toISOString().split('T')[0])
         .order('record_date', { ascending: false });
         
-      // Filter by property ID if provided
+      // Filter by house ID if provided
       if (propertyId) {
-        query = query.eq('property_id', propertyId);
+        query = query.eq('house_id', propertyId);
       }
       
       const { data, error } = await query;
@@ -270,7 +272,7 @@ export default function MetricDetailsScreen() {
       setAnalyticsData(data);
       
       // Process the data for property comparison
-      processPropertyComparison(data);
+      await processPropertyComparison(data);
       
       // Process data for totals and period breakdowns
       processTotalMetrics(data);
@@ -281,25 +283,43 @@ export default function MetricDetailsScreen() {
   };
   
   // Process property comparison from analytics data
-  const processPropertyComparison = (data) => {
+  const processPropertyComparison = async (data) => {
     if (!data || data.length === 0) return;
     
-    // Group data by property
-    const propertyGroups = {};
+    // Group data by house
+    const houseGroups = {};
     data.forEach(record => {
-      if (!propertyGroups[record.property_id]) {
-        propertyGroups[record.property_id] = [];
+      if (!houseGroups[record.house_id]) {
+        houseGroups[record.house_id] = [];
       }
-      propertyGroups[record.property_id].push(record);
+      houseGroups[record.house_id].push(record);
     });
     
-    // Calculate aggregated metrics for each property
-    const comparison = Object.entries(propertyGroups).map(([propertyId, records]) => {
+    // Get house names from the houses table
+    const houseIds = Object.keys(houseGroups);
+    const { data: housesData, error: housesError } = await supabase
+      .from('houses')
+      .select('house_id, street_address, postcode, code')
+      .in('house_id', houseIds);
+    
+    if (housesError) {
+      console.error("Error fetching house names:", housesError);
+      return;
+    }
+    
+    // Create a map of house_id to house name
+    const houseNameMap = {};
+    housesData.forEach(house => {
+      houseNameMap[house.house_id] = house.street_address || `Property ${house.code}`;
+    });
+    
+    // Calculate aggregated metrics for each house
+    const comparison = Object.entries(houseGroups).map(([houseId, records]) => {
       // Sort by date (most recent first)
       records.sort((a, b) => new Date(b.record_date) - new Date(a.record_date));
       
-      // Get the property name from the most recent record
-      const propertyName = records[0].property_name;
+      // Get the house name from the houses table
+      const houseName = houseNameMap[houseId] || `Property ${houseId.slice(0, 8)}`;
       
       // Aggregate values based on the metric
       let value = 0;
@@ -314,14 +334,15 @@ export default function MetricDetailsScreen() {
       }
       
       return {
-        id: propertyId,
-        name: propertyName,
+        id: houseId,
+        name: houseName,
         value,
         change
       };
     });
     
     setPropertyComparison(comparison);
+    setHouseNameMap(houseNameMap);
   };
   
   // Process total metrics from analytics data
@@ -539,7 +560,9 @@ export default function MetricDetailsScreen() {
           <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>{metricInfo.title}</Text>
+          <Text style={styles.headerTitle}>
+            {propertyId ? `${propertyName} - ${metricInfo.title}` : metricInfo.title}
+          </Text>
           <View style={styles.headerRight} />
         </View>
         <View style={styles.loadingContainer}>
@@ -556,7 +579,9 @@ export default function MetricDetailsScreen() {
         <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{metricInfo.title}</Text>
+        <Text style={styles.headerTitle}>
+          {propertyId ? `${propertyName} - ${metricInfo.title}` : metricInfo.title}
+        </Text>
         <View style={styles.headerRight} />
       </View>
       
@@ -716,7 +741,7 @@ export default function MetricDetailsScreen() {
                         year: 'numeric'
                       })}
                     </Text>
-                    <Text style={styles.tableCell}>{item.property_name}</Text>
+                    <Text style={styles.tableCell}>{houseNameMap[item.house_id]}</Text>
                     <Text style={styles.tableCellValue}>
                       {formatValue(item[mapMetricKeyToDbField(metricKey)])}
                     </Text>

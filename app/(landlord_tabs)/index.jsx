@@ -158,7 +158,7 @@ function LandlordDashboardContent() {
   }
   
   const { 
-    properties, 
+    houses, 
     overviewMetrics, 
     incomeExpensesTrend, 
     maintenanceCosts,
@@ -183,7 +183,10 @@ function LandlordDashboardContent() {
   const occupancyRate = overviewMetrics?.occupancyRate?.value || "0";
   
   // Calculate upcoming rent payments (sample data)
-  const upcomingPayments = [
+  const upcomingPayments = houses && houses.length > 0 ? [
+    { property: houses[0].name, amount: 1200, dueDate: "25 Jun 2024", status: "pending" },
+    ...(houses.length > 1 ? [{ property: houses[1].name, amount: 1500, dueDate: "28 Jun 2024", status: "pending" }] : [])
+  ] : [
     { property: "Bridgewater Road", amount: 1200, dueDate: "25 Jun 2024", status: "pending" },
     { property: "Oak Avenue", amount: 1500, dueDate: "28 Jun 2024", status: "pending" },
   ];
@@ -291,7 +294,7 @@ function LandlordDashboardContent() {
             </Text>
           </View>
           <View style={styles.propertiesCount}>
-            <Text style={styles.propertiesCountNumber}>{properties?.length || 0}</Text>
+            <Text style={styles.propertiesCountNumber}>{houses?.length || 0}</Text>
             <Text style={styles.propertiesCountLabel}>Properties</Text>
           </View>
         </View>
@@ -428,33 +431,6 @@ function LandlordDashboardContent() {
               </View>
             )}
           </View>
-        </View>
-        
-        {/* Quick Actions */}
-        <View style={styles.quickActionsContainer}>
-          <TouchableOpacity 
-            style={styles.quickActionButton}
-            onPress={() => router.push("/(landlord_tabs)/add-property")}
-          >
-            <Ionicons name="add-circle-outline" size={24} color="#007AFF" />
-            <Text style={styles.quickActionText}>Add Property</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.quickActionButton}
-            onPress={handleGoToInsights}
-          >
-            <Ionicons name="analytics-outline" size={24} color="#007AFF" />
-            <Text style={styles.quickActionText}>Analytics</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.quickActionButton}
-            onPress={() => router.push("/(landlord_tabs)/requests")}
-          >
-            <Ionicons name="construct-outline" size={24} color="#007AFF" />
-            <Text style={styles.quickActionText}>Requests</Text>
-          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -753,30 +729,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     marginTop: 12,
-  },
-  quickActionsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: '#F8F9FA',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 80,
-    marginTop: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  quickActionButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 10,
-  },
-  quickActionText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
-    marginTop: 8,
   },
 });

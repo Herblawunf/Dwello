@@ -1,21 +1,18 @@
-import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider as NavigationThemeProvider,
-} from "@react-navigation/native";
-import { useFonts } from "expo-font";
-import { Stack, useRouter } from "expo-router";
-import "react-native-reanimated";
-import React, { useContext, useEffect } from "react";
-import { View, ActivityIndicator } from "react-native";
-import { useColorScheme } from "@/hooks/useColorScheme";
-import {
-  Provider as AuthProvider,
-  Context as AuthContext,
-} from "@/context/AuthContext";
-import { ThemeProvider } from "@/context/ThemeContext";
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { analyticsApi } from '../lib/supabase';
+import React, { useEffect, useContext } from 'react';
+import { Stack, useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { View, ActivityIndicator } from 'react-native';
+import { Provider as AuthProvider, Context as AuthContext } from '@/context/AuthContext';
+import { ThemeProvider } from '@/context/ThemeContext';
+import DataProvider from './components/DataProvider';
+import { supabase } from '@/lib/supabase';
+
+// Loading component
+const LoadingScreen = () => (
+  <View style={{ flex: 1, justifyContent: "center" }}>
+    <ActivityIndicator size="large" />
+  </View>
+);
 
 // Stacks Configuration
 const Stacks = {
@@ -44,65 +41,6 @@ const Stacks = {
     </Stack>
   ),
 };
-
-const LoadingScreen = () => (
-  <View style={{ flex: 1, justifyContent: "center" }}>
-    <ActivityIndicator size="large" />
-  </View>
-);
-
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [fontsLoaded, error] = useFonts({
-    SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
-  });
-
-  // Initialize analytics system
-  useEffect(() => {
-    const initAnalytics = async () => {
-      try {
-        console.log('Initializing analytics system...');
-        const result = await analyticsApi.initializeAnalytics();
-        if (result.success) {
-          console.log('Analytics system initialized successfully');
-        } else {
-          console.error('Failed to initialize analytics system:', result.error);
-          // Try to set up analytics directly as fallback
-          await analyticsApi.setupPropertyAnalytics();
-        }
-      } catch (error) {
-        console.error('Error initializing analytics:', error);
-        // Try to set up analytics directly as fallback
-        try {
-          await analyticsApi.setupPropertyAnalytics();
-        } catch (setupError) {
-          console.error('Failed to set up analytics after initialization error:', setupError);
-        }
-      }
-    };
-    
-    initAnalytics();
-  }, []);
-
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
-  useEffect(() => {
-    if (error) throw error;
-  }, [error]);
-
-  if (!fontsLoaded) return null;
-
-  return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <NavigationThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <ThemeProvider>
-          <AuthProvider>
-            <AuthRouter />
-          </AuthProvider>
-        </ThemeProvider>
-      </NavigationThemeProvider>
-    </GestureHandlerRootView>
-  );
-}
 
 function AuthRouter() {
   const router = useRouter();
@@ -145,5 +83,56 @@ function AuthRouter() {
         <Stacks.Auth />
       )}
     </>
+  );
+}
+
+export default function RootLayout() {
+  useEffect(() => {
+    // Initialize Supabase and check connection
+    const initializeApp = async () => {
+      try {
+        console.log('Initializing app...');
+        
+        // Test Supabase connection
+        const { data, error } = await supabase
+          .from('houses')
+          .select('count')
+          .limit(1);
+        
+        if (error) {
+          console.error('Supabase connection error:', error);
+        } else {
+          console.log('✅ Supabase connected successfully');
+        }
+        
+        // Check if house_analytics table exists and has data
+        const { data: analyticsData, error: analyticsError } = await supabase
+          .from('house_analytics')
+          .select('count')
+          .limit(1);
+        
+        if (analyticsError) {
+          console.warn('house_analytics table not found or empty:', analyticsError);
+        } else {
+          console.log('✅ house_analytics table accessible');
+        }
+        
+      } catch (error) {
+        console.error('App initialization error:', error);
+      }
+    };
+    
+    initializeApp();
+  }, []);
+
+  return (
+    <AuthProvider>
+      <ThemeProvider>
+        <DataProvider>
+          <AuthRouter />
+          <StatusBar style="auto" />
+        </DataProvider>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
