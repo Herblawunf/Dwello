@@ -292,53 +292,48 @@ export default function ChatWindow() {
         supabase.removeChannel(channel);
       }
 
-      channel = supabase
-        .channel(`chat-${id}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "messages",
-            filter: `group_id=eq.${id}`,
-          },
-          async (payload) => {
-            console.log("Real-time update received:", payload);
+      channel = supabase.channel(`chat-${id}`).on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "messages",
+          filter: `group_id=eq.${id}`,
+        },
+        async (payload) => {
+          console.log("Real-time update received:", payload);
 
-            if (payload.eventType === "INSERT") {
-              // Fetch user information for the new message
-              const { data: userData, error: userError } = await supabase
-                .from("users")
-                .select("first_name, last_name")
-                .eq("id", payload.new.sender)
-                .single();
+          if (payload.eventType === "INSERT") {
+            // Fetch user information for the new message
+            const { data: userData, error: userError } = await supabase
+              .from("users")
+              .select("first_name, last_name")
+              .eq("id", payload.new.sender)
+              .single();
 
-              if (userError) {
-                console.error(
-                  "Error fetching user for new message:",
-                  userError
-                );
-              }
-
-              const newMessage = {
-                ...payload.new,
-                sender_name: userData
-                  ? `${userData.first_name} ${userData.last_name}`.trim()
-                  : "Unknown User",
-              };
-
-              console.log("Adding new message:", newMessage);
-              setMessages((prevMessages) => [newMessage, ...prevMessages]);
-            } else if (payload.eventType === "UPDATE") {
-              console.log("Updating message:", payload.new);
-              setMessages((prevMessages) =>
-                prevMessages.map((msg) =>
-                  msg.message_id === payload.new.message_id ? payload.new : msg
-                )
-              );
+            if (userError) {
+              console.error("Error fetching user for new message:", userError);
             }
+
+            const newMessage = {
+              ...payload.new,
+              sender_name: userData
+                ? `${userData.first_name} ${userData.last_name}`.trim()
+                : "Unknown User",
+            };
+
+            console.log("Adding new message:", newMessage);
+            setMessages((prevMessages) => [newMessage, ...prevMessages]);
+          } else if (payload.eventType === "UPDATE") {
+            console.log("Updating message:", payload.new);
+            setMessages((prevMessages) =>
+              prevMessages.map((msg) =>
+                msg.message_id === payload.new.message_id ? payload.new : msg
+              )
+            );
           }
-        );
+        }
+      );
 
       return channel;
     };
