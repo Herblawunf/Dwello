@@ -272,6 +272,7 @@ export default function ChatWindow() {
   const [messages, setMessages] = useState([]);
   const [group, setGroup] = useState(null);
   const flatListRef = useRef(null);
+  const channelRef = useRef(null);
   const { state: authState } = useContext(AuthContext);
   const userId = authState.userId;
   const [selectedImage, setSelectedImage] = useState(null);
@@ -279,75 +280,121 @@ export default function ChatWindow() {
   const theme = useTheme();
   const router = useRouter();
 
+  const markMessagesAsRead = useCallback(async () => {
+    if (!id || !userId) return;
+
+    try {
+      // Get all unread messages in this chat
+      const { data: unreadMessages, error: unreadError } = await supabase
+        .from('messages')
+        .select('message_id')
+        .eq('group_id', id)
+        .not('sender', 'eq', userId);
+
+      if (unreadError) throw unreadError;
+      if (!unreadMessages?.length) return;
+
+      // Get already read messages
+      const { data: readMessages, error: readError } = await supabase
+        .from('read_message')
+        .select('message_id')
+        .eq('user_id', userId)
+        .in('message_id', unreadMessages.map(msg => msg.message_id));
+
+      if (readError) throw readError;
+
+      const readMessageIds = new Set(readMessages.map(msg => msg.message_id));
+      const messagesToMarkAsRead = unreadMessages
+        .filter(msg => !readMessageIds.has(msg.message_id))
+        .map(msg => ({
+          message_id: msg.message_id,
+          user_id: userId
+        }));
+
+      if (messagesToMarkAsRead.length > 0) {
+        const { error: insertError } = await supabase
+          .from('read_message')
+          .insert(messagesToMarkAsRead);
+
+        if (insertError) throw insertError;
+      }
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+    }
+  }, [id, userId]);
+
   // Add real-time subscription
   useEffect(() => {
     if (!id) return;
 
-    console.log("Setting up real-time subscription for chat:", id);
-    let channel;
+    const setupSubscription = async () => {
+      try {
+        // Mark existing messages as read when opening chat
+        await markMessagesAsRead();
 
-    const setupSubscription = () => {
-      // Clean up any existing channel
-      if (channel) {
-        supabase.removeChannel(channel);
-      }
-
-      channel = supabase.channel(`chat-${id}`).on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "messages",
-          filter: `group_id=eq.${id}`,
-        },
-        async (payload) => {
-          console.log("Real-time update received:", payload);
-
-          if (payload.eventType === "INSERT") {
-            // Fetch user information for the new message
-            const { data: userData, error: userError } = await supabase
-              .from("users")
-              .select("first_name, last_name")
-              .eq("id", payload.new.sender)
-              .single();
-
-            if (userError) {
-              console.error("Error fetching user for new message:", userError);
-            }
-
-            const newMessage = {
-              ...payload.new,
-              sender_name: userData
-                ? `${userData.first_name} ${userData.last_name}`.trim()
-                : "Unknown User",
-            };
-
-            console.log("Adding new message:", newMessage);
-            setMessages((prevMessages) => [newMessage, ...prevMessages]);
-          } else if (payload.eventType === "UPDATE") {
-            console.log("Updating message:", payload.new);
-            setMessages((prevMessages) =>
-              prevMessages.map((msg) =>
-                msg.message_id === payload.new.message_id ? payload.new : msg
-              )
-            );
-          }
+        // Clean up any existing subscription
+        if (channelRef.current) {
+          await supabase.removeChannel(channelRef.current);
+          channelRef.current = null;
         }
-      );
 
-      return channel;
-    };
+        // Create new channel
+        const channel = supabase
+          .channel(`chat-${id}`)
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'messages',
+              filter: `group_id=eq.${id}`
+            },
+            async (payload) => {
+              console.log('Real-time update:', payload);
+              
+              if (payload.eventType === 'INSERT') {
+                // Fetch user information for the new message
+                const { data: userData, error: userError } = await supabase
+                  .from('users')
+                  .select('first_name, last_name')
+                  .eq('id', payload.new.sender)
+                  .single();
 
-    channel = setupSubscription();
+                const newMessage = {
+                  ...payload.new,
+                  sender_name: userData ? `${userData.first_name} ${userData.last_name}`.trim() : 'Unknown User'
+                };
 
-    // Cleanup subscription on unmount
-    return () => {
-      console.log("Cleaning up real-time subscription for chat:", id);
-      if (channel) {
-        supabase.removeChannel(channel);
+                setMessages(prev => [newMessage, ...prev]);
+
+                // Mark new message as read if it's not from the current user
+                if (payload.new.sender !== userId) {
+                  await supabase
+                    .from('read_message')
+                    .insert({
+                      message_id: payload.new.message_id,
+                      user_id: userId
+                    });
+                }
+              }
+            }
+          )
+          .subscribe();
+
+        channelRef.current = channel;
+      } catch (error) {
+        console.error('Error setting up subscription:', error);
       }
     };
-  }, [id]);
+
+    setupSubscription();
+
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+      }
+    };
+  }, [id, userId, markMessagesAsRead]);
 
   const fetchMessages = useCallback(async () => {
     if (!id) return;
