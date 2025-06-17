@@ -66,12 +66,21 @@ function LandlordDashboardContent() {
         if (housesError) throw housesError;
         if (!houses?.length) return;
 
-        // Get all non-tenant-only chats for these houses
+        // Get all request IDs to exclude
+        const { data: requests, error: requestsError } = await supabase
+          .from("requests")
+          .select("request_id");
+
+        if (requestsError) throw requestsError;
+        const requestIds = requests?.map(req => req.request_id) || [];
+
+        // Get all non-tenant-only chats for these houses, excluding request-related chats
         const { data: chats, error: chatError } = await supabase
           .from("chats")
           .select("group_id")
           .in("house_id", houses.map(house => house.house_id))
-          .eq("tenants_only", false);
+          .eq("tenants_only", false)
+          .not("group_id", "in", `(${requestIds.join(',')})`);
 
         if (chatError) throw chatError;
         if (!chats?.length) return;

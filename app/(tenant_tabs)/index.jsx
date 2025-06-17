@@ -156,11 +156,29 @@ export default function HomeScreen() {
       if (chatError) throw chatError;
       if (!chats?.length) return;
 
-      // Get all unread messages
+      // Get all request IDs to exclude
+      const { data: requests, error: requestsError } = await supabase
+        .from("requests")
+        .select("request_id");
+
+      if (requestsError) throw requestsError;
+
+      // Filter out request groups from chats
+      const requestIds = new Set(requests?.map(req => req.request_id) || []);
+      const validGroupIds = chats
+        .map(chat => chat.group_id)
+        .filter(groupId => !requestIds.has(groupId));
+
+      if (!validGroupIds.length) {
+        setUnreadCount(0);
+        return;
+      }
+
+      // Get all unread messages for valid groups
       const { data: unreadMessages, error: unreadError } = await supabase
         .from("messages")
         .select("message_id")
-        .in("group_id", chats.map(chat => chat.group_id))
+        .in("group_id", validGroupIds)
         .not("sender", "eq", userId);
 
       if (unreadError) throw unreadError;
