@@ -415,10 +415,7 @@ export default function Contact() {
     setMessage("");
     setSelectedImageUri(null);
     setUploadedFileUrl(null);
-    Alert.alert(
-      "Success",
-      "Maintenance request submitted successfully! A chat group has been created for this request."
-    );
+    Alert.alert("Success", "Maintenance request submitted successfully!");
   };
 
   const dismissKeyboard = () => {
