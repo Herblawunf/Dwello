@@ -11,6 +11,9 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  Modal,
+  TouchableWithoutFeedback,
+  Text,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -21,7 +24,7 @@ import * as ImagePicker from "expo-image-picker";
 import { useTheme } from "@/context/ThemeContext";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
-import DateTimePickerModal from "react-native-modal-datetime-picker";
+import { Calendar } from "react-native-calendars";
 
 const MessageBubble = ({ message, isOwnMessage }) => {
   const theme = useTheme();
@@ -200,8 +203,9 @@ const InputArea = ({
 }) => {
   const [message, setMessage] = useState("");
   const [isPollMode, setIsPollMode] = useState(false);
-  const [isDatePickerVisible, setDatePickerVisible] = useState(false);
+  const [calendarVisible, setCalendarVisible] = useState(false);
   const [selectedDates, setSelectedDates] = useState([]);
+  const [markedDates, setMarkedDates] = useState({});
   const theme = useTheme();
 
   const handleSend = () => {
@@ -217,11 +221,17 @@ const InputArea = ({
     }
   };
 
-  const handleDateConfirm = (date) => {
+  const handleDayPress = (day) => {
+    const { dateString } = day;
+    const date = new Date(dateString);
+
     if (selectedDates.length < 3) {
       setSelectedDates([...selectedDates, date]);
+      setMarkedDates(prev => ({
+        ...prev,
+        [dateString]: { selected: true, selectedColor: theme.colors.primary }
+      }));
     }
-    setDatePickerVisible(false);
   };
 
   return (
@@ -251,9 +261,15 @@ const InputArea = ({
             <View key={index} style={styles.selectedDateItem}>
               <ThemedText>{date.toLocaleDateString()}</ThemedText>
               <TouchableOpacity
-                onPress={() =>
-                  setSelectedDates(selectedDates.filter((_, i) => i !== index))
-                }
+                onPress={() => {
+                  const dateString = date.toISOString().split('T')[0];
+                  setSelectedDates(selectedDates.filter((_, i) => i !== index));
+                  setMarkedDates(prev => {
+                    const newMarkedDates = { ...prev };
+                    delete newMarkedDates[dateString];
+                    return newMarkedDates;
+                  });
+                }}
               >
                 <Ionicons name="close" size={20} color={theme.colors.error} />
               </TouchableOpacity>
@@ -262,7 +278,7 @@ const InputArea = ({
           {selectedDates.length < 3 && (
             <TouchableOpacity
               style={styles.addDateButton}
-              onPress={() => setDatePickerVisible(true)}
+              onPress={() => setCalendarVisible(true)}
             >
               <Ionicons
                 name="add-circle-outline"
@@ -279,6 +295,7 @@ const InputArea = ({
             onPress={() => {
               setIsPollMode(false);
               setSelectedDates([]);
+              setMarkedDates({});
             }}
           >
             <ThemedText style={{ color: theme.colors.error }}>Cancel</ThemedText>
@@ -298,13 +315,35 @@ const InputArea = ({
         maxLength={1000}
       />
 
-      <DateTimePickerModal
-        isVisible={isDatePickerVisible}
-        mode="date"
-        onConfirm={handleDateConfirm}
-        onCancel={() => setDatePickerVisible(false)}
-        minimumDate={new Date()}
-      />
+      <Modal
+        visible={calendarVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setCalendarVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setCalendarVisible(false)}
+        >
+          <TouchableWithoutFeedback>
+            <View style={styles.calendarModal}>
+              <Calendar
+                onDayPress={handleDayPress}
+                markedDates={markedDates}
+                markingType="simple"
+                minDate={new Date().toISOString().split('T')[0]}
+              />
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setCalendarVisible(false)}
+              >
+                <Text style={styles.closeButtonText}>Done</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableWithoutFeedback>
+        </TouchableOpacity>
+      </Modal>
 
       {selectedImage && (
         <View style={styles.imagePreviewContainer}>
@@ -917,5 +956,31 @@ const styles = StyleSheet.create({
     padding: 8,
     alignItems: "center",
     marginTop: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  calendarModal: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    width: "90%",
+    padding: 10,
+    alignItems: "center",
+  },
+  closeButton: {
+    backgroundColor: "#000",
+    padding: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 10,
+    width: "100%",
+  },
+  closeButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

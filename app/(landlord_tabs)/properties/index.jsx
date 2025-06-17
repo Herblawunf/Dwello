@@ -69,7 +69,7 @@ export default function Properties() {
   );
 
   const renderProperty = ({ item }) => {
-    console.log('Rendering property:', item);
+    // console.log('Rendering property:', item);
     return (
       <TouchableOpacity
         onPress={() =>
