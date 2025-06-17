@@ -100,11 +100,23 @@ export default function FinancialBarChart({ data, labels, suffix = '', propertyB
     labelColor: () => '#666',
     style: { borderRadius: 16 },
     propsForDots: { r: '6', strokeWidth: '2', stroke: currentDataType.color },
-    propsForLabels: { fontSize: 10 },
-    formatYLabel: (value) => {
-      const num = Math.round(parseFloat(value) / 100) * 100;
-      return num.toString();
-    }
+    propsForLabels: { fontSize: 0 },
+    formatYLabel: () => '',
+    withHorizontalLabels: false,
+    withVerticalLabels: false,
+    withInnerLines: false,
+    withOuterLines: true,
+    withDots: false,
+    withShadow: false,
+    withVerticalLines: false,
+    withHorizontalLines: true,
+    yAxisLabel: '',
+    yAxisSuffix: '',
+    yAxisInterval: 1,
+    count: 5,
+    withYAxis: false,
+    showValuesOnTopOfBars: false,
+    showBarTops: false
   };
 
   const toggleChartType = () => {
@@ -174,10 +186,30 @@ export default function FinancialBarChart({ data, labels, suffix = '', propertyB
                   }}
                   width={getBarChartWidth()}
                   height={chartHeight}
-                  chartConfig={{ ...chartConfig, barPercentage: 0.6, withInnerLines: false, withHorizontalLabels: false }}
-                  style={styles.chart}
+                  chartConfig={{ 
+                    ...chartConfig, 
+                    barPercentage: 0.6, 
+                    withInnerLines: false, 
+                    withHorizontalLabels: false,
+                    withVerticalLabels: false,
+                    yAxisLabel: '',
+                    yAxisSuffix: '',
+                    yAxisInterval: 1,
+                    count: 5,
+                    formatYLabel: () => '',
+                    showValuesOnTopOfBars: false,
+                    showBarTops: false,
+                    propsForLabels: {
+                      fontSize: 0
+                    }
+                  }}
+                  style={[styles.chart, { marginLeft: -40 }]}
                   fromZero
                   verticalLabelRotation={30}
+                  hideLegend={true}
+                  segments={5}
+                  yAxisSuffix=""
+                  yAxisLabel=""
                 />
               ) : (
                 <BarChart
@@ -322,12 +354,14 @@ const styles = StyleSheet.create({
   },
   barWrapper: {
     flexDirection: 'row',
-    alignItems: 'flex-start'
+    alignItems: 'flex-start',
+    marginLeft: 20
   },
   yAxisLabels: {
     height: chartHeight,
     justifyContent: 'space-between',
-    paddingRight: 6
+    paddingRight: 6,
+    marginRight: 4
   },
   yAxisLabel: {
     fontSize: 11,
