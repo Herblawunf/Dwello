@@ -106,6 +106,18 @@ export default function ChatScreen() {
         return;
       }
 
+      // First get all request_ids to filter out
+      const { data: requests, error: requestError } = await supabase
+        .from("requests")
+        .select("request_id");
+
+      if (requestError) {
+        console.error("Error fetching requests:", requestError);
+        throw requestError;
+      }
+
+      const requestIds = requests.map(req => req.request_id);
+
       // Get all non-tenant-only chats for these houses
       const { data: chats, error: chatError } = await supabase
         .from("chats")
@@ -123,8 +135,13 @@ export default function ChatScreen() {
 
       if (chatError) throw chatError;
 
+      // Filter out chats where group_id matches any request_id
+      const filteredChats = chats.filter(chat => 
+        !requestIds.includes(chat.group_id)
+      );
+
       // Get last messages for all chats
-      const chatPromises = chats.map(async (chat) => {
+      const chatPromises = filteredChats.map(async (chat) => {
         const { data: messages, error: messageError } = await supabase
           .from("messages")
           .select("*")

@@ -71,62 +71,58 @@ const defaultTheme = {
       xl: 20,
       xxl: 24,
     },
-  }
+  },
 };
 
 export default class Requests extends Component {
   static contextType = AuthContext;
-  
+
   constructor(props) {
     super(props);
-    
+
     this.state = {
       activeTab: "pending",
       sortBy: "time",
       sortMenuVisible: false,
       searchQuery: "",
-      properties: [],
-      selectedProperty: null,
-      propertyMenuVisible: false,
       statusInfoVisible: false,
       selectedStatus: null,
       requests: [],
       tabBarHeight: 49, // Default value
     };
-    
+
     this.theme = defaultTheme;
   }
-  
+
   componentDidMount() {
     this.getRequests();
-    this.getProperties();
   }
-  
+
   componentDidUpdate(prevProps) {
     if (this.props !== prevProps) {
       this.getRequests();
-      this.getProperties();
     }
   }
-  
+
   getRequests = async () => {
     try {
       const { userId, tenant } = this.context.state;
-      
+
       if (tenant) {
         // Get the tenant's house_id first
         const { data: tenantData, error: tenantError } = await supabase
-          .from('tenants')
-          .select('house_id')
-          .eq('tenant_id', userId)
+          .from("tenants")
+          .select("house_id")
+          .eq("tenant_id", userId)
           .single();
 
         if (tenantError) throw tenantError;
 
         // Get all requests for that house
         const { data, error } = await supabase
-          .from('requests')
-          .select(`
+          .from("requests")
+          .select(
+            `
             request_id,
             created_at,
             description,
@@ -142,14 +138,15 @@ export default class Requests extends Component {
                 street_address
               )
             )
-          `)
-          .eq('tenants.house_id', tenantData.house_id)
-          .order('created_at', { ascending: false });
+          `
+          )
+          .eq("tenants.house_id", tenantData.house_id)
+          .order("created_at", { ascending: false });
 
         if (error) throw error;
 
         // Transform the data to match the expected format
-        const transformedData = data.map(request => ({
+        const transformedData = data.map((request) => ({
           request_id: request.request_id,
           created_at: request.created_at,
           description: request.description,
@@ -157,7 +154,7 @@ export default class Requests extends Component {
           status: request.status,
           poster_first_name: request.tenants.users.first_name,
           poster_last_name: request.tenants.users.last_name,
-          street_address: request.tenants.houses.street_address
+          street_address: request.tenants.houses.street_address,
         }));
 
         this.setState({ requests: transformedData });
@@ -177,48 +174,31 @@ export default class Requests extends Component {
     }
   };
 
-  getProperties = async () => {
-    try {
-      const { userId } = this.context.state;
-      const { data, error } = await supabase.rpc("get_landlord_houses", {
-        p_landlord_id: userId,
-      });
-      if (data) {
-        this.setState({ properties: data });
-        console.log(data);
-        return;
-      }
-      console.error(error);
-    } catch (error) {
-      console.error("Error fetching properties:", error);
-    }
-  };
-
   getPriorityText = (priority) => {
     switch (priority) {
       case 0:
-        return { 
-          text: "Minor", 
+        return {
+          text: "Minor",
           color: "#2ecc71", // Modern green
-          icon: 'build'
+          icon: "build",
         };
       case 1:
-        return { 
-          text: "Routine", 
+        return {
+          text: "Routine",
           color: "#f39c12", // Modern orange
-          icon: 'handyman'
+          icon: "handyman",
         };
       case 2:
-        return { 
-          text: "Urgent", 
+        return {
+          text: "Urgent",
           color: "#e74c3c", // Modern red
-          icon: 'priority-high'
+          icon: "priority-high",
         };
       default:
-        return { 
-          text: "Unknown Priority", 
+        return {
+          text: "Unknown Priority",
           color: "#95a5a6",
-          icon: 'help'
+          icon: "help",
         };
     }
   };
@@ -236,14 +216,10 @@ export default class Requests extends Component {
   };
 
   filterRequests = (requestsToFilter) => {
-    const { searchQuery, selectedProperty } = this.state;
+    const { searchQuery } = this.state;
     const query = searchQuery.toLowerCase();
     return requestsToFilter.filter((r) => {
-      const matchesSearch = r.description.toLowerCase().includes(query);
-      const matchesProperty = selectedProperty
-        ? r.house_id === selectedProperty.house_id
-        : true;
-      return matchesSearch && matchesProperty;
+      return r.description.toLowerCase().includes(query);
     });
   };
 
@@ -313,40 +289,31 @@ export default class Requests extends Component {
   renderRequest = ({ item, index }) => {
     const priorityInfo = this.getPriorityText(item.priority);
     const statusInfo = this.getStatusIcon(item.status);
-    const formattedDate = new Date(item.created_at).toLocaleDateString(undefined, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-    
+    const formattedDate = new Date(item.created_at).toLocaleDateString(
+      undefined,
+      {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }
+    );
+
     return (
       <View style={styles.requestCard}>
         <View style={styles.requestCardContent}>
-          <View 
+          <View
             style={[
-              styles.coloredSidebar, 
-              { backgroundColor: priorityInfo.color }
+              styles.coloredSidebar,
+              { backgroundColor: priorityInfo.color },
             ]}
           />
-          
-          <TouchableOpacity
-            style={styles.requestCardInner}
-            activeOpacity={0.9}
-            onPress={() =>
-              router.push({
-                pathname: "/request_screens/",
-                params: {
-                  requestId: item.request_id,
-                  description: item.description,
-                  tenant: `${item.poster_first_name} ${item.poster_last_name}`,
-                },
-              })
-            }
-          >
+
+          <TouchableOpacity style={styles.requestCardInner} activeOpacity={0.9}>
             <View style={styles.userInfoHeader}>
               <View style={styles.userIconContainer}>
                 <Text style={styles.userInitials}>
-                  {item.poster_first_name.charAt(0) + item.poster_last_name.charAt(0)}
+                  {item.poster_first_name.charAt(0) +
+                    item.poster_last_name.charAt(0)}
                 </Text>
               </View>
               <View style={styles.userTextContainer}>
@@ -354,56 +321,77 @@ export default class Requests extends Component {
                   {item.poster_first_name} {item.poster_last_name}
                 </Text>
                 <View style={styles.userAddressContainer}>
-                  <MaterialIcons name="home" size={12} color={this.theme.colors.placeholder} style={{marginRight: 4}} />
-                  <Text style={styles.userAddress} numberOfLines={1}>{item.street_address}</Text>
+                  <MaterialIcons
+                    name="home"
+                    size={12}
+                    color={this.theme.colors.placeholder}
+                    style={{ marginRight: 4 }}
+                  />
+                  <Text style={styles.userAddress} numberOfLines={1}>
+                    {item.street_address}
+                  </Text>
                 </View>
               </View>
               <View style={styles.priorityContainer}>
-                <View style={[styles.priorityBadge, { backgroundColor: priorityInfo.color }]}>
-                  <MaterialIcons name={priorityInfo.icon} size={12} color="#FFFFFF" />
+                <View
+                  style={[
+                    styles.priorityBadge,
+                    { backgroundColor: priorityInfo.color },
+                  ]}
+                >
+                  <MaterialIcons
+                    name={priorityInfo.icon}
+                    size={12}
+                    color="#FFFFFF"
+                  />
                 </View>
-                <Text style={[styles.priorityText, { color: priorityInfo.color }]}>
+                <Text
+                  style={[styles.priorityText, { color: priorityInfo.color }]}
+                >
                   {priorityInfo.text}
                 </Text>
               </View>
             </View>
-            
-            <Text style={styles.descriptionText} numberOfLines={2}>{item.description}</Text>
-            
+
+            <Text style={styles.descriptionText} numberOfLines={2}>
+              {item.description}
+            </Text>
+
             <View style={styles.engagementBar}>
               <View
-                style={[styles.statusBadge, { backgroundColor: statusInfo.color }]}
+                style={[
+                  styles.statusBadge,
+                  { backgroundColor: statusInfo.color },
+                ]}
               >
                 <MaterialIcons
                   name={statusInfo.name}
                   size={12}
                   color="#FFFFFF"
                 />
-                <Text style={styles.statusText}>
-                  {item.status}
-                </Text>
+                <Text style={styles.statusText}>{item.status}</Text>
               </View>
-              
+
               <View style={styles.dateContainer}>
-                <MaterialIcons name="event" size={12} color={this.theme.colors.placeholder} style={styles.dateIcon} />
+                <MaterialIcons
+                  name="event"
+                  size={12}
+                  color={this.theme.colors.placeholder}
+                  style={styles.dateIcon}
+                />
                 <Text style={styles.dateText}>{formattedDate}</Text>
               </View>
-              
+
               <TouchableOpacity
                 style={styles.viewButton}
-                onPress={() =>
-                  router.push({
-                    pathname: "/request_screens/",
-                    params: {
-                      requestId: item.request_id,
-                      description: item.description,
-                      tenant: `${item.poster_first_name} ${item.poster_last_name}`,
-                    },
-                  })
-                }
+                onPress={() => router.push(`/chat/${item.request_id}`)}
               >
                 <Text style={styles.viewButtonText}>View</Text>
-                <MaterialIcons name="chevron-right" size={14} color={this.theme.colors.primary} />
+                <MaterialIcons
+                  name="chevron-right"
+                  size={14}
+                  color={this.theme.colors.primary}
+                />
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
@@ -417,42 +405,49 @@ export default class Requests extends Component {
       activeTab,
       sortMenuVisible,
       searchQuery,
-      properties,
-      selectedProperty,
-      propertyMenuVisible,
       statusInfoVisible,
       selectedStatus,
-      requests
+      requests,
     } = this.state;
-    
+
     return (
       <SafeAreaInsetsContext.Consumer>
-        {insets => (
+        {(insets) => (
           <SafeAreaView
             style={[
               styles.container,
               {
                 paddingTop:
-                  Platform.OS === "android" ? StatusBar.currentHeight : insets.top,
+                  Platform.OS === "android"
+                    ? StatusBar.currentHeight
+                    : insets.top,
               },
             ]}
           >
             <View style={styles.header}>
               <View style={styles.tabBar}>
                 <TouchableOpacity
-                  style={[styles.tab, activeTab === "pending" && styles.activeTab]}
+                  style={[
+                    styles.tab,
+                    activeTab === "pending" && styles.activeTab,
+                  ]}
                   onPress={() => this.setState({ activeTab: "pending" })}
                 >
                   <Text
                     style={
-                      activeTab === "pending" ? styles.activeTabText : styles.tabText
+                      activeTab === "pending"
+                        ? styles.activeTabText
+                        : styles.tabText
                     }
                   >
                     Pending
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.tab, activeTab === "completed" && styles.activeTab]}
+                  style={[
+                    styles.tab,
+                    activeTab === "completed" && styles.activeTab,
+                  ]}
                   onPress={() => this.setState({ activeTab: "completed" })}
                 >
                   <Text
@@ -470,7 +465,11 @@ export default class Requests extends Component {
                 style={styles.sortButton}
                 onPress={() => this.setState({ sortMenuVisible: true })}
               >
-                <MaterialIcons name="sort" size={24} color={defaultTheme.colors.primary} />
+                <MaterialIcons
+                  name="sort"
+                  size={24}
+                  color={defaultTheme.colors.primary}
+                />
               </TouchableOpacity>
             </View>
 
@@ -491,7 +490,7 @@ export default class Requests extends Component {
                     onPress={() => {
                       this.setState({
                         sortBy: "time",
-                        sortMenuVisible: false
+                        sortMenuVisible: false,
                       });
                     }}
                   >
@@ -503,7 +502,7 @@ export default class Requests extends Component {
                     onPress={() => {
                       this.setState({
                         sortBy: "priority",
-                        sortMenuVisible: false
+                        sortMenuVisible: false,
                       });
                     }}
                   >
@@ -524,62 +523,7 @@ export default class Requests extends Component {
                   onChangeText={(text) => this.setState({ searchQuery: text })}
                 />
               </View>
-
-              <TouchableOpacity
-                style={styles.propertyButton}
-                onPress={() => this.setState({ propertyMenuVisible: true })}
-              >
-                <MaterialIcons name="home" size={20} color="#757575" />
-                <Text style={styles.propertyButtonText}>
-                  {selectedProperty
-                    ? selectedProperty.street_address
-                    : "All Properties"}
-                </Text>
-              </TouchableOpacity>
             </View>
-
-            <Modal
-              visible={propertyMenuVisible}
-              transparent={true}
-              animationType="fade"
-              onRequestClose={() => this.setState({ propertyMenuVisible: false })}
-            >
-              <TouchableOpacity
-                style={styles.modalOverlay}
-                activeOpacity={1}
-                onPress={() => this.setState({ propertyMenuVisible: false })}
-              >
-                <View style={[styles.sortMenu, styles.propertyMenu]}>
-                  <TouchableOpacity
-                    style={styles.sortMenuItem}
-                    onPress={() => {
-                      this.setState({
-                        selectedProperty: null,
-                        propertyMenuVisible: false
-                      });
-                    }}
-                  >
-                    <Text style={styles.sortMenuText}>All Properties</Text>
-                  </TouchableOpacity>
-                  {properties.map((property) => (
-                    <TouchableOpacity
-                      key={property.house_id}
-                      style={styles.sortMenuItem}
-                      onPress={() => {
-                        this.setState({
-                          selectedProperty: property,
-                          propertyMenuVisible: false
-                        });
-                      }}
-                    >
-                      <Text style={styles.sortMenuText}>
-                        {property.street_address}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </TouchableOpacity>
-            </Modal>
 
             <Modal
               visible={statusInfoVisible}
@@ -593,12 +537,16 @@ export default class Requests extends Component {
                 onPress={() => this.setState({ statusInfoVisible: false })}
               >
                 <View style={styles.statusInfoContainer}>
-                  <Text style={styles.statusInfoTitle}>Request Status Workflow</Text>
+                  <Text style={styles.statusInfoTitle}>
+                    Request Status Workflow
+                  </Text>
                   {this.statusWorkflow.map((status, index) => {
-                    const currentStatusIndex = this.getStatusIndex(selectedStatus);
+                    const currentStatusIndex =
+                      this.getStatusIndex(selectedStatus);
                     const isNext = currentStatusIndex + 1 === index;
                     const isClickable = isNext && status.status !== "completed";
-                    const shouldHighlight = isNext && status.status !== "completed";
+                    const shouldHighlight =
+                      isNext && status.status !== "completed";
                     const statusIcon = this.getStatusIcon(status.status);
 
                     return (
@@ -623,7 +571,9 @@ export default class Requests extends Component {
                         disabled={!isClickable}
                       >
                         <View style={styles.statusInfoHeader}>
-                          <Text style={styles.statusInfoLabel}>{status.label}</Text>
+                          <Text style={styles.statusInfoLabel}>
+                            {status.label}
+                          </Text>
                           {index < this.statusWorkflow.length - 1 &&
                           index < currentStatusIndex ? (
                             <MaterialIcons
@@ -647,7 +597,8 @@ export default class Requests extends Component {
               data={this.sortRequests(
                 this.filterRequests(
                   requests.filter(
-                    (r) => (r.status === "completed") === (activeTab === "completed")
+                    (r) =>
+                      (r.status === "completed") === (activeTab === "completed")
                   )
                 )
               )}
@@ -656,7 +607,7 @@ export default class Requests extends Component {
               style={styles.list}
               contentContainerStyle={[
                 styles.listContent,
-                !requests.length && styles.emptyListContent
+                !requests.length && styles.emptyListContent,
               ]}
               showsVerticalScrollIndicator={false}
               initialNumToRender={10}
@@ -665,7 +616,11 @@ export default class Requests extends Component {
               removeClippedSubviews={true}
               ListEmptyComponent={() => (
                 <View style={styles.emptyState}>
-                  <MaterialIcons name="inbox" size={64} color={this.theme.colors.placeholder} />
+                  <MaterialIcons
+                    name="inbox"
+                    size={64}
+                    color={this.theme.colors.placeholder}
+                  />
                   <Text style={styles.emptyStateTitle}>No requests found</Text>
                   <Text style={styles.emptyStateText}>
                     {activeTab === "pending"
@@ -724,7 +679,7 @@ const styles = StyleSheet.create({
   },
   tabText: {
     color: defaultTheme.colors.placeholder,
-    fontWeight: '500',
+    fontWeight: "500",
     fontSize: 14,
   },
   activeTabText: {
@@ -750,25 +705,25 @@ const styles = StyleSheet.create({
   requestCard: {
     marginBottom: 14,
     borderRadius: 14,
-    overflow: 'hidden',
+    overflow: "hidden",
     backgroundColor: defaultTheme.colors.surface,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.07,
     shadowRadius: 3,
     elevation: 2,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.04)',
+    borderColor: "rgba(0,0,0,0.04)",
   },
   requestCardContent: {
-    flexDirection: 'row',
+    flexDirection: "row",
     borderRadius: 14,
-    overflow: 'hidden',
+    overflow: "hidden",
     backgroundColor: defaultTheme.colors.surface,
   },
   coloredSidebar: {
     width: 8,
-    height: '100%',
+    height: "100%",
   },
   requestCardInner: {
     flex: 1,
@@ -783,11 +738,11 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: defaultTheme.colors.info + '15',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: defaultTheme.colors.info + "15",
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 10,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 1,
@@ -795,7 +750,7 @@ const styles = StyleSheet.create({
   userInitials: {
     fontSize: 13,
     color: defaultTheme.colors.info,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   userTextContainer: {
     flex: 1,
@@ -807,24 +762,24 @@ const styles = StyleSheet.create({
     color: defaultTheme.colors.onSurface,
   },
   userAddressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: 2,
   },
   userAddress: {
     fontSize: 12,
     color: defaultTheme.colors.placeholder,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   priorityContainer: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   priorityBadge: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 4,
   },
   priorityText: {
@@ -834,7 +789,7 @@ const styles = StyleSheet.create({
   descriptionText: {
     fontSize: 14,
     color: defaultTheme.colors.onSurface,
-    fontWeight: '400',
+    fontWeight: "400",
     marginVertical: 10,
     lineHeight: 20,
   },
@@ -845,11 +800,11 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.04)',
+    borderTopColor: "rgba(0,0,0,0.04)",
   },
   statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 4,
     paddingHorizontal: 8,
     borderRadius: 6,
@@ -857,8 +812,8 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 10,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
   dateContainer: {
     flexDirection: "row",
@@ -874,17 +829,17 @@ const styles = StyleSheet.create({
   viewButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: defaultTheme.colors.primary + '10',
+    backgroundColor: defaultTheme.colors.primary + "10",
     paddingVertical: 4,
     paddingHorizontal: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: defaultTheme.colors.primary + '20',
+    borderColor: defaultTheme.colors.primary + "20",
   },
   viewButtonText: {
     fontSize: 12,
     color: defaultTheme.colors.primary,
-    fontWeight: '600',
+    fontWeight: "600",
     marginRight: 3,
   },
   modalOverlay: {
@@ -899,7 +854,7 @@ const styles = StyleSheet.create({
     top: Platform.OS === "android" ? StatusBar.currentHeight + 56 : 56,
     backgroundColor: defaultTheme.colors.surface,
     borderRadius: defaultTheme.borderRadius.md,
-    overflow: 'hidden',
+    overflow: "hidden",
     minWidth: 180,
     elevation: 0,
     borderWidth: 1,
@@ -924,7 +879,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: defaultTheme.colors.surface,
-    marginBottom: defaultTheme.spacing.sm,
     paddingHorizontal: defaultTheme.spacing.md,
     paddingVertical: defaultTheme.spacing.sm,
     borderRadius: 20,
@@ -936,27 +890,7 @@ const styles = StyleSheet.create({
     marginLeft: defaultTheme.spacing.sm,
     fontSize: 14,
     color: defaultTheme.colors.onSurface,
-    fontWeight: '400',
-  },
-  propertyButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: defaultTheme.colors.surface,
-    padding: defaultTheme.spacing.sm,
-    borderRadius: 20,
-    marginBottom: defaultTheme.spacing.sm,
-    borderWidth: 1,
-    borderColor: defaultTheme.colors.divider,
-  },
-  propertyButtonText: {
-    flex: 1,
-    marginLeft: defaultTheme.spacing.sm,
-    fontSize: 14,
-    color: defaultTheme.colors.onSurface,
-  },
-  propertyMenu: {
-    top: Platform.OS === "android" ? StatusBar.currentHeight + 110 : 110,
-    maxHeight: 300,
+    fontWeight: "400",
   },
   statusInfoContainer: {
     backgroundColor: defaultTheme.colors.surface,
@@ -966,7 +900,7 @@ const styles = StyleSheet.create({
     width: "90%",
     maxWidth: 400,
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
@@ -978,7 +912,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginBottom: defaultTheme.spacing.md,
     color: defaultTheme.colors.onSurface,
-    textAlign: 'center',
+    textAlign: "center",
   },
   statusInfoItem: {
     marginBottom: defaultTheme.spacing.md,
@@ -989,12 +923,12 @@ const styles = StyleSheet.create({
     borderColor: defaultTheme.colors.divider,
   },
   statusInfoItemActive: {
-    backgroundColor: defaultTheme.colors.primary + '15',
+    backgroundColor: defaultTheme.colors.primary + "15",
     borderLeftWidth: 4,
     borderLeftColor: defaultTheme.colors.primary,
   },
   statusInfoItemNext: {
-    backgroundColor: defaultTheme.colors.secondary + '15',
+    backgroundColor: defaultTheme.colors.secondary + "15",
     borderLeftWidth: 4,
     borderLeftColor: defaultTheme.colors.secondary,
   },
@@ -1036,21 +970,124 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   fab: {
-    position: 'absolute',
+    position: "absolute",
     right: 20,
     bottom: 20,
     width: 56,
     height: 56,
     borderRadius: 28,
     backgroundColor: defaultTheme.colors.primaryVariant,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     elevation: 4,
-    shadowColor: '#000',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    zIndex: 1000,
+  },
+  propertyButtonText: {
+    flex: 1,
+    marginLeft: defaultTheme.spacing.sm,
+    fontSize: 14,
+    color: defaultTheme.colors.onSurface,
+  },
+  propertyMenu: {
+    top: Platform.OS === "android" ? StatusBar.currentHeight + 110 : 110,
+    maxHeight: 300,
+  },
+  statusInfoContainer: {
+    backgroundColor: defaultTheme.colors.surface,
+    margin: defaultTheme.spacing.md,
+    padding: defaultTheme.spacing.lg,
+    borderRadius: 16,
+    width: "90%",
+    maxWidth: 400,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    borderWidth: 1,
+    borderColor: defaultTheme.colors.divider,
+  },
+  statusInfoTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom: defaultTheme.spacing.md,
+    color: defaultTheme.colors.onSurface,
+    textAlign: "center",
+  },
+  statusInfoItem: {
+    marginBottom: defaultTheme.spacing.md,
+    padding: defaultTheme.spacing.md,
+    borderRadius: 12,
+    backgroundColor: defaultTheme.colors.background,
+    borderWidth: 1,
+    borderColor: defaultTheme.colors.divider,
+  },
+  statusInfoItemActive: {
+    backgroundColor: defaultTheme.colors.primary + "15",
+    borderLeftWidth: 4,
+    borderLeftColor: defaultTheme.colors.primary,
+  },
+  statusInfoItemNext: {
+    backgroundColor: defaultTheme.colors.secondary + "15",
+    borderLeftWidth: 4,
+    borderLeftColor: defaultTheme.colors.secondary,
+  },
+  statusInfoHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: defaultTheme.spacing.sm,
+  },
+  statusInfoLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: defaultTheme.colors.onSurface,
+  },
+  statusInfoDescription: {
+    fontSize: 14,
+    color: defaultTheme.colors.placeholder,
+    lineHeight: 20,
+  },
+  emptyListContent: {
+    flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 100,
+  },
+  emptyState: {
+    alignItems: "center",
+    padding: defaultTheme.spacing.lg,
+  },
+  emptyStateTitle: {
+    fontSize: 24,
+    fontWeight: "600",
+    marginBottom: defaultTheme.spacing.md,
+    color: defaultTheme.colors.onSurface,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: defaultTheme.colors.placeholder,
+    textAlign: "center",
+  },
+  fab: {
+    position: "absolute",
+    right: 20,
+    bottom: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: defaultTheme.colors.primaryVariant,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 4,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
     zIndex: 1000,
   },
 });
-
