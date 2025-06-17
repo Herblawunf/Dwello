@@ -95,11 +95,13 @@ export default function FinancialBarChart({ data, labels, suffix = '', propertyB
         const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
         
         return { 
-          name: `${property.name} (${percentage}%)`, 
+          name: property.name, // Remove percentage from name as we'll display it in custom legend
           population: value, 
           color: pieColors[idx % pieColors.length], 
           legendFontColor: modernColors.lightText, 
-          legendFontSize: 10 
+          legendFontSize: 10,
+          percentage: percentage,
+          propertyName: property.name // Store original name for custom legend
         };
       })
       .filter(item => item.population > 0);
@@ -175,6 +177,11 @@ export default function FinancialBarChart({ data, labels, suffix = '', propertyB
       </View>
     );
   }
+
+  // Calculate pie chart width based on data
+  const getPieChartContainerWidth = () => {
+    return Math.max(screenWidth, pieData.length * 120); // Ensure enough width for the chart and legend
+  };
 
   return (
     <View style={styles.wrapper}>
@@ -308,34 +315,65 @@ export default function FinancialBarChart({ data, labels, suffix = '', propertyB
         )}
         
         {chartType === 'pie' && (
-          <View style={styles.pieContainer}>
-            <PieChart
-              data={pieData}
-              width={screenWidth}
-              height={chartHeight}
-              chartConfig={chartConfig}
-              accessor="population"
-              backgroundColor="transparent"
-              paddingLeft="15"
-              center={[screenWidth / 5, 0]} 
-              absolute
-              hasLegend={true}
-              avoidFalseZero={true}
-            />
-          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={true}
+            decelerationRate="fast"
+            scrollEventThrottle={16}
+            contentContainerStyle={[styles.scrollContainer, { width: getPieChartContainerWidth() }]}
+          >
+            <View style={styles.pieChartWithLegendContainer}>
+              <View style={styles.pieChartContainer}>
+                <PieChart
+                  data={pieData}
+                  width={screenWidth * 0.6}
+                  height={chartHeight}
+                  chartConfig={chartConfig}
+                  accessor="population"
+                  backgroundColor="transparent"
+                  paddingLeft="0"
+                  center={[screenWidth * 0.15, 0]} 
+                  absolute
+                  hasLegend={false} // Disable default legend
+                  avoidFalseZero={true}
+                />
+              </View>
+              
+              <View style={styles.pieLegendContainer}>
+                {pieData.map((item, index) => (
+                  <View key={index} style={styles.pieLegendItem}>
+                    <View style={[styles.legendColorBox, { backgroundColor: item.color }]} />
+                    <View style={styles.legendTextContainer}>
+                      <Text style={styles.legendPropertyName} numberOfLines={1} ellipsizeMode="tail">
+                        {item.propertyName}
+                      </Text>
+                      <Text style={styles.legendValue}>
+                        £{Math.round(item.population).toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                      </Text>
+                      <Text style={styles.legendPercentage}>
+                        {item.percentage}%
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </ScrollView>
         )}
       </View>
       {/* Custom legend */}
-      <View style={styles.customLegendContainer}>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendColorBox, { backgroundColor: currentDataType.color }]} />
-          <Text style={styles.legendLabel}>Net</Text>
+      {(chartType === 'bar' || chartType === 'line') && dataType === 'monthly' && (
+        <View style={styles.customLegendContainer}>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendColorBox, { backgroundColor: currentDataType.color }]} />
+            <Text style={styles.legendLabel}>Net</Text>
+          </View>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendColorBox, { backgroundColor: currentDataType.secondaryColor }]} />
+            <Text style={styles.legendLabel}>Expenses</Text>
+          </View>
         </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendColorBox, { backgroundColor: currentDataType.secondaryColor }]} />
-          <Text style={styles.legendLabel}>Expenses</Text>
-        </View>
-      </View>
+      )}
     </View>
   );
 }
@@ -411,6 +449,50 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginLeft: -20 // Adjust to prevent legend overflow
   },
+  pieChartWithLegendContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingHorizontal: 10
+  },
+  pieChartContainer: {
+    width: screenWidth * 0.6,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  pieLegendContainer: {
+    width: screenWidth * 0.4,
+    marginLeft: 10,
+    paddingLeft: 10,
+    borderLeftWidth: 1,
+    borderLeftColor: '#EEEEEE',
+  },
+  pieLegendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingRight: 5
+  },
+  legendTextContainer: {
+    flex: 1,
+  },
+  legendPropertyName: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#2D3436',
+    marginBottom: 2
+  },
+  legendValue: {
+    fontSize: 11,
+    color: '#636E72',
+    fontWeight: '500'
+  },
+  legendPercentage: {
+    fontSize: 10,
+    color: '#636E72',
+    fontWeight: '400'
+  },
   customLegendContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -425,7 +507,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 2,
-    marginRight: 4
+    marginRight: 8
   },
   legendLabel: {
     fontSize: 10,

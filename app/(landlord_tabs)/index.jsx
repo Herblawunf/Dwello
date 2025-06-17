@@ -310,10 +310,13 @@ function LandlordDashboardContent() {
               {new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' })}
             </Text>
           </View>
-          <View style={styles.propertiesCount}>
+          <TouchableOpacity 
+            style={styles.propertiesCount}
+            onPress={() => router.push("/(landlord_tabs)/properties")}
+          >
             <Text style={styles.propertiesCountNumber}>{houses?.length || 0}</Text>
             <Text style={styles.propertiesCountLabel}>Properties</Text>
-          </View>
+          </TouchableOpacity>
         </View>
 
         {/* Key Metrics Grid */}
