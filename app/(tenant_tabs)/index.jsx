@@ -6,6 +6,7 @@ import {
   ScrollView,
   SafeAreaView,
   Text,
+  Dimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
@@ -16,6 +17,9 @@ import { useTheme } from "@/context/ThemeContext";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { colors } from "../theme/colors";
+
+const { width } = Dimensions.get("window");
+const cardWidth = width * 0.42;
 
 const formatBalanceText = (balance) => {
   if (balance != 0) {
@@ -326,17 +330,47 @@ export default function HomeScreen() {
       ...theme.elevation.sm,
     },
     sectionTitle: {
-      color: theme.colors.onSurface,
-      marginBottom: theme.spacing.sm,
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: theme.colors.onBackground,
+      marginBottom: 16,
     },
-    balanceAmount: {
-      color: theme.colors.success,
+    metricsGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+      marginBottom: 24,
     },
-    smallText: {
+    metricCard: {
+      width: cardWidth,
+      backgroundColor: theme.colors.surface,
+      padding: 16,
+      borderRadius: 12,
+      marginBottom: 16,
+      shadowColor: theme.colors.onBackground,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    metricIconContainer: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    metricLabel: {
+      fontSize: 14,
       color: theme.colors.placeholder,
+      marginBottom: 4,
     },
-    notificationText: {
-      color: theme.colors.warning,
+    metricValue: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: theme.colors.onBackground,
+      marginBottom: 4,
     },
     quickActionsContainer: {
       flexDirection: 'row',
@@ -392,9 +426,7 @@ export default function HomeScreen() {
             <Ionicons name="chatbubble-ellipses-outline" size={24} color={theme.colors.primary} />
             {unreadCount > 0 && (
               <View style={styles.unreadBadge}>
-                {unreadCount < 10 && (
-                  <Text style={styles.unreadCount}>{unreadCount}</Text>
-                )}
+                <Text style={styles.unreadCount}>{unreadCount}</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -416,47 +448,51 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Splits Section */}
-        <ThemedView style={styles.section}>
-          <ThemedText type="subtitle" style={styles.sectionTitle}>Household Expenses</ThemedText>
-          <ThemedText type="default" style={styles.smallText}>
-            {balance > 0 ? 'You are owed ' : balance < 0 ? 'You owe ' : 'No balance '}
-            {formatBalanceText(balance)}
-          </ThemedText>
-        </ThemedView>
-
-        {/* Notifications Section */}
-        <ThemedView style={styles.section}>
-          <ThemedText type="subtitle" style={styles.sectionTitle}>Notifications</ThemedText>
-          <ThemedText type="defaultSemiBold" style={styles.notificationText}>
-            Rent payment due {dueIn > 0 ? `in ${dueIn} days` : dueIn === 0 ? "today" : "now"}
-          </ThemedText>
-        </ThemedView>
-
-        {/* Quick Actions */}
-        <View style={styles.quickActionsContainer}>
-          <TouchableOpacity 
-            style={styles.quickActionButton}
-            onPress={handleReportRepair}
-          >
-            <Ionicons name="construct-outline" size={24} color={theme.colors.primary} />
-            <ThemedText type="default" style={styles.quickActionText}>Report repair</ThemedText>
+        {/* Key Metrics Grid */}
+        <ThemedText type="subtitle" style={styles.sectionTitle}>Overview</ThemedText>
+        <View style={styles.metricsGrid}>
+          <TouchableOpacity style={styles.metricCard} onPress={handleRentInfoPress}>
+            <View style={[styles.metricIconContainer, { backgroundColor: theme.colors.primary + '15' }]}>
+              <Ionicons name="home-outline" size={24} color={theme.colors.primary} />
+            </View>
+            <ThemedText type="default" style={styles.metricLabel}>Rent Due</ThemedText>
+            <ThemedText type="title" style={styles.metricValue}>£{due.toFixed(2)}</ThemedText>
+            <ThemedText type="default" style={[styles.metricLabel, { color: theme.colors.warning }]}>
+              {dueIn > 0 ? `Due in ${dueIn} days` : dueIn === 0 ? "Due today" : "Overdue"}
+            </ThemedText>
           </TouchableOpacity>
           
-          <TouchableOpacity 
-            style={styles.quickActionButton}
-            onPress={handleAddExpenses}
-          >
-            <Ionicons name="add-circle-outline" size={24} color={theme.colors.primary} />
-            <ThemedText type="default" style={styles.quickActionText}>Add expenses</ThemedText>
+          <TouchableOpacity style={styles.metricCard} onPress={handleAddExpenses}>
+            <View style={[styles.metricIconContainer, { backgroundColor: theme.colors.success + '15' }]}>
+              <Ionicons name="wallet-outline" size={24} color={theme.colors.success} />
+            </View>
+            <ThemedText type="default" style={styles.metricLabel}>Household Balance</ThemedText>
+            <ThemedText type="title" style={styles.metricValue}>{formatBalanceText(balance)}</ThemedText>
+            <ThemedText type="default" style={[styles.metricLabel, { color: balance > 0 ? theme.colors.success : balance < 0 ? theme.colors.error : theme.colors.placeholder }]}>
+              {balance > 0 ? 'You are owed' : balance < 0 ? 'You owe' : 'No balance'}
+            </ThemedText>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.quickActionButton}
-            onPress={handleRentInfoPress}
-          >
-            <Ionicons name="document-text-outline" size={24} color={theme.colors.primary} />
-            <ThemedText type="default" style={styles.quickActionText}>Documents</ThemedText>
+
+          <TouchableOpacity style={styles.metricCard} onPress={handleReportRepair}>
+            <View style={[styles.metricIconContainer, { backgroundColor: theme.colors.error + '15' }]}>
+              <Ionicons name="construct-outline" size={24} color={theme.colors.error} />
+            </View>
+            <ThemedText type="default" style={styles.metricLabel}>Report Repair</ThemedText>
+            <ThemedText type="title" style={styles.metricValue}>Request</ThemedText>
+            <ThemedText type="default" style={[styles.metricLabel, { color: theme.colors.error }]}>
+              1 open request
+            </ThemedText>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.metricCard} onPress={handleRentInfoPress}>
+            <View style={[styles.metricIconContainer, { backgroundColor: theme.colors.info + '15' }]}>
+              <Ionicons name="document-text-outline" size={24} color={theme.colors.info} />
+            </View>
+            <ThemedText type="default" style={styles.metricLabel}>Documents</ThemedText>
+            <ThemedText type="title" style={styles.metricValue}>View</ThemedText>
+            <ThemedText type="default" style={[styles.metricLabel, { color: theme.colors.info }]}>
+              3 docs stored
+            </ThemedText>
           </TouchableOpacity>
         </View>
       </ScrollView>
