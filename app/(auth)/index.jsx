@@ -82,7 +82,7 @@ const LoginScreen = () => {
           style={styles.logo}
         />
         <Text style={styles.title}>Welcome to Dwello</Text>
-        <Text style={styles.subtitle}>Sign in to manage your properties</Text>
+        <Text style={styles.subtitle}>Sign in to manage your property needs</Text>
       </View>
 
       <View style={styles.form}>
