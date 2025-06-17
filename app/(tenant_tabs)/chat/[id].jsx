@@ -22,8 +22,14 @@ import { useTheme } from "@/context/ThemeContext";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 
-const MessageBubble = ({ message, isOwnMessage }) => {
+const MessageBubble = ({ message, isOwnMessage, onPollVote }) => {
   const theme = useTheme();
+  const hasPollOptions = message.poll_option_1 && message.poll_option_2;
+
+  const handlePollVote = async (index) => {
+    if (message.poll_vote !== null) return; // Prevent re-voting
+    await onPollVote(message.message_id, index + 1);
+  };
 
   return (
     <View
@@ -59,6 +65,58 @@ const MessageBubble = ({ message, isOwnMessage }) => {
         >
           {message.content}
         </ThemedText>
+      )}
+      {hasPollOptions && (
+        <View style={styles.pollContainer}>
+          <ThemedText
+            style={[
+              styles.pollTitle,
+              isOwnMessage
+                ? { color: "#FFFFFF" }
+                : { color: theme.colors.onSurface },
+            ]}
+          >
+            Available dates:
+          </ThemedText>
+          {[message.poll_option_1, message.poll_option_2, message.poll_option_3]
+            .filter(Boolean)
+            .map((option, index) => (
+              <TouchableOpacity
+                key={index}
+                onPress={() => handlePollVote(index)}
+                disabled={message.poll_vote !== null}
+                style={[
+                  styles.pollOption,
+                  {
+                    backgroundColor: isOwnMessage
+                      ? "rgba(255,255,255,0.2)"
+                      : theme.colors.border,
+                  },
+                  message.poll_vote === index + 1 && styles.pollOptionSelected,
+                ]}
+              >
+                <ThemedText
+                  style={[
+                    styles.pollOptionText,
+                    isOwnMessage
+                      ? { color: "#FFFFFF" }
+                      : { color: theme.colors.onSurface },
+                  ]}
+                >
+                  {new Date(option).toLocaleDateString()}
+                </ThemedText>
+                {message.poll_vote === index + 1 && (
+                  <View style={styles.voteIndicator}>
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={16}
+                      color={isOwnMessage ? "#FFFFFF" : theme.colors.primary}
+                    />
+                  </View>
+                )}
+              </TouchableOpacity>
+            ))}
+        </View>
       )}
       <ThemedText
         style={[
@@ -496,12 +554,52 @@ export default function ChatWindow() {
     }
   };
 
+  const handlePollVote = async (messageId, voteIndex) => {
+    try {
+      // First, get the message to access the poll option date
+      const { data: messageData, error: messageError } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("message_id", messageId)
+        .single();
+
+      if (messageError) throw messageError;
+
+      // Get the selected date based on the vote index
+      const selectedDate = messageData[`poll_option_${voteIndex}`];
+
+      // Update the message with the vote
+      const { error: voteError } = await supabase
+        .from("messages")
+        .update({ poll_vote: voteIndex })
+        .eq("message_id", messageId);
+
+      if (voteError) throw voteError;
+
+      // Create a new request_event
+      const { error: eventError } = await supabase
+        .from("request_events")
+        .insert({
+          date: selectedDate,
+          title: "Maintenance visit",
+          description: "",
+          request_id: id, // using the group_id as request_id
+        });
+
+      if (eventError) throw eventError;
+    } catch (error) {
+      console.error("Error updating poll vote:", error);
+      Alert.alert("Error", "Failed to submit vote");
+    }
+  };
+
   const renderMessage = useCallback(
     ({ item }) => (
       <MessageBubble
         key={item.message_id}
         message={item}
         isOwnMessage={item.sender === userId}
+        onPollVote={handlePollVote}
       />
     ),
     [userId]
@@ -662,5 +760,36 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     marginBottom: 4,
+  },
+  pollContainer: {
+    marginTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0, 0, 0, 0.1)",
+    paddingTop: 8,
+  },
+  pollTitle: {
+    fontSize: 14,
+    fontWeight: "500",
+    marginBottom: 4,
+  },
+  pollOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.1)",
+  },
+  pollOptionText: {
+    fontSize: 16,
+  },
+  voteIndicator: {
+    marginLeft: 8,
+  },
+  pollOptionSelected: {
+    borderWidth: 2,
+    borderColor: "#4CAF50",
   },
 });
