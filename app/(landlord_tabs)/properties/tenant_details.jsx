@@ -16,6 +16,7 @@ import { router, useGlobalSearchParams } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { MaterialIcons } from "@expo/vector-icons";
 import { formatDate } from "@/tools/formatDate";
+import { colors } from "@/app/theme/colors";
 
 export default function TenantDetails() {
   const insets = useSafeAreaInsets();
@@ -26,6 +27,7 @@ export default function TenantDetails() {
   const [acceptModalVisible, setAcceptModalVisible] = useState(false);
   const [selectedExtension, setSelectedExtension] = useState(null);
   const [denyReason, setDenyReason] = useState("");
+  const [isRentInfoExpanded, setIsRentInfoExpanded] = useState(false);
 
   const getTenantDetails = async () => {
     if (!tenantId) return;
@@ -104,21 +106,33 @@ export default function TenantDetails() {
     <View key={extension.id} style={styles.extensionCard}>
       <View style={styles.extensionHeader}>
         <Text style={styles.extensionTitle}>Rent Extension Request</Text>
-        <Text
-          style={[
-            styles.extensionStatus,
-            {
-              color:
-                extension.status === "open"
-                  ? "#FFA500"
-                  : extension.status === "accepted"
-                  ? "#4CAF50"
-                  : "#FF3B30",
-            },
-          ]}
-        >
-          {extension.status.charAt(0).toUpperCase() + extension.status.slice(1)}
-        </Text>
+        <View style={[
+          styles.statusBadge,
+          {
+            backgroundColor: 
+              extension.status === "open"
+                ? colors.warning + '15'
+                : extension.status === "accepted"
+                ? colors.success + '15'
+                : colors.error + '15',
+          }
+        ]}>
+          <Text
+            style={[
+              styles.extensionStatus,
+              {
+                color:
+                  extension.status === "open"
+                    ? colors.warning
+                    : extension.status === "accepted"
+                    ? colors.success
+                    : colors.error,
+              },
+            ]}
+          >
+            {extension.status.charAt(0).toUpperCase() + extension.status.slice(1)}
+          </Text>
+        </View>
       </View>
 
       <View style={styles.extensionDetails}>
@@ -177,50 +191,47 @@ export default function TenantDetails() {
       ]}
     >
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <MaterialIcons name="arrow-back" size={24} color="#333" />
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <MaterialIcons name="arrow-back" size={24} color={colors.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Tenant Details</Text>
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView style={styles.tenantInfo}>
-        <Text style={styles.tenantName}>
-          {tenant.first_name} {tenant.last_name}
-        </Text>
-        <View style={styles.infoRow}>
+      <ScrollView style={styles.scrollView}>
+        <View style={styles.tenantInfo}>
+          <Text style={styles.tenantName}>
+            {tenant.first_name} {tenant.last_name}
+          </Text>
           <Text style={styles.tenantDetail}>Email: {tenant.email}</Text>
-          <TouchableOpacity>
-            <MaterialIcons name="edit" size={20} color="#666" />
+          <TouchableOpacity 
+            style={styles.rentInfoHeader}
+            onPress={() => setIsRentInfoExpanded(!isRentInfoExpanded)}
+          >
+            <Text style={styles.rentTitle}>Rent Information</Text>
+            <MaterialIcons 
+              name={isRentInfoExpanded ? "expand-less" : "expand-more"} 
+              size={24} 
+              color={colors.primary} 
+            />
           </TouchableOpacity>
-        </View>
-        <View style={styles.rentInfo}>
-          <Text style={styles.rentTitle}>Rent Information</Text>
-          <View style={styles.infoRow}>
-            <Text style={styles.tenantDetail}>
-              Monthly Rent: £{tenant.monthly_rent.toFixed(2)}
-            </Text>
-            <TouchableOpacity>
-              <MaterialIcons name="edit" size={20} color="#666" />
-            </TouchableOpacity>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.tenantDetail}>
-              Payment Schedule: Every {tenant.months_per_payment} month
-              {tenant.months_per_payment > 1 ? "s" : ""}
-            </Text>
-            <TouchableOpacity>
-              <MaterialIcons name="edit" size={20} color="#666" />
-            </TouchableOpacity>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.tenantDetail}>
-              Next Payment: {formatDate(tenant.next_payment)}
-            </Text>
-            <TouchableOpacity>
-              <MaterialIcons name="edit" size={20} color="#666" />
-            </TouchableOpacity>
-          </View>
+          {isRentInfoExpanded && (
+            <View style={styles.rentInfo}>
+              <Text style={styles.tenantDetail}>
+                Monthly Rent: £{tenant.monthly_rent.toFixed(2)}
+              </Text>
+              <Text style={styles.tenantDetail}>
+                Payment Schedule: Every {tenant.months_per_payment} month
+                {tenant.months_per_payment > 1 ? "s" : ""}
+              </Text>
+              <Text style={styles.tenantDetail}>
+                Next Payment: {formatDate(tenant.next_payment)}
+              </Text>
+            </View>
+          )}
         </View>
 
         <TouchableOpacity
@@ -232,7 +243,7 @@ export default function TenantDetails() {
             })
           }
         >
-          <MaterialIcons name="lock" size={24} color="#fff" />
+          <MaterialIcons name="lock" size={24} color={colors.onPrimary} />
           <Text style={styles.documentsButtonText}>View Secure Documents</Text>
         </TouchableOpacity>
 
@@ -263,6 +274,7 @@ export default function TenantDetails() {
               placeholder="Enter reason for denial..."
               value={denyReason}
               onChangeText={setDenyReason}
+              placeholderTextColor={colors.placeholder}
             />
             <View style={styles.modalActions}>
               <TouchableOpacity
@@ -273,7 +285,7 @@ export default function TenantDetails() {
                   setSelectedExtension(null);
                 }}
               >
-                <Text style={styles.modalButtonText}>Cancel</Text>
+                <Text style={[styles.modalButtonText, { color: colors.onSurface }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.confirmDenyButton]}
@@ -308,7 +320,7 @@ export default function TenantDetails() {
                   setSelectedExtension(null);
                 }}
               >
-                <Text style={styles.modalButtonText}>Cancel</Text>
+                <Text style={[styles.modalButtonText, { color: colors.onSurface }]}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.confirmAcceptButton]}
@@ -327,7 +339,10 @@ export default function TenantDetails() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: colors.background,
+  },
+  scrollView: {
+    flex: 1,
   },
   header: {
     flexDirection: "row",
@@ -335,69 +350,81 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: colors.background,
     borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
+    borderBottomColor: colors.divider,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 20,
+    backgroundColor: colors.primary + '15',
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#333",
+    color: colors.onBackground,
   },
   tenantInfo: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.surface,
     padding: 20,
     margin: 20,
-    borderRadius: 12,
-    shadowColor: "#000",
+    borderRadius: 16,
+    shadowColor: colors.onBackground,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   tenantName: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#333",
+    color: colors.onSurface,
     marginBottom: 16,
   },
   tenantDetail: {
     fontSize: 16,
-    color: "#666",
-    marginBottom: 8,
+    color: colors.placeholder,
+    marginBottom: 12,
   },
   documentsButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#007AFF",
+    backgroundColor: colors.primary,
     margin: 20,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     gap: 8,
+    shadowColor: colors.onBackground,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   documentsButtonText: {
-    color: "#fff",
+    color: colors.onPrimary,
     fontSize: 16,
     fontWeight: "600",
   },
-  rentInfo: {
+  rentInfoHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: "#e0e0e0",
+    borderTopColor: colors.divider,
+  },
+  rentInfo: {
+    marginTop: 16,
   },
   rentTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#333",
-    marginBottom: 8,
-  },
-  infoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
+    color: colors.onSurface,
   },
   extensionsSection: {
     margin: 20,
@@ -405,19 +432,19 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#333",
+    color: colors.onBackground,
     marginBottom: 16,
   },
   extensionCard: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
+    backgroundColor: colors.surface,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 12,
-    shadowColor: "#000",
+    shadowColor: colors.onBackground,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   extensionHeader: {
     flexDirection: "row",
@@ -428,7 +455,12 @@ const styles = StyleSheet.create({
   extensionTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#333",
+    color: colors.onSurface,
+  },
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
   },
   extensionStatus: {
     fontSize: 14,
@@ -439,11 +471,11 @@ const styles = StyleSheet.create({
   },
   extensionDetail: {
     fontSize: 14,
-    color: "#666",
+    color: colors.placeholder,
     marginBottom: 4,
   },
   deniedReason: {
-    color: "#FF3B30",
+    color: colors.error,
     marginTop: 8,
   },
   extensionActions: {
@@ -453,51 +485,56 @@ const styles = StyleSheet.create({
   actionButton: {
     flex: 1,
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: "center",
   },
   acceptButton: {
-    backgroundColor: "#4CAF50",
+    backgroundColor: colors.success,
   },
   denyButton: {
-    backgroundColor: "#FF3B30",
+    backgroundColor: colors.error,
   },
   actionButtonText: {
-    color: "#fff",
+    color: colors.onPrimary,
     fontSize: 14,
     fontWeight: "600",
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: colors.backdrop,
     justifyContent: "center",
     alignItems: "center",
   },
   modalContent: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
+    backgroundColor: colors.surface,
+    borderRadius: 16,
     padding: 20,
     width: "90%",
     maxWidth: 400,
+    shadowColor: colors.onBackground,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 5,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#333",
+    color: colors.onSurface,
     marginBottom: 8,
   },
   modalSubtitle: {
     fontSize: 14,
-    color: "#666",
+    color: colors.placeholder,
     marginBottom: 16,
   },
   reasonInput: {
     borderWidth: 1,
-    borderColor: "#e0e0e0",
-    borderRadius: 8,
+    borderColor: colors.divider,
+    borderRadius: 12,
     padding: 12,
     fontSize: 14,
-    color: "#333",
+    color: colors.onSurface,
     marginBottom: 16,
     minHeight: 100,
     textAlignVertical: "top",
@@ -509,24 +546,21 @@ const styles = StyleSheet.create({
   modalButton: {
     flex: 1,
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: "center",
   },
   cancelButton: {
-    backgroundColor: "#e0e0e0",
+    backgroundColor: colors.divider,
   },
   confirmDenyButton: {
-    backgroundColor: "#FF3B30",
-  },
-  modalButtonText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
+    backgroundColor: colors.error,
   },
   confirmAcceptButton: {
-    backgroundColor: "#4CAF50",
+    backgroundColor: colors.success,
   },
-  scrollView: {
-    flex: 1,
+  modalButtonText: {
+    color: colors.onPrimary,
+    fontSize: 14,
+    fontWeight: "600",
   },
 });

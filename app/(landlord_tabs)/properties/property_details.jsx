@@ -9,12 +9,14 @@ import {
   TouchableOpacity,
   Platform,
   StatusBar,
+  Image,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useGlobalSearchParams } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { MaterialIcons } from "@expo/vector-icons";
 import ExpenseModal from "@/app/components/ExpenseModal";
+import { colors } from "@/app/theme/colors";
 
 export default function PropertyDetails() {
   const insets = useSafeAreaInsets();
@@ -51,7 +53,18 @@ export default function PropertyDetails() {
         .eq("house_id", houseId);
 
       if (tenantError) throw tenantError;
-      setTenants(tenantData);
+      
+      // Sort tenants: those with open extensions first
+      const sortedTenants = tenantData.sort((a, b) => {
+        const aHasOpenExtension = a.rent_extensions?.some(ext => ext.status === 'open');
+        const bHasOpenExtension = b.rent_extensions?.some(ext => ext.status === 'open');
+        
+        if (aHasOpenExtension && !bHasOpenExtension) return -1;
+        if (!aHasOpenExtension && bHasOpenExtension) return 1;
+        return 0;
+      });
+      
+      setTenants(sortedTenants);
     } catch (error) {
       console.error("Error fetching property details:", error);
     } finally {
@@ -80,7 +93,10 @@ export default function PropertyDetails() {
             params: { tenantId: item.tenant_id },
           })
         }
-        style={styles.tenantCard}
+        style={[
+          styles.tenantCard,
+          hasOpenExtension && styles.tenantCardWithExtension
+        ]}
       >
         <View style={styles.tenantInfo}>
           <View style={styles.nameContainer}>
@@ -88,12 +104,14 @@ export default function PropertyDetails() {
               {item.users.first_name} {item.users.last_name}
             </Text>
             {hasOpenExtension && (
-              <Text style={styles.extensionIndicator}>- open rent extension request</Text>
+              <View style={styles.extensionBadge}>
+                <Text style={styles.extensionText}>Open Extension</Text>
+              </View>
             )}
           </View>
           <Text style={styles.tenantEmail}>{item.users.email}</Text>
         </View>
-        <MaterialIcons name="chevron-right" size={24} color="#666" />
+        <MaterialIcons name="chevron-right" size={24} color={colors.placeholder} />
       </TouchableOpacity>
     );
   };
@@ -111,11 +129,27 @@ export default function PropertyDetails() {
       ]}
     >
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <MaterialIcons name="arrow-back" size={24} color="#333" />
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <MaterialIcons name="arrow-back" size={24} color={colors.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Property Details</Text>
         <View style={{ width: 24 }} />
+      </View>
+
+      <View style={styles.propertyImageContainer}>
+        <Image
+          source={{ uri: property.image || 'https://gjfyiqdpysudxfiodvbf.supabase.co/storage/v1/object/public/houses//how-to-design-a-house.jpg' }}
+          style={styles.propertyImage}
+          onError={(e) => console.log('Image loading error:', e.nativeEvent.error)}
+        />
+        <View style={styles.propertyStatus}>
+          <Text style={styles.propertyStatusText}>
+            {tenants.length > 0 ? 'Occupied' : 'Vacant'}
+          </Text>
+        </View>
       </View>
 
       <View style={styles.propertyInfo}>
@@ -130,7 +164,7 @@ export default function PropertyDetails() {
           style={styles.addExpenseButton}
           onPress={() => setShowExpenseModal(true)}
         >
-          <MaterialIcons name="add-circle-outline" size={18} color="#007AFF" />
+          <MaterialIcons name="add-circle-outline" size={18} color={colors.primary} />
           <Text style={styles.addExpenseText}>Add Expense</Text>
         </TouchableOpacity>
       </View>
@@ -145,6 +179,8 @@ export default function PropertyDetails() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={getPropertyDetails}
+              colors={[colors.primary]}
+              tintColor={colors.primary}
             />
           }
           style={styles.tenantsList}
@@ -164,7 +200,7 @@ export default function PropertyDetails() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: "row",
@@ -172,36 +208,68 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: colors.background,
     borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
+    borderBottomColor: colors.divider,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 20,
+    backgroundColor: colors.primary + '15',
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#333",
+    color: colors.onBackground,
+  },
+  propertyImageContainer: {
+    position: 'relative',
+    height: 200,
+    width: '100%',
+  },
+  propertyImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  propertyStatus: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  propertyStatusText: {
+    color: colors.onPrimary,
+    fontSize: 12,
+    fontWeight: '600',
   },
   propertyInfo: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.surface,
     padding: 20,
     marginHorizontal: 20,
     marginTop: 20,
-    borderRadius: 12,
-    shadowColor: "#000",
+    borderRadius: 16,
+    shadowColor: colors.onBackground,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   propertyAddress: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#333",
+    color: colors.onSurface,
     marginBottom: 8,
   },
   propertyDetails: {
     fontSize: 16,
-    color: "#666",
+    color: colors.placeholder,
   },
   tenantsSection: {
     flex: 1,
@@ -210,7 +278,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#333",
+    color: colors.onBackground,
     marginHorizontal: 20,
     marginBottom: 12,
   },
@@ -221,15 +289,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#fff",
+    backgroundColor: colors.surface,
     padding: 16,
-    marginBottom: 8,
-    borderRadius: 12,
-    shadowColor: "#000",
+    marginBottom: 12,
+    borderRadius: 16,
+    shadowColor: colors.onBackground,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  tenantCardWithExtension: {
+    borderLeftWidth: 4,
+    borderLeftColor: colors.warning,
   },
   tenantInfo: {
     flex: 1,
@@ -237,20 +309,27 @@ const styles = StyleSheet.create({
   tenantName: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#333",
+    color: colors.onSurface,
     marginBottom: 4,
   },
   tenantEmail: {
     fontSize: 14,
-    color: "#666",
+    color: colors.placeholder,
   },
   nameContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flexWrap: 'wrap',
   },
-  extensionIndicator: {
-    color: '#FFA500',
+  extensionBadge: {
+    backgroundColor: colors.warning + '15',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  extensionText: {
+    color: colors.warning,
     fontSize: 12,
     fontWeight: '500',
   },
@@ -263,15 +342,15 @@ const styles = StyleSheet.create({
   addExpenseButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0f9ff',
+    backgroundColor: colors.primary + '15',
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#d0e8ff',
+    borderColor: colors.primary + '30',
   },
   addExpenseText: {
-    color: '#007AFF',
+    color: colors.primary,
     fontWeight: '500',
     fontSize: 14,
     marginLeft: 6,

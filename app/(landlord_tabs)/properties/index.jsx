@@ -18,6 +18,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "@/lib/supabase";
 import { colors } from "../../theme/colors";
 import { Ionicons } from "@expo/vector-icons";
+import { setOpenExtensions } from "../_layout";
 
 export default function Properties() {
   const insets = useSafeAreaInsets();
@@ -37,7 +38,12 @@ export default function Properties() {
           street_address,
           postcode,
           image,
-          tenants:tenants(count)
+          tenants!left(
+            tenant_id,
+            rent_extensions!left(
+              status
+            )
+          )
         `)
         .eq('landlord_id', userId);
 
@@ -46,9 +52,16 @@ export default function Properties() {
         const transformedData = data
           .map(house => ({
             ...house,
-            num_tenants: house.tenants[0]?.count || 0
+            num_tenants: house.tenants?.length || 0,
+            has_open_extension: house.tenants?.some(tenant => 
+              tenant.rent_extensions?.some(extension => extension.status === 'open')
+            ) || false
           }))
           .sort((a, b) => b.num_tenants - a.num_tenants); // Sort in descending order
+        
+        // Update the global open extensions state
+        const hasAnyOpenExtensions = transformedData.some(house => house.has_open_extension);
+        setOpenExtensions(hasAnyOpenExtensions);
         
         console.log('Properties data:', JSON.stringify(transformedData, null, 2));
         setProperties(transformedData);
@@ -69,7 +82,6 @@ export default function Properties() {
   );
 
   const renderProperty = ({ item }) => {
-    console.log('Rendering property:', item);
     return (
       <TouchableOpacity
         onPress={() =>
@@ -93,7 +105,12 @@ export default function Properties() {
           </View>
         </View>
         <View style={styles.propertyInfo}>
-          <Text style={styles.propertyTitle}>{item.street_address}</Text>
+          <View style={styles.titleContainer}>
+            <Text style={styles.propertyTitle}>{item.street_address}</Text>
+            {item.has_open_extension && (
+              <View style={styles.extensionDot} />
+            )}
+          </View>
           <View style={styles.propertyDetailsContainer}>
             <View style={styles.propertyDetail}>
               <Ionicons name="location-outline" size={16} color={colors.primary} />
@@ -233,5 +250,16 @@ const styles = StyleSheet.create({
   propertyDetails: {
     fontSize: 14,
     color: colors.placeholder,
+  },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  extensionDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'red',
   },
 });
