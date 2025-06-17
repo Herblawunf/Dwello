@@ -7,15 +7,31 @@ const screenWidth = Dimensions.get('window').width - 40;
 const chartHeight = 220;
 const BAR_WIDTH = 60; // Width allocated for each bar
 
-export default function FinancialBarChart({ data, labels, suffix = '', propertyBreakdown = [] }) {
+export default function FinancialBarChart({ data, labels, suffix = '', propertyBreakdown }) {
+  // Ensure propertyBreakdown is always an array
+  propertyBreakdown = Array.isArray(propertyBreakdown) ? propertyBreakdown : [];
+
   const [chartType, setChartType] = useState('bar');
   const [dataType, setDataType] = useState('monthly');
 
+  // Modern futuristic color palette
+  const modernColors = {
+    primary: '#6C5CE7',      // Soft purple
+    secondary: '#00CEC9',    // Teal
+    accent1: '#74B9FF',      // Soft blue
+    accent2: '#81ECEC',      // Light cyan
+    accent3: '#A29BFE',      // Lavender
+    accent4: '#DFEAFF',      // Very light blue
+    accent5: '#E5FCFF',      // Very light cyan
+    text: '#2D3436',         // Dark gray for text
+    lightText: '#636E72'     // Medium gray for secondary text
+  };
+
   const dataTypes = [
-    { key: 'monthly', label: 'Monthly Income', icon: 'cash-outline', color: '#007AFF', secondaryColor: '#4CAF50' },
-    { key: 'gross', label: 'Gross Income', icon: 'trending-up-outline', color: '#FF6B35', secondaryColor: '#FFD93D' },
-    { key: 'expenses', label: 'Expenses', icon: 'wallet-outline', color: '#FF4757', secondaryColor: '#FFA502' },
-    { key: 'net', label: 'Net Income', icon: 'analytics-outline', color: '#2ED573', secondaryColor: '#1E90FF' }
+    { key: 'monthly', label: 'Monthly Income', icon: 'cash-outline', color: modernColors.primary, secondaryColor: modernColors.secondary },
+    { key: 'gross', label: 'Gross Income', icon: 'trending-up-outline', color: modernColors.accent1, secondaryColor: modernColors.accent3 },
+    { key: 'expenses', label: 'Expenses', icon: 'wallet-outline', color: modernColors.secondary, secondaryColor: modernColors.accent2 },
+    { key: 'net', label: 'Net Income', icon: 'analytics-outline', color: modernColors.accent3, secondaryColor: modernColors.accent1 }
   ];
 
   const chartTypes = [
@@ -29,17 +45,41 @@ export default function FinancialBarChart({ data, labels, suffix = '', propertyB
 
   const barLineData = useMemo(() => {
     if (!data?.length) return { primary: [], secondary: [], gross: [], expenses: [], net: [] };
+    const roundToHundred = (val) => Math.round(val / 100) * 100;
     return {
-      primary: data.map(item => item.net),
-      secondary: data.map(item => item.util),
-      gross: data.map(item => item.net + item.util),
-      expenses: data.map(item => item.util),
-      net: data.map(item => item.net)
+      primary: data.map(item => roundToHundred(item.net)),
+      secondary: data.map(item => roundToHundred(item.util)),
+      gross: data.map(item => roundToHundred(item.net + item.util)),
+      expenses: data.map(item => roundToHundred(item.util)),
+      net: data.map(item => roundToHundred(item.net))
     };
   }, [data]);
 
   const pieData = useMemo(() => {
-    const colors = ['#007AFF', '#4CAF50', '#FF6B35', '#FF4757', '#2ED573', '#FFD93D'];
+    // Use modern color palette for pie chart
+    const pieColors = [
+      modernColors.primary,
+      modernColors.secondary,
+      modernColors.accent1,
+      modernColors.accent2,
+      modernColors.accent3,
+      modernColors.accent4
+    ];
+    
+    // Calculate total for percentage calculation
+    let total = 0;
+    propertyBreakdown.forEach(property => {
+      let value;
+      switch (dataType) {
+        case 'gross': value = property.gross_income; break;
+        case 'expenses': value = property.expenses; break;
+        case 'net': value = property.net_profit; break;
+        case 'monthly':
+        default: value = property.total_income;
+      }
+      if (value > 0) total += value;
+    });
+    
     return propertyBreakdown
       .map((property, idx) => {
         let value;
@@ -50,16 +90,20 @@ export default function FinancialBarChart({ data, labels, suffix = '', propertyB
           case 'monthly':
           default: value = property.total_income;
         }
+        
+        // Calculate percentage
+        const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+        
         return { 
-          name: `${property.name} (${suffix}${Math.round(value)})`, 
+          name: `${property.name} (${percentage}%)`, 
           population: value, 
-          color: colors[idx % colors.length], 
-          legendFontColor: '#666', 
-          legendFontSize: 11 
+          color: pieColors[idx % pieColors.length], 
+          legendFontColor: modernColors.lightText, 
+          legendFontSize: 10 
         };
       })
       .filter(item => item.population > 0);
-  }, [propertyBreakdown, dataType, suffix]);
+  }, [propertyBreakdown, dataType, suffix, modernColors]);
 
   // Calculate the minimum chart width needed to display all bars
   const getBarChartWidth = () => {
@@ -97,14 +141,20 @@ export default function FinancialBarChart({ data, labels, suffix = '', propertyB
     backgroundGradientTo: '#FFFFFF',
     decimalPlaces: 0,
     color: () => currentDataType.color,
-    labelColor: () => '#666',
+    labelColor: () => modernColors.lightText,
     style: { borderRadius: 16 },
     propsForDots: { r: '6', strokeWidth: '2', stroke: currentDataType.color },
     propsForLabels: { fontSize: 10 },
     formatYLabel: (value) => {
+      // Round to nearest hundred
       const num = Math.round(parseFloat(value) / 100) * 100;
-      return num.toString();
-    }
+      // Format with commas for thousands and pound prefix
+      return `£${Math.round(num).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+    },
+    // Completely hide data labels on bars
+    formatTopBarValue: () => '',
+    // Ensure no data values are shown on bars
+    showBarTops: false
   };
 
   const toggleChartType = () => {
@@ -126,15 +176,6 @@ export default function FinancialBarChart({ data, labels, suffix = '', propertyB
     );
   }
 
-  // ========================= Helper for y-axis labels ========================= //
-  const renderYAxis = (ticks) => (
-    <View style={styles.yAxisLabels}>
-      {ticks.slice().reverse().map((t, idx) => (
-        <Text key={idx} style={styles.yAxisLabel}>{`${suffix}${t}`}</Text>
-      ))}
-    </View>
-  );
-
   return (
     <View style={styles.wrapper}>
       <View style={styles.titleContainer}>
@@ -144,59 +185,91 @@ export default function FinancialBarChart({ data, labels, suffix = '', propertyB
       <View style={styles.controls}>
         <TouchableOpacity style={styles.button} onPress={toggleDataType}>
           <Ionicons name={currentDataType.icon} size={18} color={currentDataType.color} />
-          <Text style={styles.buttonText}>{currentDataType.label}</Text>
+          <Text style={[styles.buttonText, {color: currentDataType.color}]}>{currentDataType.label}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.button} onPress={toggleChartType}>
           <Ionicons name={currentChartType.icon} size={18} color={currentDataType.color} />
-          <Text style={styles.buttonText}>{currentChartType.label}</Text>
+          <Text style={[styles.buttonText, {color: currentDataType.color}]}>{currentChartType.label}</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.chartArea}>
         {chartType === 'bar' && (
-          <View style={styles.barWrapper}>
-            {renderYAxis(getYAxisTicks(data))}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              decelerationRate="fast"
-              scrollEventThrottle={16}
-              nestedScrollEnabled
-              contentContainerStyle={styles.scrollContainer}
-            >
-              {dataType === 'monthly' ? (
-                <StackedBarChart
-                  data={{
-                    labels,
-                    legend: ['Net', 'Expenses'],
-                    data: barLineData.primary.map((_, i) => [barLineData.primary[i], barLineData.secondary[i]]),
-                    barColors: [currentDataType.color, currentDataType.secondaryColor]
-                  }}
-                  width={getBarChartWidth()}
-                  height={chartHeight}
-                  chartConfig={{ ...chartConfig, barPercentage: 0.6, withInnerLines: false, withHorizontalLabels: false }}
-                  style={styles.chart}
-                  fromZero
-                  verticalLabelRotation={30}
-                />
-              ) : (
-                <BarChart
-                  data={{
-                    labels,
-                    datasets: [{
-                      data: dataType === 'gross' ? barLineData.gross : dataType === 'expenses' ? barLineData.expenses : barLineData.net
-                    }]
-                  }}
-                  width={getBarChartWidth()}
-                  height={chartHeight}
-                  chartConfig={{ ...chartConfig, barPercentage: 0.6, withInnerLines: false, withHorizontalLabels: false }}
-                  style={styles.chart}
-                  fromZero
-                  verticalLabelRotation={30}
-                />
-              )}
-            </ScrollView>
-          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            decelerationRate="fast"
+            scrollEventThrottle={16}
+            nestedScrollEnabled
+            contentContainerStyle={styles.scrollContainer}
+          >
+            {dataType === 'monthly' ? (
+              <StackedBarChart
+                data={{
+                  labels,
+                  legend: ['Net', 'Expenses'],
+                  data: barLineData.primary.map((_, i) => [barLineData.primary[i], barLineData.secondary[i]]),
+                  barColors: [currentDataType.color, currentDataType.secondaryColor]
+                }}
+                width={getBarChartWidth()}
+                height={chartHeight}
+                chartConfig={{
+                  ...chartConfig,
+                  barPercentage: 0.6,
+                  withInnerLines: true,
+                  fillShadowGradientOpacity: 0.85,
+                  useShadowColorFromDataset: false,
+                  decimalPlaces: 0,
+                  propsForBackgroundLines: {
+                    strokeWidth: 1,
+                    strokeDasharray: '',
+                    stroke: 'rgba(56, 56, 56, 0.1)'
+                  }
+                }}
+                decimalPlaces={0}
+                formatYLabel={(value) => {
+                  const num = Math.round(parseFloat(value));
+                  return `£${num.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+                }}
+                hideLegend={true}
+                segments={5}
+                paddingRight={80}
+                withHorizontalLabels={true}
+              />
+            ) : (
+              <BarChart
+                data={{
+                  labels,
+                  datasets: [{
+                    data: dataType === 'gross' ? barLineData.gross : dataType === 'expenses' ? barLineData.expenses : barLineData.net
+                  }]
+                }}
+                width={getBarChartWidth()}
+                height={chartHeight}
+                chartConfig={{
+                  ...chartConfig,
+                  barPercentage: 0.6,
+                  withInnerLines: true,
+                  fillShadowGradientOpacity: 0.85,
+                  useShadowColorFromDataset: false,
+                  decimalPlaces: 0,
+                  propsForBackgroundLines: {
+                    strokeDasharray: '', // solid line
+                    stroke: '#EEEEEE',
+                    strokeWidth: 1
+                  }
+                }}
+                style={styles.chart}
+                fromZero
+                verticalLabelRotation={30}
+                showValuesOnTopOfBars={false} // Disable values on top of bars
+                withHorizontalLabels={true}
+                segments={5}
+                yAxisInterval={1} // To show all horizontal lines
+                hidePointsAtIndex={[]}
+              />
+            )}
+          </ScrollView>
         )}
         
         {chartType === 'line' && (
@@ -225,6 +298,12 @@ export default function FinancialBarChart({ data, labels, suffix = '', propertyB
             verticalLabelRotation={30}
             style={styles.chart}
             segments={5}
+            withDots={true}
+            withShadow={false}
+            withInnerLines={true}
+            withOuterLines={true}
+            withVerticalLines={false}
+            withHorizontalLines={true}
           />
         )}
         
@@ -238,12 +317,24 @@ export default function FinancialBarChart({ data, labels, suffix = '', propertyB
               accessor="population"
               backgroundColor="transparent"
               paddingLeft="15"
-              center={[screenWidth / 4, 0]}
+              center={[screenWidth / 5, 0]} 
               absolute
               hasLegend={true}
+              avoidFalseZero={true}
             />
           </View>
         )}
+      </View>
+      {/* Custom legend */}
+      <View style={styles.customLegendContainer}>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendColorBox, { backgroundColor: currentDataType.color }]} />
+          <Text style={styles.legendLabel}>Net</Text>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendColorBox, { backgroundColor: currentDataType.secondaryColor }]} />
+          <Text style={styles.legendLabel}>Expenses</Text>
+        </View>
       </View>
     </View>
   );
@@ -297,8 +388,7 @@ const styles = StyleSheet.create({
   },
   buttonText: { 
     fontSize: 12, 
-    fontWeight: '600', 
-    color: '#007AFF', 
+    fontWeight: '600',
     marginLeft: 6 
   },
   chartArea: { 
@@ -318,19 +408,27 @@ const styles = StyleSheet.create({
   pieContainer: { 
     width: '100%', 
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    marginLeft: -20 // Adjust to prevent legend overflow
   },
-  barWrapper: {
+  customLegendContainer: {
     flexDirection: 'row',
-    alignItems: 'flex-start'
+    justifyContent: 'center',
+    marginTop: 4
   },
-  yAxisLabels: {
-    height: chartHeight,
-    justifyContent: 'space-between',
-    paddingRight: 6
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 6
   },
-  yAxisLabel: {
-    fontSize: 11,
-    color: '#666'
+  legendColorBox: {
+    width: 10,
+    height: 10,
+    borderRadius: 2,
+    marginRight: 4
+  },
+  legendLabel: {
+    fontSize: 10,
+    color: '#636E72'
   }
 }); 
