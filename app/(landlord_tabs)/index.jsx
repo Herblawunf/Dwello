@@ -432,33 +432,6 @@ function LandlordDashboardContent() {
             )}
           </View>
         </View>
-        
-        {/* Quick Actions */}
-        <View style={styles.quickActionsContainer}>
-          <TouchableOpacity 
-            style={styles.quickActionButton}
-            onPress={() => router.push("/(landlord_tabs)/add-property")}
-          >
-            <Ionicons name="add-circle-outline" size={24} color="#007AFF" />
-            <Text style={styles.quickActionText}>Add Property</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.quickActionButton}
-            onPress={handleGoToInsights}
-          >
-            <Ionicons name="analytics-outline" size={24} color="#007AFF" />
-            <Text style={styles.quickActionText}>Analytics</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.quickActionButton}
-            onPress={() => router.push("/(landlord_tabs)/requests")}
-          >
-            <Ionicons name="construct-outline" size={24} color="#007AFF" />
-            <Text style={styles.quickActionText}>Requests</Text>
-          </TouchableOpacity>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -756,30 +729,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     marginTop: 12,
-  },
-  quickActionsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: '#F8F9FA',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 80,
-    marginTop: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  quickActionButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 10,
-  },
-  quickActionText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
-    marginTop: 8,
   },
 });

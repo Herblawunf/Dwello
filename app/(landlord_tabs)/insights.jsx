@@ -379,13 +379,7 @@ export default function InsightsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={handleGoToDashboard} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#333" />
-          </TouchableOpacity>
           <Text style={styles.headerTitle}>Insights</Text>
-          <TouchableOpacity onPress={handleGoToChat} style={styles.chatButton}>
-            <Ionicons name="chatbubble-ellipses-outline" size={24} color="#333" />
-          </TouchableOpacity>
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#007AFF" />
@@ -398,13 +392,7 @@ export default function InsightsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleGoToDashboard} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
         <Text style={styles.headerTitle}>Insights</Text>
-        <TouchableOpacity onPress={handleGoToChat} style={styles.chatButton}>
-          <Ionicons name="chatbubble-ellipses-outline" size={24} color="#333" />
-        </TouchableOpacity>
       </View>
       <ScrollView 
         style={styles.scrollView}
@@ -652,7 +640,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     padding: 16,
     paddingTop: 16,
     backgroundColor: '#fff',
@@ -660,19 +648,9 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f0f0f0',
   },
   headerTitle: {
-    flex: 1,
     fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
-    textAlign: 'center',
-  },
-  backButton: {
-    padding: 8,
-    borderRadius: 20,
-  },
-  chatButton: {
-    padding: 8,
-    borderRadius: 20,
   },
   title: {
     fontSize: 28,
