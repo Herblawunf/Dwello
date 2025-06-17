@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
 import { supabase } from "@/lib/supabase";
-import { analyticsApi } from "@/lib/supabase";
 import {
   View,
   Text,
@@ -288,11 +287,11 @@ const RentScreen = () => {
                 // Update property analytics with the rent income
                 console.log(`Adding rent payment to property_analytics: Property ID: ${propertyId}, Amount: ${rentAmount}`);
                 
-                await analyticsApi.updateAnalyticsForIncome(
-                  propertyId, 
-                  rentAmount,
-                  'Rent'
-                );
+                await supabase.rpc("update_property_analytics", {
+                  p_property_id: propertyId,
+                  p_amount: rentAmount,
+                  p_type: 'Rent'
+                });
               }
               
               getRentInfo();

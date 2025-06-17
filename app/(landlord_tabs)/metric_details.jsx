@@ -215,7 +215,7 @@ export default function MetricDetailsScreen() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Fetch data from the property_analytics table
+        // Fetch data from the house_analytics table
         await fetchAnalyticsData();
         setIsLoading(false);
       } catch (error) {
@@ -227,7 +227,7 @@ export default function MetricDetailsScreen() {
     fetchData();
   }, [metricKey, timeFrame]);
 
-  // Fetch from property_analytics table
+  // Fetch from house_analytics table
   const fetchAnalyticsData = async () => {
     try {
       // Determine how many months to look back based on time frame
@@ -240,14 +240,14 @@ export default function MetricDetailsScreen() {
       
       // Query the database
       let query = supabase
-        .from('property_analytics')
+        .from('house_analytics')
         .select('*')
         .gte('record_date', startDate.toISOString().split('T')[0])
         .order('record_date', { ascending: false });
         
-      // Filter by property ID if provided
+      // Filter by house ID if provided
       if (propertyId) {
-        query = query.eq('property_id', propertyId);
+        query = query.eq('house_id', propertyId);
       }
       
       const { data, error } = await query;
@@ -284,22 +284,22 @@ export default function MetricDetailsScreen() {
   const processPropertyComparison = (data) => {
     if (!data || data.length === 0) return;
     
-    // Group data by property
-    const propertyGroups = {};
+    // Group data by house
+    const houseGroups = {};
     data.forEach(record => {
-      if (!propertyGroups[record.property_id]) {
-        propertyGroups[record.property_id] = [];
+      if (!houseGroups[record.house_id]) {
+        houseGroups[record.house_id] = [];
       }
-      propertyGroups[record.property_id].push(record);
+      houseGroups[record.house_id].push(record);
     });
     
-    // Calculate aggregated metrics for each property
-    const comparison = Object.entries(propertyGroups).map(([propertyId, records]) => {
+    // Calculate aggregated metrics for each house
+    const comparison = Object.entries(houseGroups).map(([houseId, records]) => {
       // Sort by date (most recent first)
       records.sort((a, b) => new Date(b.record_date) - new Date(a.record_date));
       
-      // Get the property name from the most recent record
-      const propertyName = records[0].property_name;
+      // Get the house name from the most recent record
+      const houseName = records[0].house_name;
       
       // Aggregate values based on the metric
       let value = 0;
@@ -314,8 +314,8 @@ export default function MetricDetailsScreen() {
       }
       
       return {
-        id: propertyId,
-        name: propertyName,
+        id: houseId,
+        name: houseName,
         value,
         change
       };
@@ -716,7 +716,7 @@ export default function MetricDetailsScreen() {
                         year: 'numeric'
                       })}
                     </Text>
-                    <Text style={styles.tableCell}>{item.property_name}</Text>
+                    <Text style={styles.tableCell}>{item.house_name}</Text>
                     <Text style={styles.tableCellValue}>
                       {formatValue(item[mapMetricKeyToDbField(metricKey)])}
                     </Text>

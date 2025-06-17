@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedTouchableOpacity } from '@/components/ThemedTouchableOpacity';
-import { analyticsApi } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 const EXPENSE_CATEGORIES = [
   { label: 'Maintenance', value: 'maintenance' },
@@ -49,7 +49,7 @@ export default function ExpenseModal({ visible, onClose, properties, onExpenseAd
       
       if (properties && properties.length === 1) {
         // Auto-select if there's only one property
-        setPropertyId(properties[0].id);
+        setPropertyId(properties[0].house_id);
         setSelectedProperty(properties[0]);
       } else {
         setPropertyId('');
@@ -79,12 +79,12 @@ export default function ExpenseModal({ visible, onClose, properties, onExpenseAd
     setLoading(true);
     
     try {
-      // Update analytics directly in property_analytics table
+      // Update analytics directly in house_analytics table
       const expenseAmount = parseFloat(amount);
       const expenseDate = date || new Date().toISOString().split('T')[0];
       const expenseType = category;
       
-      console.log(`Adding expense directly to property_analytics: ${propertyId}, ${expenseAmount}, ${expenseType}`);
+      console.log(`Adding expense directly to house_analytics: ${propertyId}, ${expenseAmount}, ${expenseType}`);
       
       // Get current date info for the record
       const expenseDateObj = new Date(expenseDate);
@@ -94,15 +94,15 @@ export default function ExpenseModal({ visible, onClose, properties, onExpenseAd
       // Get property name
       let propertyName = "";
       if (properties && properties.length > 0) {
-        const property = properties.find(p => p.id === propertyId);
-        propertyName = property ? property.name : "Unknown Property";
+        const property = properties.find(p => p.house_id === propertyId);
+        propertyName = property ? property.street_address : "Unknown Property";
       }
       
       // First try to find an existing record for this property/month/year
-      const { data: existingRecord, error: findError } = await analyticsApi.supabase
-        .from('property_analytics')
+      const { data: existingRecord, error: findError } = await supabase
+        .from('house_analytics')
         .select('*')
-        .eq('property_id', propertyId)
+        .eq('house_id', propertyId)
         .eq('month', month)
         .eq('year', year)
         .single();
@@ -112,8 +112,8 @@ export default function ExpenseModal({ visible, onClose, properties, onExpenseAd
       if (findError || !existingRecord) {
         // No record exists - create a new one
         const newRecord = {
-          property_id: propertyId,
-          property_name: propertyName,
+          house_id: propertyId,
+          house_name: propertyName,
           record_date: expenseDate,
           month: month,
           year: year,
@@ -124,10 +124,16 @@ export default function ExpenseModal({ visible, onClose, properties, onExpenseAd
           maintenance_costs: expenseType.toLowerCase().includes('maintenance') ? expenseAmount : 0,
           tenant_satisfaction: 90, // Default value
           occupancy_rate: 95, // Default value
+          property_value: 350000, // Default value
+          yield_rate: 5.0, // Default value
+          vacancy_rate: 5.0, // Default value
+          avg_tenancy_length: 18, // Default value
+          maintenance_cost_ratio: 15.0, // Default value
+          rent_to_value_ratio: 4.0 // Default value
         };
         
-        const { data, error } = await analyticsApi.supabase
-          .from('property_analytics')
+        const { data, error } = await supabase
+          .from('house_analytics')
           .insert(newRecord)
           .select();
           
@@ -149,8 +155,8 @@ export default function ExpenseModal({ visible, onClose, properties, onExpenseAd
           updatedRecord.maintenance_costs = (existingRecord.maintenance_costs || 0) + expenseAmount;
         }
         
-        const { data, error } = await analyticsApi.supabase
-          .from('property_analytics')
+        const { data, error } = await supabase
+          .from('house_analytics')
           .update(updatedRecord)
           .eq('id', existingRecord.id)
           .select();
@@ -185,7 +191,7 @@ export default function ExpenseModal({ visible, onClose, properties, onExpenseAd
   
   // Select property handler
   const handleSelectProperty = (property) => {
-    setPropertyId(property.id);
+    setPropertyId(property.house_id);
     setSelectedProperty(property);
     setShowProperties(false);
   };
@@ -244,7 +250,7 @@ export default function ExpenseModal({ visible, onClose, properties, onExpenseAd
                 disabled={loading}
               >
                 <Text style={selectedProperty ? styles.dropdownText : styles.dropdownPlaceholder}>
-                  {selectedProperty ? selectedProperty.name : 'Select property...'}
+                  {selectedProperty ? selectedProperty.street_address : 'Select property...'}
                 </Text>
                 <Ionicons name="chevron-down" size={20} color="#666" />
               </TouchableOpacity>
@@ -265,11 +271,11 @@ export default function ExpenseModal({ visible, onClose, properties, onExpenseAd
                     {properties && properties.length > 0 ? (
                       properties.map((property) => (
                         <TouchableOpacity
-                          key={property.id}
+                          key={property.house_id}
                           style={styles.dropdownItem}
                           onPress={() => handleSelectProperty(property)}
                         >
-                          <Text style={styles.dropdownItemText}>{property.name}</Text>
+                          <Text style={styles.dropdownItemText}>{property.street_address}</Text>
                         </TouchableOpacity>
                       ))
                     ) : (

@@ -158,7 +158,7 @@ function LandlordDashboardContent() {
   }
   
   const { 
-    properties, 
+    houses, 
     overviewMetrics, 
     incomeExpensesTrend, 
     maintenanceCosts,
@@ -291,7 +291,7 @@ function LandlordDashboardContent() {
             </Text>
           </View>
           <View style={styles.propertiesCount}>
-            <Text style={styles.propertiesCountNumber}>{properties?.length || 0}</Text>
+            <Text style={styles.propertiesCountNumber}>{houses?.length || 0}</Text>
             <Text style={styles.propertiesCountLabel}>Properties</Text>
           </View>
         </View>

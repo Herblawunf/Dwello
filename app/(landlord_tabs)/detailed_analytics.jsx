@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Platform, 
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import FinancialBarChart from "./data_analytics_";
-import { analyticsApi } from "../../lib/supabase";
 import { useData } from "../components/DataProvider";
 
 const ADDRESSES = [

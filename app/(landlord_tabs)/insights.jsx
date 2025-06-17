@@ -54,11 +54,11 @@ export default function InsightsScreen() {
 
   // Destructure dataContext with fallback values
   const { 
-    properties = [], 
+    houses = [], 
     overviewMetrics = {}, 
-    propertyMetrics = {},
+    houseMetrics = {},
     maintenanceCosts = [], 
-    loading = { properties: true, metrics: true }, 
+    loading = { houses: true, metrics: true }, 
     selectedTimeFrame = 'Monthly',
     setSelectedTimeFrame = () => {}
   } = dataContext || {};
@@ -185,79 +185,79 @@ export default function InsightsScreen() {
       }
     } 
     // If a specific property is selected
-    else if (selectedProperty && propertyMetrics) {
-      const propertyId = selectedProperty.id || selectedProperty;
-      const propertyData = propertyMetrics[propertyId];
+    else if (selectedProperty && houseMetrics) {
+      const houseId = selectedProperty.house_id || selectedProperty;
+      const houseData = houseMetrics[houseId];
       
-      if (propertyData) {
-        // Update metrics with property-specific data
+      if (houseData) {
+        // Update metrics with house-specific data
         setMetrics(prev => ({
           ...prev,
           occupancyRate: { 
             ...prev.occupancyRate, 
-            value: formatPercentage(propertyData.occupancyRate?.value),
-            change: formatChange(propertyData.occupancyRate?.change)
+            value: formatPercentage(houseData.occupancyRate?.value),
+            change: formatChange(houseData.occupancyRate?.change)
           },
           grossIncome: { 
             ...prev.grossIncome, 
-            value: formatCurrency(propertyData.grossIncome?.value),
-            change: formatChange(propertyData.grossIncome?.change)
+            value: formatCurrency(houseData.grossIncome?.value),
+            change: formatChange(houseData.grossIncome?.change)
           },
           totalExpenses: { 
             ...prev.totalExpenses, 
-            value: formatCurrency(propertyData.totalExpenses?.value),
-            change: formatChange(propertyData.totalExpenses?.change)
+            value: formatCurrency(houseData.totalExpenses?.value),
+            change: formatChange(houseData.totalExpenses?.change)
           },
           netProfit: { 
             ...prev.netProfit, 
-            value: formatCurrency(propertyData.netProfit?.value),
-            change: formatChange(propertyData.netProfit?.change)
+            value: formatCurrency(houseData.netProfit?.value),
+            change: formatChange(houseData.netProfit?.change)
           },
           maintenanceCosts: { 
             ...prev.maintenanceCosts, 
-            value: formatCurrency(propertyData.maintenanceCosts?.value),
-            change: formatChange(propertyData.maintenanceCosts?.change)
+            value: formatCurrency(houseData.maintenanceCosts?.value),
+            change: formatChange(houseData.maintenanceCosts?.change)
           },
           tenantSatisfaction: { 
             ...prev.tenantSatisfaction, 
-            value: formatPercentage(propertyData.tenantSatisfaction?.value),
-            change: formatChange(propertyData.tenantSatisfaction?.change)
+            value: formatPercentage(houseData.tenantSatisfaction?.value),
+            change: formatChange(houseData.tenantSatisfaction?.change)
           },
           rentCollection: { 
             ...prev.rentCollection, 
-            value: formatPercentage(propertyData.rentCollection?.value),
-            change: formatChange(propertyData.rentCollection?.change)
+            value: formatPercentage(houseData.rentCollection?.value),
+            change: formatChange(houseData.rentCollection?.change)
           },
           propertyValue: { 
             ...prev.propertyValue, 
-            value: formatCurrency(propertyData.propertyValue?.value),
-            change: formatChange(propertyData.propertyValue?.change)
+            value: formatCurrency(houseData.propertyValue?.value),
+            change: formatChange(houseData.propertyValue?.change)
           }
         }));
         
-        // Update property-specific advanced metrics if available
-        if (propertyData.yieldRate) {
+        // Update house-specific advanced metrics if available
+        if (houseData.yieldRate) {
           setAdvancedMetrics(prev => ({
             ...prev,
             yieldRate: { 
               ...prev.yieldRate, 
-              value: formatPercentage(propertyData.yieldRate?.value),
-              change: formatChange(propertyData.yieldRate?.change)
+              value: formatPercentage(houseData.yieldRate?.value),
+              change: formatChange(houseData.yieldRate?.change)
             },
             vacancyRate: { 
               ...prev.vacancyRate, 
-              value: formatPercentage(propertyData.vacancyRate?.value),
-              change: formatChange(propertyData.vacancyRate?.change)
+              value: formatPercentage(houseData.vacancyRate?.value),
+              change: formatChange(houseData.vacancyRate?.change)
             },
             avgTenancyLength: { 
               ...prev.avgTenancyLength, 
-              value: `${Math.round(propertyData.avgTenancyLength?.value || 0)} months`,
-              change: formatChange(propertyData.avgTenancyLength?.change)
+              value: `${Math.round(houseData.avgTenancyLength?.value || 0)} months`,
+              change: formatChange(houseData.avgTenancyLength?.change)
             },
             maintenanceCostRatio: { 
               ...prev.maintenanceCostRatio, 
-              value: formatPercentage(propertyData.maintenanceCostRatio?.value),
-              change: formatChange(propertyData.maintenanceCostRatio?.change)
+              value: formatPercentage(houseData.maintenanceCostRatio?.value),
+              change: formatChange(houseData.maintenanceCostRatio?.change)
             }
           }));
         }
@@ -276,12 +276,7 @@ export default function InsightsScreen() {
         }
       }));
     }
-  }, [overviewMetrics, maintenanceCosts, loading, selectedProperty, propertyMetrics]);
-
-  // Note: The 'handlePropertySelect' function was identified as a duplicate by the error message.
-  // It has been removed from here. Ensure it is defined correctly once elsewhere in this component's scope
-  // if it was intended to be the primary definition.
-  // If an earlier definition exists, that one will now be used.
+  }, [overviewMetrics, maintenanceCosts, loading, selectedProperty, houseMetrics]);
 
   // Handle property selection
   const handlePropertySelect = (property) => {
@@ -297,7 +292,7 @@ export default function InsightsScreen() {
   const handleMetricClick = (metricKey, metricName) => {
     router.push({
       pathname: "/(landlord_tabs)/metric_details",
-      params: { metricKey, metricName, propertyId: selectedProperty?.id }
+      params: { metricKey, metricName, propertyId: selectedProperty?.house_id }
     });
   };
 
@@ -319,7 +314,7 @@ export default function InsightsScreen() {
   };
 
   // Handle case where data context is not available or show loading state
-  if (!dataContext || loading.properties || loading.metrics) {
+  if (!dataContext || loading.houses || loading.metrics) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
@@ -374,24 +369,24 @@ export default function InsightsScreen() {
             ]}>Overview</Text>
           </TouchableOpacity>
           
-          {properties.map((property, index) => (
+          {houses.map((property, index) => (
             <TouchableOpacity 
-              key={property.id || index}
+              key={property.house_id || index}
               style={[
                 styles.propertyTab, 
-                selectedProperty?.id === property.id && styles.activePropertyTab
+                selectedProperty?.house_id === property.house_id && styles.activePropertyTab
               ]}
               onPress={() => handlePropertySelect(property)}
             >
               <Text style={[
                 styles.propertyTabText,
-                selectedProperty?.id === property.id && styles.activePropertyTabText
+                selectedProperty?.house_id === property.house_id && styles.activePropertyTabText
               ]}>{property.name || `Property ${index + 1}`}</Text>
             </TouchableOpacity>
           ))}
           
           {/* Fallback if no properties are loaded */}
-          {(!properties || properties.length === 0) && (
+          {(!houses || houses.length === 0) && (
             <>
               <TouchableOpacity 
                 style={[
@@ -580,7 +575,7 @@ export default function InsightsScreen() {
       <ExpenseModal
         visible={showExpenseModal}
         onClose={() => setShowExpenseModal(false)}
-        properties={properties}
+        properties={houses}
         onExpenseAdded={handleExpenseAdded}
       />
     </SafeAreaView>
