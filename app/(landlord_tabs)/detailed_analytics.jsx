@@ -3,15 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Platform, 
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import FinancialBarChart from "./data_analytics_";
-import { analyticsApi } from "../../lib/supabase";
 import { useData } from "../components/DataProvider";
 
-const ADDRESSES = [
-  "123 Bridgewater Road, London",
-  "45 Oak Avenue, Manchester"
-];
-
-const sortedAddresses = [...ADDRESSES].sort();
 const TABS = ["Overview"];
 
 const METRICS_DATA = {
@@ -47,62 +40,6 @@ function formatDate(date) {
   });
 }
 
-// Add property-specific metrics data
-const PROPERTY_METRICS = {
-    'Bridgewater Road': {
-        Monthly: {
-            occupancyRate: { value: '95%', change: '+2%' },
-            maintenanceCosts: { value: '£450', change: '-15%' },
-            grossIncome: { value: '£1,200', change: '+5%' },
-            totalExpenses: { value: '£650', change: '-8%' },
-            netProfit: { value: '£550', change: '+12%' },
-            roi: { value: '8.2%', change: '+0.5%' }
-        },
-        Quarterly: {
-            occupancyRate: { value: '92%', change: '+1%' },
-            maintenanceCosts: { value: '£1,350', change: '-12%' },
-            grossIncome: { value: '£3,600', change: '+4%' },
-            totalExpenses: { value: '£1,950', change: '-6%' },
-            netProfit: { value: '£1,650', change: '+10%' },
-            roi: { value: '7.8%', change: '+0.3%' }
-        },
-        Annual: {
-            occupancyRate: { value: '90%', change: '+3%' },
-            maintenanceCosts: { value: '£5,400', change: '-10%' },
-            grossIncome: { value: '£14,400', change: '+6%' },
-            totalExpenses: { value: '£7,800', change: '-5%' },
-            netProfit: { value: '£6,600', change: '+15%' },
-            roi: { value: '7.5%', change: '+0.8%' }
-        }
-    },
-    'Oak Avenue': {
-        Monthly: {
-            occupancyRate: { value: '98%', change: '+3%' },
-            maintenanceCosts: { value: '£380', change: '-20%' },
-            grossIncome: { value: '£1,500', change: '+8%' },
-            totalExpenses: { value: '£580', change: '-12%' },
-            netProfit: { value: '£920', change: '+18%' },
-            roi: { value: '9.5%', change: '+0.7%' }
-        },
-        Quarterly: {
-            occupancyRate: { value: '96%', change: '+2%' },
-            maintenanceCosts: { value: '£1,140', change: '-15%' },
-            grossIncome: { value: '£4,500', change: '+6%' },
-            totalExpenses: { value: '£1,740', change: '-8%' },
-            netProfit: { value: '£2,760', change: '+15%' },
-            roi: { value: '9.2%', change: '+0.5%' }
-        },
-        Annual: {
-            occupancyRate: { value: '94%', change: '+4%' },
-            maintenanceCosts: { value: '£4,560', change: '-12%' },
-            grossIncome: { value: '£18,000', change: '+7%' },
-            totalExpenses: { value: '£6,960', change: '-6%' },
-            netProfit: { value: '£11,040', change: '+20%' },
-            roi: { value: '8.8%', change: '+1.0%' }
-        }
-    }
-};
-
 export default function DetailedAnalyticsScreen() {
   const router = useRouter();
   const { 
@@ -127,6 +64,14 @@ export default function DetailedAnalyticsScreen() {
   
   // Get month labels from the trend data
   const monthLabels = incomeExpensesTrend?.map(item => item.date) || [];
+
+  // Debug: Log data changes
+  useEffect(() => {
+    console.log("Detailed analytics - properties:", properties);
+    console.log("Detailed analytics - propertyMetrics:", propertyMetrics);
+    console.log("Detailed analytics - selectedPeriod:", selectedPeriod);
+    console.log("Detailed analytics - activeTab:", activeTab);
+  }, [properties, propertyMetrics, selectedPeriod, activeTab]);
 
   const handleGoToChat = () => {
     router.push("/ChatWindow");
@@ -169,6 +114,32 @@ export default function DetailedAnalyticsScreen() {
     }));
   };
 
+  // Helper function to get a proper property name
+  const getPropertyName = (property, index) => {
+    // If property has a name field, use it
+    if (property.name && property.name.trim()) {
+      return property.name;
+    }
+    
+    // If property has street_address, use it
+    if (property.street_address && property.street_address.trim()) {
+      return property.street_address;
+    }
+    
+    // If property has postcode, create a name from it
+    if (property.postcode && property.postcode.trim()) {
+      return `Property ${property.postcode}`;
+    }
+    
+    // If property has a code, use it
+    if (property.code) {
+      return `Property ${property.code}`;
+    }
+    
+    // Final fallback
+    return `Property ${index + 1}`;
+  };
+
   const renderSectionHeader = (title, section) => (
     <TouchableOpacity 
       style={styles.sectionHeader} 
@@ -206,240 +177,183 @@ export default function DetailedAnalyticsScreen() {
   );
 
   const renderTabContent = () => {
-    // Show error if there is one
-    if (error) {
-      return renderError();
-    }
-    
-    // Show loading for initial data fetch
-    if (loading.properties) {
-      return renderLoading();
-    }
-    
     switch (activeTab) {
-        case 'Overview':
-            return (
-                <>
-                    {/* Date Range and Period Selection */}
-                    <View style={styles.section}>
-                        <View style={styles.rowBetween}>
-                            <Text style={styles.sectionTitle}>Key Metrics</Text>
-                            <TouchableOpacity style={styles.dateRangeButton} onPress={toggleDateRange}>
-                                <Ionicons name="calendar-outline" size={18} color="#007AFF" />
-                                <Text style={styles.dateRangeText}>{dateRange.label}</Text>
-                            </TouchableOpacity>
-                        </View>
-                        
-                        {/* Period Toggle */}
-                        <View style={styles.periodToggleRow}>
-                            {PERIODS.map((period) => (
-                                <TouchableOpacity
-                                    key={period}
-                                    style={[
-                                        styles.periodToggle,
-                                        selectedPeriod === period && styles.periodToggleActive
-                                    ]}
-                                    onPress={() => setSelectedPeriod(period)}
-                                >
-                                    <Text style={[
-                                        styles.periodToggleText,
-                                        selectedPeriod === period && styles.periodToggleTextActive
-                                    ]}>
-                                        {period}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
+      case "Overview":
+        return (
+          <>
+            <View style={styles.overviewContainer}>
+              <View style={styles.periodSelector}>
+                <TouchableOpacity 
+                  style={[styles.periodButton, selectedPeriod === 'Monthly' && styles.periodButtonActive]}
+                  onPress={() => setSelectedPeriod('Monthly')}
+                >
+                  <Text style={[styles.periodButtonText, selectedPeriod === 'Monthly' && styles.periodButtonTextActive]}>
+                    Monthly
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.periodButton, selectedPeriod === 'Quarterly' && styles.periodButtonActive]}
+                  onPress={() => setSelectedPeriod('Quarterly')}
+                >
+                  <Text style={[styles.periodButtonText, selectedPeriod === 'Quarterly' && styles.periodButtonTextActive]}>
+                    Quarterly
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.periodButton, selectedPeriod === 'Annual' && styles.periodButtonActive]}
+                  onPress={() => setSelectedPeriod('Annual')}
+                >
+                  <Text style={[styles.periodButtonText, selectedPeriod === 'Annual' && styles.periodButtonTextActive]}>
+                    Annual
+                  </Text>
+                </TouchableOpacity>
+              </View>
 
-                        {/* Metrics Grid */}
-                        {loading.metrics ? (
-                          <View style={styles.metricsGrid}>
-                            {[1, 2, 3, 4, 5, 6].map((_, i) => (
-                              <View key={i} style={[styles.metricCard, styles.metricCardLoading]}>
-                                <ActivityIndicator size="small" color="#007AFF" />
-                              </View>
-                            ))}
-                          </View>
-                        ) : (
-                          <View style={styles.metricsGrid}>
-                            {Object.entries(overviewMetrics).map(([key, data]) => (
-                              <View key={key} style={styles.metricCard}>
-                                <View style={styles.metricIconRow}>
-                                  <Ionicons 
-                                    name={getIconForMetric(key)} 
-                                    size={22} 
-                                    color="#007AFF" 
-                                  />
-                                  <TouchableOpacity onPress={() => handleShowTooltip({
-                                    title: formatMetricName(key),
-                                    description: METRICS_DATA[key]?.description || ""
-                                  })}>
-                                    <Ionicons 
-                                      name="information-circle-outline" 
-                                      size={18} 
-                                      color="#888" 
-                                      style={{ marginLeft: 6 }} 
-                                    />
-                                  </TouchableOpacity>
-                                </View>
-                                <Text style={styles.metricLabel} numberOfLines={1} ellipsizeMode="tail">
-                                  {formatMetricName(key)}
-                                </Text>
-                                <Text style={styles.metricValue}>
-                                  {formatMetricValue(data.value, key)}
-                                </Text>
-                              </View>
-                            ))}
-                          </View>
-                        )}
+              <View style={styles.metricsGrid}>
+                {Object.entries(overviewMetrics).map(([key, value]) => (
+                  <TouchableOpacity
+                    key={key}
+                    style={styles.metricCard}
+                    onPress={() => {
+                      setTooltip({
+                        title: formatMetricName(key),
+                        description: METRICS_DATA[key]?.description || ""
+                      });
+                    }}
+                  >
+                    <View style={styles.metricIconRow}>
+                      <Text style={styles.metricLabel}>
+                        {formatMetricName(key)}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setTooltip({
+                            title: formatMetricName(key),
+                            description: METRICS_DATA[key]?.description || ""
+                          });
+                        }}
+                      >
+                        <Ionicons name="information-circle-outline" size={16} color="#666" />
+                      </TouchableOpacity>
                     </View>
+                    <Text style={styles.metricValue}>
+                      {formatMetricValue(value, key)}
+                    </Text>
+                    {value.change && (
+                      <Text style={[
+                        styles.metricChange,
+                        value.change.startsWith('+') ? styles.positiveChange : styles.negativeChange
+                      ]}>
+                        {value.change}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </>
+        );
+      default:
+        // Handle individual property tabs
+        // Find the property by matching the activeTab name
+        const property = properties.find((p, index) => getPropertyName(p, index) === activeTab);
+        if (!property) return <Text>Property not found</Text>;
+        
+        // Get the metrics for this property using house_id
+        const propertyMetricsData = propertyMetrics[property.house_id];
+        
+        console.log("Property metrics for", property.house_id, ":", propertyMetricsData);
+        console.log("Selected period:", selectedPeriod);
+        
+        // If we don't have the metrics yet, show loading
+        if (loading.houseMetrics || !propertyMetricsData) {
+          return (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#007AFF" />
+              <Text style={styles.loadingText}>Loading property data...</Text>
+            </View>
+          );
+        }
+        
+        // Filter out ROI from metrics and format them for display
+        const filteredMetrics = Object.entries(propertyMetricsData)
+          .filter(([key]) => key !== 'roi' && !['id', 'property_id', 'date', 'created_at', 'period'].includes(key))
+          .map(([key, value]) => [key, value]);
+        
+        return (
+          <View style={styles.tabContent}>
+            <View style={styles.propertyMetricsContainer}>
+              <View style={styles.periodSelector}>
+                <TouchableOpacity 
+                  style={[styles.periodButton, selectedPeriod === 'Monthly' && styles.periodButtonActive]}
+                  onPress={() => setSelectedPeriod('Monthly')}
+                >
+                  <Text style={[styles.periodButtonText, selectedPeriod === 'Monthly' && styles.periodButtonTextActive]}>
+                    Monthly
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.periodButton, selectedPeriod === 'Quarterly' && styles.periodButtonActive]}
+                  onPress={() => setSelectedPeriod('Quarterly')}
+                >
+                  <Text style={[styles.periodButtonText, selectedPeriod === 'Quarterly' && styles.periodButtonTextActive]}>
+                    Quarterly
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.periodButton, selectedPeriod === 'Annual' && styles.periodButtonActive]}
+                  onPress={() => setSelectedPeriod('Annual')}
+                >
+                  <Text style={[styles.periodButtonText, selectedPeriod === 'Annual' && styles.periodButtonTextActive]}>
+                    Annual
+                  </Text>
+                </TouchableOpacity>
+              </View>
 
-                    {/* Overall Maintenance Costs */}
-                    <View style={styles.section}>
-                        {renderSectionHeader("Maintenance Costs", "maintenance")}
-                        {expandedSections.maintenance && (
-                          loading.maintenance ? (
-                            <View style={styles.loadingSectionContainer}>
-                              <ActivityIndicator size="small" color="#007AFF" />
-                            </View>
-                          ) : (
-                            <View style={styles.maintenanceContainer}>
-                              {maintenanceCosts.map((item, index) => (
-                                <View key={index} style={styles.maintenanceItem}>
-                                  <View style={styles.maintenanceCategory}>
-                                    <Text style={styles.maintenanceCategoryText}>{item.category}</Text>
-                                  </View>
-                                  <View style={styles.maintenanceDetails}>
-                                    <Text style={styles.maintenanceAmount}>£{item.amount}</Text>
-                                    <Text style={styles.maintenancePercentage}>{item.percentage}%</Text>
-                                  </View>
-                                </View>
-                              ))}
-                            </View>
-                          )
-                        )}
+              <View style={styles.metricsGrid}>
+                {filteredMetrics.map(([key, value]) => (
+                  <TouchableOpacity
+                    key={key}
+                    style={styles.metricCard}
+                    onPress={() => {
+                      setTooltip({
+                        title: formatMetricName(key),
+                        description: METRICS_DATA[key]?.description || ""
+                      });
+                    }}
+                  >
+                    <View style={styles.metricIconRow}>
+                      <Text style={styles.metricLabel}>
+                        {formatMetricName(key)}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setTooltip({
+                            title: formatMetricName(key),
+                            description: METRICS_DATA[key]?.description || ""
+                          });
+                        }}
+                      >
+                        <Ionicons name="information-circle-outline" size={16} color="#666" />
+                      </TouchableOpacity>
                     </View>
-
-                    {/* Income and Expenses Trend */}
-                    <View style={styles.section}>
-                        {renderSectionHeader("Income & Expenses Trend", "income")}
-                        {expandedSections.income && (
-                          loading.incomeExpenses ? (
-                            <View style={styles.loadingSectionContainer}>
-                              <ActivityIndicator size="small" color="#007AFF" />
-                            </View>
-                          ) : (
-                            <View style={styles.graphContainer}>
-                                <FinancialBarChart
-                                    data={incomeExpensesTrend}
-                                    labels={monthLabels}
-                                    suffix="£"
-                                />
-                            </View>
-                          )
-                        )}
-                    </View>
-                </>
-            );
-        case 'Bridgewater Road':
-        case 'Oak Avenue':
-            // Find the property
-            const property = properties.find(p => p.name === activeTab);
-            if (!property) return <Text>Property not found</Text>;
-            
-            // Get the metrics for this property
-            const propertyMetricsData = propertyMetrics[activeTab]?.[selectedPeriod];
-            
-            // If we don't have the metrics yet, show loading
-            if (loading.metrics || !propertyMetricsData) {
-              return (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="large" color="#007AFF" />
-                  <Text style={styles.loadingText}>Loading property data...</Text>
-                </View>
-              );
-            }
-            
-            // Filter out ROI from metrics
-            const filteredMetrics = Object.entries(propertyMetricsData)
-              .filter(([key]) => key !== 'roi' && !['id', 'property_id', 'date', 'created_at', 'period'].includes(key));
-            
-            return (
-                <View style={styles.tabContent}>
-                    <View style={styles.propertyMetricsContainer}>
-                        <View style={styles.periodSelector}>
-                            <TouchableOpacity 
-                                style={[styles.periodButton, selectedPeriod === 'Monthly' && styles.periodButtonActive]}
-                                onPress={() => setSelectedPeriod('Monthly')}
-                            >
-                                <Text style={[styles.periodButtonText, selectedPeriod === 'Monthly' && styles.periodButtonTextActive]}>
-                                    Monthly
-                                </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity 
-                                style={[styles.periodButton, selectedPeriod === 'Quarterly' && styles.periodButtonActive]}
-                                onPress={() => setSelectedPeriod('Quarterly')}
-                            >
-                                <Text style={[styles.periodButtonText, selectedPeriod === 'Quarterly' && styles.periodButtonTextActive]}>
-                                    Quarterly
-                                </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity 
-                                style={[styles.periodButton, selectedPeriod === 'Annual' && styles.periodButtonActive]}
-                                onPress={() => setSelectedPeriod('Annual')}
-                            >
-                                <Text style={[styles.periodButtonText, selectedPeriod === 'Annual' && styles.periodButtonTextActive]}>
-                                    Annual
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        <View style={styles.metricsGrid}>
-                            {filteredMetrics.map(([key, value]) => (
-                                <TouchableOpacity
-                                    key={key}
-                                    style={styles.metricCard}
-                                    onPress={() => {
-                                        setTooltip({
-                                            title: formatMetricName(key),
-                                            description: METRICS_DATA[key]?.description || ""
-                                        });
-                                    }}
-                                >
-                                    <View style={styles.metricIconRow}>
-                                        <Text style={styles.metricLabel}>
-                                            {formatMetricName(key)}
-                                        </Text>
-                                        <TouchableOpacity
-                                            onPress={() => {
-                                                setTooltip({
-                                                    title: formatMetricName(key),
-                                                    description: METRICS_DATA[key]?.description || ""
-                                                });
-                                            }}
-                                        >
-                                            <Ionicons name="information-circle-outline" size={16} color="#666" />
-                                        </TouchableOpacity>
-                                    </View>
-                                    <Text style={styles.metricValue}>
-                                      {formatMetricValue(value, key)}
-                                    </Text>
-                                    {value.change && (
-                                      <Text style={[
-                                          styles.metricChange,
-                                          value.change.startsWith('+') ? styles.positiveChange : styles.negativeChange
-                                      ]}>
-                                          {value.change}
-                                      </Text>
-                                    )}
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    </View>
-                </View>
-            );
-        default:
-            return null;
+                    <Text style={styles.metricValue}>
+                      {formatMetricValue(value, key)}
+                    </Text>
+                    {value.change && (
+                      <Text style={[
+                        styles.metricChange,
+                        value.change.startsWith('+') ? styles.positiveChange : styles.negativeChange
+                      ]}>
+                        {value.change}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </View>
+        );
     }
   };
   
@@ -510,14 +424,14 @@ export default function DetailedAnalyticsScreen() {
               Overview
             </Text>
           </TouchableOpacity>
-          {properties.map(property => (
+          {properties.map((property, index) => (
             <TouchableOpacity
-              key={property.id}
-              style={[styles.tab, activeTab === property.name && styles.activeTab]}
-              onPress={() => setActiveTab(property.name)}
+              key={property.house_id || property.id || index}
+              style={[styles.tab, activeTab === getPropertyName(property, index) && styles.activeTab]}
+              onPress={() => setActiveTab(getPropertyName(property, index))}
             >
-              <Text style={[styles.tabText, activeTab === property.name && styles.activeTabText]}>
-                {property.name}
+              <Text style={[styles.tabText, activeTab === getPropertyName(property, index) && styles.activeTabText]}>
+                {getPropertyName(property, index)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -926,6 +840,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 20,
+  },
+  overviewContainer: {
+    flex: 1,
     paddingHorizontal: 16,
     paddingTop: 20,
   },

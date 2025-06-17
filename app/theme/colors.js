@@ -32,4 +32,7 @@ export const colors = {
   priorityLow: '#4CAF50',
   priorityMedium: '#FFC107',
   priorityHigh: '#F44336',
-}; 
+};
+
+// Default export
+export default colors; 
