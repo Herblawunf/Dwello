@@ -357,6 +357,7 @@ export default function ChatWindow() {
   const [messages, setMessages] = useState([]);
   const [group, setGroup] = useState(null);
   const flatListRef = useRef(null);
+  const channelRef = useRef(null);
   const { state: authState } = useContext(AuthContext);
   const userId = authState.userId;
   const [selectedImage, setSelectedImage] = useState(null);
@@ -367,50 +368,74 @@ export default function ChatWindow() {
   // Add real-time subscription
   useEffect(() => {
     if (!id) return;
-
-    const channel = supabase
-      .channel(`chat-${id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "messages",
-          filter: `group_id=eq.${id}`,
-        },
-        async (payload) => {
-          console.log("Real-time update:", payload);
-
-          if (payload.eventType === "INSERT") {
-            // Fetch user information for the new message
-            const { data: userData, error: userError } = await supabase
-              .from("users")
-              .select("first_name, last_name")
-              .eq("id", payload.new.sender)
-              .single();
-
-            const newMessage = {
-              ...payload.new,
-              sender_name: userData
-                ? `${userData.first_name} ${userData.last_name}`.trim()
-                : "Unknown User",
-            };
-
-            setMessages((prevMessages) => [newMessage, ...prevMessages]);
-          } else if (payload.eventType === "UPDATE") {
-            setMessages((prevMessages) =>
-              prevMessages.map((msg) =>
-                msg.message_id === payload.new.message_id ? payload.new : msg
-              )
-            );
-          }
+    const setupSubscription = async () => {
+      try {
+        // Clean up any existing subscription
+        if (channelRef.current) {
+          await supabase.removeChannel(channelRef.current);
+          channelRef.current = null;
         }
-      )
-      .subscribe();
+
+        // Create new channel
+        const channel = supabase
+          .channel(`chat-${id}`)
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'messages',
+              filter: `group_id=eq.${id}`
+            },
+            async (payload) => {
+              console.log('Real-time update:', payload);
+              
+              if (payload.eventType === 'INSERT') {
+                // Fetch user information for the new message
+                const { data: userData, error: userError } = await supabase
+                  .from('users')
+                  .select('first_name, last_name')
+                  .eq('id', payload.new.sender)
+                  .single();
+
+                const newMessage = {
+                  ...payload.new,
+                  sender_name: userData ? `${userData.first_name} ${userData.last_name}`.trim() : 'Unknown User'
+                };
+
+                setMessages(prevMessages => [newMessage, ...prevMessages]);
+              } else if (payload.eventType === 'UPDATE') {
+                setMessages(prevMessages => 
+                  prevMessages.map(msg => 
+                    msg.message_id === payload.new.message_id ? payload.new : msg
+                  )
+                );
+              }
+            }
+          );
+
+        // Store channel reference
+        channelRef.current = channel;
+      } catch (error) {
+        console.error('Error setting up subscription:', error);
+      }
+    };
+
+    setupSubscription();
 
     // Cleanup subscription on unmount
     return () => {
-      supabase.removeChannel(channel);
+      const cleanup = async () => {
+        try {
+          if (channelRef.current) {
+            await supabase.removeChannel(channelRef.current);
+            channelRef.current = null;
+          }
+        } catch (error) {
+          console.error('Error cleaning up subscription:', error);
+        }
+      };
+      cleanup();
     };
   }, [id]);
 
