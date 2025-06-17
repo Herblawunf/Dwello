@@ -14,6 +14,7 @@ import { Context as AuthContext } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
+import { useFocusEffect } from "@react-navigation/native";
 
 const GroupChatItem = ({ group, onPress }) => {
   const theme = useTheme();
@@ -136,11 +137,38 @@ export default function ChatScreen() {
           return null;
         }
 
+        // Get unread message count
+        const { data: unreadMessages, error: unreadError } = await supabase
+          .from("messages")
+          .select("message_id")
+          .eq("group_id", chat.group_id)
+          .not("sender", "eq", userId);
+
+        if (unreadError) {
+          console.error("Error fetching unread messages:", unreadError);
+          return null;
+        }
+
+        // Get read messages for this user
+        const { data: readMessages, error: readError } = await supabase
+          .from("read_message")
+          .select("message_id")
+          .eq("user_id", userId)
+          .in("message_id", unreadMessages.map(msg => msg.message_id));
+
+        if (readError) {
+          console.error("Error fetching read messages:", readError);
+          return null;
+        }
+
+        const readMessageIds = new Set(readMessages.map(msg => msg.message_id));
+        const unreadCount = unreadMessages.filter(msg => !readMessageIds.has(msg.message_id)).length;
+
         return {
           group_id: chat.group_id,
           name: chat.houses?.street_address || "Property Chat",
           lastMessage: messages?.[0] || null,
-          unreadCount: 0,
+          unreadCount,
           request_id: chat.request_id,
           tenants_only: chat.tenants_only,
           house_id: chat.house_id
@@ -160,10 +188,15 @@ export default function ChatScreen() {
     }
   }, [userId]);
 
+  // Refresh chats when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchChats();
+    }, [fetchChats])
+  );
+
   // Add cleanup for any subscriptions
   React.useEffect(() => {
-    fetchChats();
-    
     // Set up real-time subscription for new messages
     const subscription = supabase
       .channel('public:messages')

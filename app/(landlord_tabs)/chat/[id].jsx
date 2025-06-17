@@ -161,12 +161,61 @@ export default function ChatWindow() {
   const theme = useTheme();
   const router = useRouter();
 
+  const markMessagesAsRead = useCallback(async () => {
+    if (!id || !userId) return;
+
+    try {
+      // Get all unread messages in this chat
+      const { data: unreadMessages, error: unreadError } = await supabase
+        .from('messages')
+        .select('message_id')
+        .eq('group_id', id)
+        .not('sender', 'eq', userId);
+
+      if (unreadError) throw unreadError;
+      if (!unreadMessages?.length) return;
+
+      // Get already read messages
+      const { data: readMessages, error: readError } = await supabase
+        .from('read_message')
+        .select('message_id')
+        .eq('user_id', userId)
+        .in('message_id', unreadMessages.map(msg => msg.message_id));
+
+      if (readError) throw readError;
+
+      const readMessageIds = new Set(readMessages.map(msg => msg.message_id));
+      const messagesToMarkAsRead = unreadMessages
+        .filter(msg => !readMessageIds.has(msg.message_id))
+        .map(msg => ({
+          message_id: msg.message_id,
+          user_id: userId
+        }));
+
+      if (messagesToMarkAsRead.length > 0) {
+        const { error: insertError } = await supabase
+          .from('read_message')
+          .insert(messagesToMarkAsRead);
+
+        if (insertError) throw insertError;
+
+        // Refresh the chat list screen to update unread counts
+        router.setParams({ refresh: Date.now().toString() });
+      }
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+    }
+  }, [id, userId, router]);
+
   // Add real-time subscription
   useEffect(() => {
     if (!id) return;
 
     const setupSubscription = async () => {
       try {
+        // Mark existing messages as read when opening chat
+        await markMessagesAsRead();
+
         // Clean up any existing subscription
         if (channelRef.current) {
           await supabase.removeChannel(channelRef.current);
