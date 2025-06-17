@@ -21,6 +21,7 @@ import * as ImagePicker from "expo-image-picker";
 import { useTheme } from "@/context/ThemeContext";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
+import DateTimePickerModal from "react-native-modal-datetime-picker";
 
 const MessageBubble = ({ message, isOwnMessage }) => {
   const theme = useTheme();
@@ -198,31 +199,113 @@ const InputArea = ({
   isUploading,
 }) => {
   const [message, setMessage] = useState("");
+  const [isPollMode, setIsPollMode] = useState(false);
+  const [isDatePickerVisible, setDatePickerVisible] = useState(false);
+  const [selectedDates, setSelectedDates] = useState([]);
   const theme = useTheme();
 
   const handleSend = () => {
-    if (message.trim() || selectedImage) {
-      onSend(message, selectedImage);
+    if (message.trim() || selectedImage || (isPollMode && selectedDates.length)) {
+      if (isPollMode) {
+        onSend(message, null, selectedDates);
+        setSelectedDates([]);
+        setIsPollMode(false);
+      } else {
+        onSend(message, selectedImage);
+      }
       setMessage("");
     }
+  };
+
+  const handleDateConfirm = (date) => {
+    if (selectedDates.length < 3) {
+      setSelectedDates([...selectedDates, date]);
+    }
+    setDatePickerVisible(false);
   };
 
   return (
     <ThemedView
       style={[styles.inputContainer, { borderTopColor: theme.colors.border }]}
     >
-      <TouchableOpacity onPress={onAttach} style={styles.attachButton}>
-        <Ionicons name="attach" size={24} color={theme.colors.placeholder} />
-      </TouchableOpacity>
+      {!isPollMode ? (
+        <>
+          <TouchableOpacity onPress={onAttach} style={styles.attachButton}>
+            <Ionicons name="attach" size={24} color={theme.colors.placeholder} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setIsPollMode(true)}
+            style={styles.attachButton}
+          >
+            <Ionicons
+              name="calendar-outline"
+              size={24}
+              color={theme.colors.placeholder}
+            />
+          </TouchableOpacity>
+        </>
+      ) : (
+        <View style={styles.pollCreationContainer}>
+          <ThemedText>Selected Dates:</ThemedText>
+          {selectedDates.map((date, index) => (
+            <View key={index} style={styles.selectedDateItem}>
+              <ThemedText>{date.toLocaleDateString()}</ThemedText>
+              <TouchableOpacity
+                onPress={() =>
+                  setSelectedDates(selectedDates.filter((_, i) => i !== index))
+                }
+              >
+                <Ionicons name="close" size={20} color={theme.colors.error} />
+              </TouchableOpacity>
+            </View>
+          ))}
+          {selectedDates.length < 3 && (
+            <TouchableOpacity
+              style={styles.addDateButton}
+              onPress={() => setDatePickerVisible(true)}
+            >
+              <Ionicons
+                name="add-circle-outline"
+                size={24}
+                color={theme.colors.primary}
+              />
+              <ThemedText style={{ color: theme.colors.primary }}>
+                Add Date
+              </ThemedText>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            style={styles.cancelPollButton}
+            onPress={() => {
+              setIsPollMode(false);
+              setSelectedDates([]);
+            }}
+          >
+            <ThemedText style={{ color: theme.colors.error }}>Cancel</ThemedText>
+          </TouchableOpacity>
+        </View>
+      )}
+
       <TextInput
         style={[styles.input, { color: theme.colors.onBackground }]}
         value={message}
         onChangeText={setMessage}
-        placeholder="Type a message..."
+        placeholder={
+          isPollMode ? "Add a message for your poll..." : "Type a message..."
+        }
         placeholderTextColor={theme.colors.placeholder}
         multiline
         maxLength={1000}
       />
+
+      <DateTimePickerModal
+        isVisible={isDatePickerVisible}
+        mode="date"
+        onConfirm={handleDateConfirm}
+        onCancel={() => setDatePickerVisible(false)}
+        minimumDate={new Date()}
+      />
+
       {selectedImage && (
         <View style={styles.imagePreviewContainer}>
           <Image source={{ uri: selectedImage }} style={styles.imagePreview} />
@@ -238,9 +321,17 @@ const InputArea = ({
         onPress={handleSend}
         style={[
           styles.sendButton,
-          !message.trim() && !selectedImage && styles.sendButtonDisabled,
+          !message.trim() &&
+            !selectedImage &&
+            (!isPollMode || !selectedDates.length) &&
+            styles.sendButtonDisabled,
         ]}
-        disabled={(!message.trim() && !selectedImage) || isUploading}
+        disabled={
+          (!message.trim() &&
+            !selectedImage &&
+            (!isPollMode || !selectedDates.length)) ||
+          isUploading
+        }
       >
         {isUploading ? (
           <ActivityIndicator size="small" color={theme.colors.primary} />
@@ -249,7 +340,7 @@ const InputArea = ({
             name="send"
             size={24}
             color={
-              message.trim() || selectedImage
+              message.trim() || selectedImage || (isPollMode && selectedDates.length)
                 ? theme.colors.primary
                 : theme.colors.placeholder
             }
@@ -496,7 +587,7 @@ export default function ChatWindow() {
     }
   };
 
-  const handleSend = async (content, imageUri) => {
+  const handleSend = async (content, imageUri, pollDates = null) => {
     if (!id) return;
 
     try {
@@ -505,13 +596,21 @@ export default function ChatWindow() {
         attachment = await uploadImage({ uri: imageUri });
       }
 
-      const { error } = await supabase.from("messages").insert({
+      const messageData = {
         group_id: id,
         sender: userId,
         content: content,
         attachment: attachment,
         sent: new Date().toISOString(),
-      });
+      };
+
+      if (pollDates) {
+        messageData.poll_option_1 = pollDates[0].toISOString();
+        messageData.poll_option_2 = pollDates[1]?.toISOString();
+        messageData.poll_option_3 = pollDates[2]?.toISOString();
+      }
+
+      const { error } = await supabase.from("messages").insert(messageData);
 
       if (error) throw error;
 
@@ -720,5 +819,29 @@ const styles = StyleSheet.create({
   pollOptionSelected: {
     borderWidth: 2,
     borderColor: "#4CAF50",
+  },
+  pollCreationContainer: {
+    flex: 1,
+    padding: 8,
+  },
+  selectedDateItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 8,
+    marginVertical: 4,
+    backgroundColor: "rgba(0,0,0,0.05)",
+    borderRadius: 4,
+  },
+  addDateButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 8,
+    marginTop: 8,
+  },
+  cancelPollButton: {
+    padding: 8,
+    alignItems: "center",
+    marginTop: 8,
   },
 });
