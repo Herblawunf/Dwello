@@ -760,6 +760,8 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.1)",
   },
   pollOptionText: {
     fontSize: 16,

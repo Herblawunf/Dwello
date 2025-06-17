@@ -86,6 +86,7 @@ const MessageBubble = ({ message, isOwnMessage }) => {
                       ? "rgba(255,255,255,0.2)"
                       : theme.colors.border,
                   },
+                  message.poll_vote === index + 1 && styles.pollOptionSelected,
                 ]}
               >
                 <ThemedText
@@ -691,25 +692,33 @@ const styles = StyleSheet.create({
   },
   pollContainer: {
     marginTop: 8,
-    marginBottom: 4,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0, 0, 0, 0.1)",
+    paddingTop: 8,
   },
   pollTitle: {
     fontSize: 14,
-    marginBottom: 8,
-    fontWeight: "600",
+    fontWeight: "500",
+    marginBottom: 4,
   },
   pollOption: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 8,
+    justifyContent: "space-between",
+    padding: 12,
     borderRadius: 8,
-    marginBottom: 4,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.1)",
   },
   pollOptionText: {
-    flex: 1,
-    fontSize: 14,
+    fontSize: 16,
   },
   voteIndicator: {
     marginLeft: 8,
+  },
+  pollOptionSelected: {
+    borderWidth: 2,
+    borderColor: "#4CAF50",
   },
 });
