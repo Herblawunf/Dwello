@@ -562,12 +562,37 @@ export default function ChatWindow() {
 
   const handlePollVote = async (messageId, voteIndex) => {
     try {
-      const { error } = await supabase
+      // First, get the message to access the poll option date
+      const { data: messageData, error: messageError } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("message_id", messageId)
+        .single();
+
+      if (messageError) throw messageError;
+
+      // Get the selected date based on the vote index
+      const selectedDate = messageData[`poll_option_${voteIndex}`];
+
+      // Update the message with the vote
+      const { error: voteError } = await supabase
         .from("messages")
         .update({ poll_vote: voteIndex })
         .eq("message_id", messageId);
 
-      if (error) throw error;
+      if (voteError) throw voteError;
+
+      // Create a new request_event
+      const { error: eventError } = await supabase
+        .from("request_events")
+        .insert({
+          date: selectedDate,
+          title: "Maintenance visit",
+          description: "",
+          request_id: id, // using the group_id as request_id
+        });
+
+      if (eventError) throw eventError;
     } catch (error) {
       console.error("Error updating poll vote:", error);
       Alert.alert("Error", "Failed to submit vote");
