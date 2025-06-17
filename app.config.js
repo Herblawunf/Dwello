@@ -29,6 +29,9 @@ export default {
     extra: {
       supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL || "https://gjfyiqdpysudxfiodvbf.supabase.co",
       supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqZnlpcWRweXN1ZHhmaW9kdmJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg1Mzk3MDMsImV4cCI6MjA2NDExNTcwM30.JNfhPx6CZUsuOuDBJ6o-y504VD2CZwt9Ij8oTeK41WE"
-    }
+    },
+    "plugins": [
+      "expo-web-browser"
+    ]
   }
 }; 

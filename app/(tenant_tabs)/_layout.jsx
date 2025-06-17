@@ -124,6 +124,14 @@ export default function TabLayout() {
           // headerShown: true, // Modals usually have headers
         }}
       />
+      {/* Add the documents screen as a modal */}
+      <Tabs.Screen
+        name="documents"
+        options={{
+          presentation: "modal",
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

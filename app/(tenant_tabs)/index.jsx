@@ -484,7 +484,7 @@ export default function HomeScreen() {
             </ThemedText>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.metricCard} onPress={handleRentInfoPress}>
+          <TouchableOpacity style={styles.metricCard} onPress={() => router.push("/(tenant_tabs)/documents")}>
             <View style={[styles.metricIconContainer, { backgroundColor: theme.colors.info + '15' }]}>
               <Ionicons name="document-text-outline" size={24} color={theme.colors.info} />
             </View>
