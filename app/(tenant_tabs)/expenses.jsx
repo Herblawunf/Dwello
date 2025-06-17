@@ -655,7 +655,7 @@ const ExpensesScreen = () => {
         >
           £{item.totalAmount.toFixed(2)}
         </Text>
-        {item.paidByCurrentUser && (
+        {item.paidByCurrentUser && item.deletable !== false && (
           <TouchableOpacity
             style={styles.deleteButton}
             onPress={() => handleDeletePress(item)}
