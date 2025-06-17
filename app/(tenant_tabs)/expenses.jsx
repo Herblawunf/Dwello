@@ -459,7 +459,7 @@ const ExpensesScreen = () => {
           localUserNamesMap[userId] = authUserName;
         } else {
           const { data: currentUserProfile, error: profileError } = await supabase
-            .from("profiles")
+            .from("users")
             .select("first_name")
             .eq("id", userId)
             .single();
