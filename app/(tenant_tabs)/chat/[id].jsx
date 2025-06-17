@@ -286,40 +286,43 @@ export default function ChatWindow() {
     try {
       // Get all unread messages in this chat
       const { data: unreadMessages, error: unreadError } = await supabase
-        .from('messages')
-        .select('message_id')
-        .eq('group_id', id)
-        .not('sender', 'eq', userId);
+        .from("messages")
+        .select("message_id")
+        .eq("group_id", id)
+        .not("sender", "eq", userId);
 
       if (unreadError) throw unreadError;
       if (!unreadMessages?.length) return;
 
       // Get already read messages
       const { data: readMessages, error: readError } = await supabase
-        .from('read_message')
-        .select('message_id')
-        .eq('user_id', userId)
-        .in('message_id', unreadMessages.map(msg => msg.message_id));
+        .from("read_message")
+        .select("message_id")
+        .eq("user_id", userId)
+        .in(
+          "message_id",
+          unreadMessages.map((msg) => msg.message_id)
+        );
 
       if (readError) throw readError;
 
-      const readMessageIds = new Set(readMessages.map(msg => msg.message_id));
+      const readMessageIds = new Set(readMessages.map((msg) => msg.message_id));
       const messagesToMarkAsRead = unreadMessages
-        .filter(msg => !readMessageIds.has(msg.message_id))
-        .map(msg => ({
+        .filter((msg) => !readMessageIds.has(msg.message_id))
+        .map((msg) => ({
           message_id: msg.message_id,
-          user_id: userId
+          user_id: userId,
         }));
 
       if (messagesToMarkAsRead.length > 0) {
         const { error: insertError } = await supabase
-          .from('read_message')
+          .from("read_message")
           .insert(messagesToMarkAsRead);
 
         if (insertError) throw insertError;
       }
     } catch (error) {
-      console.error('Error marking messages as read:', error);
+      console.error("Error marking messages as read:", error);
     }
   }, [id, userId]);
 
@@ -342,40 +345,56 @@ export default function ChatWindow() {
         const channel = supabase
           .channel(`chat-${id}`)
           .on(
-            'postgres_changes',
+            "postgres_changes",
             {
-              event: '*',
-              schema: 'public',
-              table: 'messages',
-              filter: `group_id=eq.${id}`
+              event: "*",
+              schema: "public",
+              table: "messages",
+              filter: `group_id=eq.${id}`,
             },
             async (payload) => {
-              console.log('Real-time update:', payload);
-              
-              if (payload.eventType === 'INSERT') {
+              console.log("Real-time update:", payload);
+
+              if (payload.eventType === "INSERT") {
                 // Fetch user information for the new message
                 const { data: userData, error: userError } = await supabase
-                  .from('users')
-                  .select('first_name, last_name')
-                  .eq('id', payload.new.sender)
+                  .from("users")
+                  .select("first_name, last_name")
+                  .eq("id", payload.new.sender)
                   .single();
 
                 const newMessage = {
                   ...payload.new,
-                  sender_name: userData ? `${userData.first_name} ${userData.last_name}`.trim() : 'Unknown User'
+                  sender_name: userData
+                    ? `${userData.first_name} ${userData.last_name}`.trim()
+                    : "Unknown User",
                 };
 
-                setMessages(prev => [newMessage, ...prev]);
+                setMessages((prev) => [newMessage, ...prev]);
 
                 // Mark new message as read if it's not from the current user
                 if (payload.new.sender !== userId) {
-                  await supabase
-                    .from('read_message')
-                    .insert({
-                      message_id: payload.new.message_id,
-                      user_id: userId
-                    });
+                  await supabase.from("read_message").insert({
+                    message_id: payload.new.message_id,
+                    user_id: userId,
+                  });
                 }
+              } else if (payload.eventType === "UPDATE") {
+                // Handle message updates (e.g., poll votes)
+                setMessages((prev) => {
+                  const updatedMessages = [...prev];
+                  const messageIndex = updatedMessages.findIndex(
+                    (msg) => msg.message_id === payload.new.message_id
+                  );
+                  if (messageIndex !== -1) {
+                    // Preserve sender_name while updating other fields
+                    updatedMessages[messageIndex] = {
+                      ...payload.new,
+                      sender_name: updatedMessages[messageIndex].sender_name,
+                    };
+                  }
+                  return updatedMessages;
+                });
               }
             }
           )
@@ -383,7 +402,7 @@ export default function ChatWindow() {
 
         channelRef.current = channel;
       } catch (error) {
-        console.error('Error setting up subscription:', error);
+        console.error("Error setting up subscription:", error);
       }
     };
 
