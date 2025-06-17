@@ -643,7 +643,8 @@ export default function ChatWindow() {
         .insert({
           date: selectedDate,
           title: "Maintenance visit",
-          description: "",
+          description: "The boiler isn't working",
+          category: "Heating/Cooling issue",
           request_id: id, // using the group_id as request_id
         });
 
