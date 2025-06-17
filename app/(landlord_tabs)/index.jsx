@@ -183,7 +183,10 @@ function LandlordDashboardContent() {
   const occupancyRate = overviewMetrics?.occupancyRate?.value || "0";
   
   // Calculate upcoming rent payments (sample data)
-  const upcomingPayments = [
+  const upcomingPayments = houses && houses.length > 0 ? [
+    { property: houses[0].name, amount: 1200, dueDate: "25 Jun 2024", status: "pending" },
+    ...(houses.length > 1 ? [{ property: houses[1].name, amount: 1500, dueDate: "28 Jun 2024", status: "pending" }] : [])
+  ] : [
     { property: "Bridgewater Road", amount: 1200, dueDate: "25 Jun 2024", status: "pending" },
     { property: "Oak Avenue", amount: 1500, dueDate: "28 Jun 2024", status: "pending" },
   ];

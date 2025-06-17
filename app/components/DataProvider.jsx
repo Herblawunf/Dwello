@@ -36,7 +36,7 @@ export default function DataProvider({ children }) {
     end: '2024-06-30'
   });
 
-  // Fetch houses for the current landlord
+  // Fetch houses with proper names
   useEffect(() => {
     async function fetchHouses() {
       if (!userId) return;
@@ -44,14 +44,22 @@ export default function DataProvider({ children }) {
       try {
         const { data, error } = await supabase
           .from('houses')
-          .select('*')
+          .select('house_id, street_address, postcode, code, image')
           .eq('landlord_id', userId)
           .order('code');
         
         if (error) throw error;
         
-        console.log("Fetched houses:", data);
-        setHouses(data || []);
+        // Transform the data to include a proper name field
+        const housesWithNames = (data || []).map(house => ({
+          ...house,
+          name: house.street_address || `Property ${house.code}`,
+          // Keep house_id for consistency
+          house_id: house.house_id
+        }));
+        
+        console.log("Fetched houses:", housesWithNames);
+        setHouses(housesWithNames);
       } catch (err) {
         console.error("Error fetching houses:", err);
         setError("Failed to load houses");
@@ -305,25 +313,44 @@ export default function DataProvider({ children }) {
         .select('*')
         .eq('house_id', houseId)
         .gte('record_date', startDate.toISOString().split('T')[0])
-        .order('record_date', { ascending: false })
-        .limit(1);
+        .order('record_date', { ascending: true });
 
       if (error) throw error;
       if (!data || data.length === 0) return null;
 
-      const record = data[0];
+      // Aggregate data for the time period
+      let processedData = data;
+      if (timeFrame === 'Quarterly' || timeFrame === 'Annual') {
+        processedData = aggregateDataByPeriod(data, timeFrame);
+      }
+
+      // Calculate totals and averages
+      const totalGrossIncome = processedData.reduce((sum, record) => sum + parseFloat(record.gross_income || 0), 0);
+      const totalExpenses = processedData.reduce((sum, record) => sum + parseFloat(record.total_expenses || 0), 0);
+      const totalNetProfit = processedData.reduce((sum, record) => sum + parseFloat(record.net_profit || 0), 0);
+      const totalMaintenanceCosts = processedData.reduce((sum, record) => sum + parseFloat(record.maintenance_costs || 0), 0);
+      
+      // Calculate averages for percentage metrics
+      const avgOccupancyRate = processedData.reduce((sum, record) => sum + parseFloat(record.occupancy_rate || 0), 0) / processedData.length;
+      const avgTenantSatisfaction = processedData.reduce((sum, record) => sum + parseFloat(record.tenant_satisfaction || 0), 0) / processedData.length;
+      const avgYieldRate = processedData.reduce((sum, record) => sum + parseFloat(record.yield_rate || 0), 0) / processedData.length;
+      const avgPropertyValue = processedData.reduce((sum, record) => sum + parseFloat(record.property_value || 0), 0) / processedData.length;
+      const avgVacancyRate = processedData.reduce((sum, record) => sum + parseFloat(record.vacancy_rate || 0), 0) / processedData.length;
+      const avgTenancyLength = processedData.reduce((sum, record) => sum + parseFloat(record.avg_tenancy_length || 0), 0) / processedData.length;
+      const avgMaintenanceCostRatio = processedData.reduce((sum, record) => sum + parseFloat(record.maintenance_cost_ratio || 0), 0) / processedData.length;
+
       return {
-        grossIncome: { value: parseFloat(record.gross_income || 0), change: '+2.1%' },
-        totalExpenses: { value: parseFloat(record.total_expenses || 0), change: '+1.5%' },
-        netProfit: { value: parseFloat(record.net_profit || 0), change: '+2.8%' },
-        maintenanceCosts: { value: parseFloat(record.maintenance_costs || 0), change: '-1.2%' },
-        occupancyRate: { value: parseFloat(record.occupancy_rate || 0), change: '+0.6%' },
-        tenantSatisfaction: { value: parseFloat(record.tenant_satisfaction || 0), change: '+1.0%' },
-        propertyValue: { value: parseFloat(record.property_value || 0), change: '+2.5%' },
-        yieldRate: { value: parseFloat(record.yield_rate || 0), change: '+0.4%' },
-        vacancyRate: { value: parseFloat(record.vacancy_rate || 0), change: '-0.3%' },
-        avgTenancyLength: { value: parseFloat(record.avg_tenancy_length || 0), change: '+0.8%' },
-        maintenanceCostRatio: { value: parseFloat(record.maintenance_cost_ratio || 0), change: '-0.5%' }
+        grossIncome: { value: totalGrossIncome, change: '+2.1%' },
+        totalExpenses: { value: totalExpenses, change: '+1.5%' },
+        netProfit: { value: totalNetProfit, change: '+2.8%' },
+        maintenanceCosts: { value: totalMaintenanceCosts, change: '-1.2%' },
+        occupancyRate: { value: avgOccupancyRate, change: '+0.6%' },
+        tenantSatisfaction: { value: avgTenantSatisfaction, change: '+1.0%' },
+        propertyValue: { value: avgPropertyValue, change: '+2.5%' },
+        yieldRate: { value: avgYieldRate, change: '+0.4%' },
+        vacancyRate: { value: avgVacancyRate, change: '-0.3%' },
+        avgTenancyLength: { value: avgTenancyLength, change: '+0.8%' },
+        maintenanceCostRatio: { value: avgMaintenanceCostRatio, change: '-0.5%' }
       };
     } catch (error) {
       console.error(`Error getting metrics for house ${houseId}:`, error);

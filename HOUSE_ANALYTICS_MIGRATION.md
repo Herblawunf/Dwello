@@ -18,12 +18,11 @@ create table public.houses (
 );
 ```
 
-### House Analytics Table
+### House Analytics Table (Updated)
 ```sql
 create table public.house_analytics (
   id serial not null,
   house_id character varying(255) not null,
-  house_name character varying(255) not null,
   record_date date not null,
   month integer not null,
   year integer not null,
@@ -44,6 +43,8 @@ create table public.house_analytics (
 );
 ```
 
+**Note:** The `house_name` column has been removed from `house_analytics`. House names are now retrieved from the `houses` table using the `house_id` foreign key relationship.
+
 ## Key Changes Made
 
 ### 1. DataProvider.jsx
@@ -55,14 +56,16 @@ create table public.house_analytics (
   - Added user authentication context to filter by `landlord_id`
   - Implemented direct data aggregation from `house_analytics` table
   - Added helper functions for data processing and formatting
+  - **NEW**: House names are now fetched from `houses` table using `street_address` or `Property ${code}` as fallback
 
 ### 2. Metric Details (metric_details.jsx)
-- **Before**: Queried `property_analytics` table
-- **After**: Queries `house_analytics` table
+- **Before**: Queried `property_analytics` table and used `house_name` column
+- **After**: Queries `house_analytics` table and fetches house names from `houses` table
 - **Changes**:
   - Updated table name from `property_analytics` to `house_analytics`
   - Updated field references from `property_id` to `house_id`
-  - Updated field references from `property_name` to `house_name`
+  - **NEW**: Added house name mapping by fetching from `houses` table
+  - **NEW**: Removed dependency on `house_name` column in `house_analytics`
 
 ### 3. Insights (insights.jsx)
 - **Before**: Used `properties` and `propertyMetrics`
@@ -71,13 +74,22 @@ create table public.house_analytics (
   - Updated state variable names and references
   - Updated property selection logic to use `house_id`
   - Maintained backward compatibility with `properties` alias
+  - **NEW**: Property tabs now display proper house names from `houses` table
 
 ### 4. Dashboard (index.jsx)
-- **Before**: Used `properties` array
-- **After**: Uses `houses` array
+- **Before**: Used `properties` array with hardcoded property names
+- **After**: Uses `houses` array with dynamic house names
 - **Changes**:
   - Updated property count display to use `houses.length`
+  - **NEW**: Upcoming payments now use real house names from `houses` data
   - Maintained backward compatibility
+
+### 5. ExpenseModal.jsx
+- **Before**: Used hardcoded property names
+- **After**: Uses house names from `houses` table
+- **Changes**:
+  - **NEW**: Property selection now shows proper house names
+  - **NEW**: Expense tracking uses `house_id` for proper data relationships
 
 ## Data Population
 
@@ -91,13 +103,29 @@ This script will:
 1. Create sample houses for a test landlord
 2. Generate 6 months of analytics data for each house
 3. Insert realistic financial and performance metrics
+4. **NEW**: No longer includes `house_name` in analytics records
+
+## Database Schema Update
+
+To remove the `house_name` column from existing `house_analytics` table:
+
+```bash
+# Run the SQL script
+psql -d your_database -f remove-house-name-column.sql
+```
+
+Or manually execute:
+```sql
+ALTER TABLE house_analytics DROP COLUMN house_name;
+```
 
 ## Migration Steps
 
 1. **Create the new tables** using the provided SQL schema
-2. **Run the population script** to add sample data
-3. **Update your environment** to ensure Supabase credentials are correct
-4. **Test the application** to ensure all features work with the new data structure
+2. **Remove house_name column** from existing `house_analytics` table (if it exists)
+3. **Run the population script** to add sample data
+4. **Update your environment** to ensure Supabase credentials are correct
+5. **Test the application** to ensure all features work with the new data structure
 
 ## Backward Compatibility
 
@@ -105,13 +133,14 @@ The refactored code maintains backward compatibility by:
 - Keeping `properties` as an alias for `houses`
 - Keeping `propertyMetrics` as an alias for `houseMetrics`
 - Maintaining the same data structure for components
+- **NEW**: Graceful fallback to `Property ${code}` if `street_address` is not available
 
 ## Field Mapping
 
 | Old Field | New Field | Notes |
 |-----------|-----------|-------|
 | `property_id` | `house_id` | UUID identifier |
-| `property_name` | `house_name` | Display name |
+| `property_name` | `houses.street_address` | Display name from houses table |
 | `gross_income` | `gross_income` | Same field |
 | `total_expenses` | `total_expenses` | Same field |
 | `net_profit` | `net_profit` | Same field |
@@ -125,15 +154,23 @@ The refactored code maintains backward compatibility by:
 | N/A | `maintenance_cost_ratio` | New field |
 | N/A | `rent_to_value_ratio` | New field |
 
+## House Name Resolution
+
+House names are now resolved through the following hierarchy:
+1. **Primary**: `houses.street_address` - The actual street address
+2. **Fallback**: `Property ${houses.code}` - Generated property code
+3. **Emergency**: `Property ${house_id.slice(0, 8)}` - First 8 characters of house ID
+
 ## Testing
 
 After migration, test the following features:
-1. Dashboard overview metrics
-2. Property-specific insights
-3. Metric details pages
-4. Financial charts
+1. Dashboard overview metrics with proper house names
+2. Property-specific insights with correct house names
+3. Metric details pages with house name mapping
+4. Financial charts with proper labels
 5. Maintenance cost breakdowns
 6. Time period filtering (Monthly/Quarterly/Annual)
+7. Expense modal with proper house selection
 
 ## Troubleshooting
 
@@ -143,6 +180,7 @@ After migration, test the following features:
 2. **Authentication errors**: Check Supabase credentials in environment variables
 3. **Missing houses**: Verify the `houses` table has data for the current user
 4. **Analytics not loading**: Check that `house_analytics` table has records for the houses
+5. **House names not showing**: Verify `houses.street_address` is populated or check fallback logic
 
 ### Debug Commands
 
@@ -158,4 +196,10 @@ const { data: analytics } = await supabase
   .from('house_analytics')
   .select('*')
   .limit(5);
+
+// Check house name mapping
+const { data: houseNames } = await supabase
+  .from('houses')
+  .select('house_id, street_address, code')
+  .in('house_id', ['house_id_1', 'house_id_2']);
 ``` 

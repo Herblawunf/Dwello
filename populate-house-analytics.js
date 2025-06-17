@@ -59,57 +59,61 @@ async function populateTables() {
     const analyticsData = [];
 
     houses.forEach(house => {
-      // Generate 6 months of data for each house
-      for (let i = 0; i < 6; i++) {
+      // Insert analytics data for each house
+      for (let monthOffset = 0; monthOffset < 6; monthOffset++) {
         const date = new Date();
-        date.setMonth(date.getMonth() - i);
+        date.setMonth(date.getMonth() - monthOffset);
         
-        const month = date.getMonth() + 1;
+        const month = date.getMonth() + 1; // 1-12
         const year = date.getFullYear();
+        const recordDate = date.toISOString().split('T')[0];
         
-        // Generate realistic but varied data
-        const baseIncome = 1200 + (Math.random() * 400);
-        const baseExpenses = 500 + (Math.random() * 200);
-        const netProfit = baseIncome - baseExpenses;
-        const maintenanceCosts = 200 + (Math.random() * 150);
+        // Generate realistic data with some variation
+        const baseIncome = 1200 + (Math.random() * 300); // Different base income per house
+        const baseExpenses = 400 + (Math.random() * 100);
+        const maintenanceCosts = 150 + (Math.random() * 200);
+        const tenantSatisfaction = 85 + (Math.random() * 15);
+        const occupancyRate = 90 + (Math.random() * 10);
+        const propertyValue = 350000 + (Math.random() * 50000) + (Math.random() * 100000);
+        const yieldRate = 4.5 + (Math.random() * 3);
+        const vacancyRate = 5 + (Math.random() * 5);
+        const avgTenancyLength = 18 + (Math.random() * 12);
+        const maintenanceCostRatio = (maintenanceCosts / baseIncome) * 100;
+        const rentToValueRatio = (baseIncome * 12 / propertyValue) * 100;
         
-        analyticsData.push({
+        const analyticsRecord = {
           house_id: house.house_id,
-          house_name: house.street_address,
-          record_date: date.toISOString().split('T')[0],
+          record_date: recordDate,
           month: month,
           year: year,
-          gross_income: baseIncome,
-          total_expenses: baseExpenses,
-          net_profit: netProfit,
-          maintenance_costs: maintenanceCosts,
-          tenant_satisfaction: 85 + (Math.random() * 10),
-          occupancy_rate: 90 + (Math.random() * 8),
-          property_value: 350000 + (Math.random() * 50000),
-          yield_rate: 5 + (Math.random() * 2),
-          vacancy_rate: 5 + (Math.random() * 3),
-          avg_tenancy_length: 18 + (Math.random() * 6),
-          maintenance_cost_ratio: 15 + (Math.random() * 5),
-          rent_to_value_ratio: 4 + (Math.random() * 1)
-        });
+          gross_income: baseIncome + (Math.random() * 200 - 100),
+          total_expenses: baseExpenses + (Math.random() * 100 - 50),
+          net_profit: baseIncome - baseExpenses + (Math.random() * 150 - 75),
+          maintenance_costs: maintenanceCosts + (Math.random() * 50 - 25),
+          tenant_satisfaction: tenantSatisfaction,
+          occupancy_rate: occupancyRate,
+          property_value: propertyValue,
+          yield_rate: yieldRate,
+          vacancy_rate: vacancyRate,
+          avg_tenancy_length: avgTenancyLength,
+          maintenance_cost_ratio: maintenanceCostRatio,
+          rent_to_value_ratio: rentToValueRatio
+        };
+        
+        const { error: analyticsError } = await supabase
+          .from('house_analytics')
+          .insert(analyticsRecord);
+        
+        if (analyticsError) {
+          console.error(`Error inserting analytics for house ${house.house_id}:`, analyticsError);
+        } else {
+          console.log(`✅ Inserted analytics for ${house.street_address} - ${recordDate}`);
+        }
       }
     });
 
-    const { data: analytics, error: analyticsError } = await supabase
-      .from('house_analytics')
-      .insert(analyticsData)
-      .select();
-
-    if (analyticsError) {
-      console.error('Error creating analytics data:', analyticsError);
-      return;
-    }
-
-    console.log('Created analytics records:', analytics.length);
-    console.log('Sample analytics record:', analytics[0]);
-
     console.log('✅ Successfully populated tables!');
-    console.log(`Created ${houses.length} houses and ${analytics.length} analytics records`);
+    console.log(`Created ${houses.length} houses and analytics records for each house`);
 
   } catch (error) {
     console.error('Error populating tables:', error);

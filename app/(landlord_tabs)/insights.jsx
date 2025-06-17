@@ -63,6 +63,30 @@ export default function InsightsScreen() {
     setSelectedTimeFrame = () => {}
   } = dataContext || {};
 
+  // Debug: Log houses data to see what's available
+  useEffect(() => {
+    if (houses && houses.length > 0) {
+      console.log("Houses data in insights:", houses);
+      houses.forEach((house, index) => {
+        console.log(`House ${index}:`, {
+          house_id: house.house_id,
+          name: house.name,
+          street_address: house.street_address,
+          postcode: house.postcode,
+          code: house.code
+        });
+      });
+    }
+    
+    if (houseMetrics && Object.keys(houseMetrics).length > 0) {
+      console.log("House metrics data:", houseMetrics);
+    }
+    
+    if (overviewMetrics && Object.keys(overviewMetrics).length > 0) {
+      console.log("Overview metrics data:", overviewMetrics);
+    }
+  }, [houses, houseMetrics, overviewMetrics]);
+
   // Format currency values
   const formatCurrency = (value) => {
     if (value === undefined || value === null) return '£0';
@@ -122,9 +146,12 @@ export default function InsightsScreen() {
 
   // Update metrics when data changes or property selection changes
   useEffect(() => {
+    console.log("Updating metrics - selectedProperty:", selectedProperty, "selectedTimeFrame:", selectedTimeFrame);
+    
     // If overview tab is selected
     if (selectedProperty === null) {
       if (overviewMetrics && !loading.metrics) {
+        console.log("Updating overview metrics:", overviewMetrics);
         // Update basic metrics from API data
         setMetrics(prev => ({
           ...prev,
@@ -188,6 +215,8 @@ export default function InsightsScreen() {
     else if (selectedProperty && houseMetrics) {
       const houseId = selectedProperty.house_id || selectedProperty;
       const houseData = houseMetrics[houseId];
+      
+      console.log("Updating property metrics for houseId:", houseId, "houseData:", houseData);
       
       if (houseData) {
         // Update metrics with house-specific data
@@ -276,7 +305,7 @@ export default function InsightsScreen() {
         }
       }));
     }
-  }, [overviewMetrics, maintenanceCosts, loading, selectedProperty, houseMetrics]);
+  }, [overviewMetrics, maintenanceCosts, loading, selectedProperty, houseMetrics, selectedTimeFrame]);
 
   // Handle property selection
   const handlePropertySelect = (property) => {
@@ -290,9 +319,15 @@ export default function InsightsScreen() {
 
   // Handle metric card click
   const handleMetricClick = (metricKey, metricName) => {
+    const propertyName = selectedProperty ? getPropertyName(selectedProperty, 0) : 'Overview';
     router.push({
       pathname: "/(landlord_tabs)/metric_details",
-      params: { metricKey, metricName, propertyId: selectedProperty?.house_id }
+      params: { 
+        metricKey, 
+        metricName, 
+        propertyId: selectedProperty?.house_id,
+        propertyName: propertyName
+      }
     });
   };
 
@@ -311,6 +346,32 @@ export default function InsightsScreen() {
     // Refresh metrics data
     console.log("Expense added, refreshing data...");
     // In a real app, you would refetch data here
+  };
+
+  // Helper function to get a proper property name
+  const getPropertyName = (property, index) => {
+    // If property has a name field, use it
+    if (property.name && property.name.trim()) {
+      return property.name;
+    }
+    
+    // If property has street_address, use it
+    if (property.street_address && property.street_address.trim()) {
+      return property.street_address;
+    }
+    
+    // If property has postcode, create a name from it
+    if (property.postcode && property.postcode.trim()) {
+      return `Property ${property.postcode}`;
+    }
+    
+    // If property has a code, use it
+    if (property.code) {
+      return `Property ${property.code}`;
+    }
+    
+    // Final fallback
+    return `Property ${index + 1}`;
   };
 
   // Handle case where data context is not available or show loading state
@@ -381,40 +442,9 @@ export default function InsightsScreen() {
               <Text style={[
                 styles.propertyTabText,
                 selectedProperty?.house_id === property.house_id && styles.activePropertyTabText
-              ]}>{property.name || `Property ${index + 1}`}</Text>
+              ]}>{getPropertyName(property, index)}</Text>
             </TouchableOpacity>
           ))}
-          
-          {/* Fallback if no properties are loaded */}
-          {(!houses || houses.length === 0) && (
-            <>
-              <TouchableOpacity 
-                style={[
-                  styles.propertyTab, 
-                  selectedProperty === 'bridgewater' && styles.activePropertyTab
-                ]}
-                onPress={() => handlePropertySelect('bridgewater')}
-              >
-                <Text style={[
-                  styles.propertyTabText,
-                  selectedProperty === 'bridgewater' && styles.activePropertyTabText
-                ]}>Bridgewater Road</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[
-                  styles.propertyTab, 
-                  selectedProperty === 'oak' && styles.activePropertyTab
-                ]}
-                onPress={() => handlePropertySelect('oak')}
-              >
-                <Text style={[
-                  styles.propertyTabText,
-                  selectedProperty === 'oak' && styles.activePropertyTabText
-                ]}>Oak Avenue</Text>
-              </TouchableOpacity>
-            </>
-          )}
         </ScrollView>
         
         {/* Time Frame Selection */}
@@ -541,7 +571,7 @@ export default function InsightsScreen() {
             <Text style={styles.insightTitle}>Expense Management</Text>
             <Text style={styles.insightDescription}>
               {selectedProperty ? 
-                `Add and track expenses for ${selectedProperty.name || 'this property'} to stay on top of your finances` : 
+                `Add and track expenses for ${getPropertyName(selectedProperty, 0)} to stay on top of your finances` : 
                 'Add and track expenses across your entire portfolio to optimize your cash flow'
               }
             </Text>
