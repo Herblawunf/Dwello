@@ -348,16 +348,67 @@ const ExpensesScreen = () => {
   const deleteExpense = async (expenseId) => {
     console.log("Deleting expense:", expenseId);
     try {
+      // Get all expenses with this expense_id
+      const { data: expenseDetails, error: fetchError } = await supabase
+        .from("expenses")
+        .select("*")
+        .eq("expense_id", expenseId);
+
+      if (fetchError) {
+        console.error("Error fetching expense details:", fetchError);
+        return;
+      }
+
+      console.log("Found expenses:", expenseDetails);
+
+      // Check if any of these expenses were paid
+      const wasPaid = expenseDetails.some(expense => expense.is_paid);
+      console.log("Was any expense paid?", wasPaid);
+
+      if (wasPaid) {
+        // Get the first expense to get the original payer and amount
+        const originalExpense = expenseDetails[0];
+        const totalAmount = expenseDetails.reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
+
+        // Find the expense that was paid to get who paid it
+        const paidExpense = expenseDetails.find(expense => expense.is_paid);
+        
+        // Create reimbursement expense
+        const newExpenseId = uuid.v4();
+        const newExpenseData = {
+          expense_id: newExpenseId,
+          payer_id: paidExpense.housemate_id, // Original payer now owes the money
+          housemate_id: paidExpense.payer_id, // Person who paid gets reimbursed
+          is_paid: false,
+          amount: originalExpense.amount,
+          description: `Reimbursement for deleted expense: ${originalExpense.description || "No description"}`,
+          deletable: false,
+        };
+
+        console.log("Creating reimbursement:", newExpenseData);
+
+        const { error: insertError } = await supabase
+          .from("expenses")
+          .insert(newExpenseData);
+
+        if (insertError) {
+          console.error("Error creating reimbursement:", insertError);
+          return;
+        }
+      }
+
+      // Delete the original expense
       const { error } = await supabase
         .from("expenses")
         .delete()
         .eq("expense_id", expenseId);
+
       if (error) {
         console.error("Error deleting expense:", error);
       } else {
         console.log("Deleted successfully");
-        getPastExpenses();
         getBalances();
+        getPastExpenses();
       }
     } catch (err) {
       console.error("Catch deleteExpense:", err);

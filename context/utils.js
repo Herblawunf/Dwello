@@ -10,8 +10,8 @@ export const getHousemates = async () => {
         .eq("tenant_id", user.id)
         .single();
 
-    console.log("Getting housemates");
-    console.log("House ID:", house_id);
+    // console.log("Getting housemates");
+    // console.log("House ID:", house_id);
 
     const { data: tenants, error: tenantsError } = await supabase
       .from("tenants")
