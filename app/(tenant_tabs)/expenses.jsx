@@ -477,7 +477,7 @@ const ExpensesScreen = () => {
       }
       const { data: allExpenseSplits, error: splitsError } = await supabase
         .from("expenses")
-        .select("expense_id, payer_id, amount, description, created_at")
+        .select("expense_id, payer_id, amount, description, created_at, deletable")
         .in("payer_id", allUserIdsInHouse)
         .order("created_at", { ascending: false });
       if (splitsError) {
@@ -501,11 +501,16 @@ const ExpensesScreen = () => {
             description: split.description || "No description",
             date: split.created_at,
             totalAmount: parseFloat(split.amount) || 0,
+            deletable: split.deletable,
           };
         } else {
           existing.totalAmount += parseFloat(split.amount) || 0;
           if (new Date(split.created_at) < new Date(existing.date)) {
             existing.date = split.created_at;
+          }
+          // If any split is not deletable, the whole expense is not deletable
+          if (split.deletable === false) {
+            existing.deletable = false;
           }
         }
         return acc;
