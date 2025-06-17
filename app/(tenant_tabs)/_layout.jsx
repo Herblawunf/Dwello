@@ -12,7 +12,7 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 const TabBarIcon = ({ name, color, focused }) => {
   const theme = useTheme();
   return (
-    <View style={{ alignItems: 'center' }}>
+    <View style={{ alignItems: "center" }}>
       <MaterialIcons name={name} size={24} color={color} />
       {focused && (
         <View
@@ -46,7 +46,7 @@ export default function TabLayout() {
           paddingTop: 8,
         },
         tabBarActiveTintColor: theme.colors.onPrimary,
-        tabBarInactiveTintColor: theme.colors.onPrimary + '80',
+        tabBarInactiveTintColor: theme.colors.onPrimary + "80",
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarBackground: () => null,
@@ -83,6 +83,15 @@ export default function TabLayout() {
         options={{
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name="notifications" color={color} focused={focused} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="upkeep"
+        options={{
+          title: "Upkeep",
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name="calendar-today" color={color} focused={focused} />
           ),
         }}
       />
