@@ -106,17 +106,19 @@ export default function TenantDetails() {
     <View key={extension.id} style={styles.extensionCard}>
       <View style={styles.extensionHeader}>
         <Text style={styles.extensionTitle}>Rent Extension Request</Text>
-        <View style={[
-          styles.statusBadge,
-          {
-            backgroundColor: 
-              extension.status === "open"
-                ? colors.warning + '15'
-                : extension.status === "accepted"
-                ? colors.success + '15'
-                : colors.error + '15',
-          }
-        ]}>
+        <View
+          style={[
+            styles.statusBadge,
+            {
+              backgroundColor:
+                extension.status === "open"
+                  ? colors.warning + "15"
+                  : extension.status === "accepted"
+                  ? colors.success + "15"
+                  : colors.error + "15",
+            },
+          ]}
+        >
           <Text
             style={[
               styles.extensionStatus,
@@ -130,7 +132,8 @@ export default function TenantDetails() {
               },
             ]}
           >
-            {extension.status.charAt(0).toUpperCase() + extension.status.slice(1)}
+            {extension.status.charAt(0).toUpperCase() +
+              extension.status.slice(1)}
           </Text>
         </View>
       </View>
@@ -143,7 +146,7 @@ export default function TenantDetails() {
           Extension days: {extension.days}
         </Text>
         <Text style={styles.extensionDetail}>
-          New date: {formatDate(extension.new_date)}
+          New date: {formatDate(extension.new_date, (reverse = true))}
         </Text>
         <Text style={styles.extensionDetail}>Reason: {extension.reason}</Text>
         {extension.status === "denied" && (
@@ -191,7 +194,7 @@ export default function TenantDetails() {
       ]}
     >
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
         >
@@ -207,15 +210,15 @@ export default function TenantDetails() {
             {tenant.first_name} {tenant.last_name}
           </Text>
           <Text style={styles.tenantDetail}>Email: {tenant.email}</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.rentInfoHeader}
             onPress={() => setIsRentInfoExpanded(!isRentInfoExpanded)}
           >
             <Text style={styles.rentTitle}>Rent Information</Text>
-            <MaterialIcons 
-              name={isRentInfoExpanded ? "expand-less" : "expand-more"} 
-              size={24} 
-              color={colors.primary} 
+            <MaterialIcons
+              name={isRentInfoExpanded ? "expand-less" : "expand-more"}
+              size={24}
+              color={colors.primary}
             />
           </TouchableOpacity>
           {isRentInfoExpanded && (
@@ -285,7 +288,11 @@ export default function TenantDetails() {
                   setSelectedExtension(null);
                 }}
               >
-                <Text style={[styles.modalButtonText, { color: colors.onSurface }]}>Cancel</Text>
+                <Text
+                  style={[styles.modalButtonText, { color: colors.onSurface }]}
+                >
+                  Cancel
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.confirmDenyButton]}
@@ -320,7 +327,11 @@ export default function TenantDetails() {
                   setSelectedExtension(null);
                 }}
               >
-                <Text style={[styles.modalButtonText, { color: colors.onSurface }]}>Cancel</Text>
+                <Text
+                  style={[styles.modalButtonText, { color: colors.onSurface }]}
+                >
+                  Cancel
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.confirmAcceptButton]}
@@ -357,10 +368,10 @@ const styles = StyleSheet.create({
   backButton: {
     width: 40,
     height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: 20,
-    backgroundColor: colors.primary + '15',
+    backgroundColor: colors.primary + "15",
   },
   headerTitle: {
     fontSize: 20,
@@ -410,9 +421,9 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   rentInfoHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
