@@ -53,6 +53,8 @@ function LandlordDashboardContent() {
 
   // Add effect to fetch unread messages count
   useEffect(() => {
+    let subscription;
+
     const fetchUnreadCount = async () => {
       try {
         // Get all houses for this landlord
@@ -104,21 +106,31 @@ function LandlordDashboardContent() {
       }
     };
 
-    fetchUnreadCount();
+    const setupSubscription = async () => {
+      // Clean up any existing subscription
+      if (subscription) {
+        await supabase.removeChannel(subscription);
+      }
 
-    // Set up real-time subscription for new messages
-    const subscription = supabase
-      .channel('public:messages')
-      .on('postgres_changes', 
-        { event: 'INSERT', schema: 'public', table: 'messages' },
-        () => {
-          fetchUnreadCount(); // Refresh unread count when new message arrives
-        }
-      )
-      .subscribe();
+      // Create new subscription
+      subscription = supabase
+        .channel('public:messages')
+        .on('postgres_changes', 
+          { event: 'INSERT', schema: 'public', table: 'messages' },
+          () => {
+            fetchUnreadCount(); // Refresh unread count when new message arrives
+          }
+        )
+        .subscribe();
+    };
+
+    fetchUnreadCount();
+    setupSubscription();
 
     return () => {
-      subscription.unsubscribe();
+      if (subscription) {
+        supabase.removeChannel(subscription);
+      }
     };
   }, [userId]);
   

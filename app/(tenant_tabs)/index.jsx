@@ -70,6 +70,7 @@ export default function HomeScreen() {
   const [dueIn, setDueIn] = useState(-1);
   const [balance, setBalance] = useState(0);
   const [userData, setUserData] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
   const router = useRouter();
   const { state: authState } = useContext(AuthContext);
   const userId = authState.userId;
@@ -132,10 +133,93 @@ export default function HomeScreen() {
     fetchDaysToRent();
   }, []);
 
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      // Get the tenant's house
+      const { data: tenantData, error: tenantError } = await supabase
+        .from("tenants")
+        .select("house_id")
+        .eq("tenant_id", userId)
+        .single();
+
+      if (tenantError) throw tenantError;
+      if (!tenantData?.house_id) return;
+
+      // Get all chats for this house
+      const { data: chats, error: chatError } = await supabase
+        .from("chats")
+        .select("group_id")
+        .eq("house_id", tenantData.house_id);
+
+      if (chatError) throw chatError;
+      if (!chats?.length) return;
+
+      // Get all unread messages
+      const { data: unreadMessages, error: unreadError } = await supabase
+        .from("messages")
+        .select("message_id")
+        .in("group_id", chats.map(chat => chat.group_id))
+        .not("sender", "eq", userId);
+
+      if (unreadError) throw unreadError;
+      if (!unreadMessages?.length) {
+        setUnreadCount(0);
+        return;
+      }
+
+      // Get read messages for this user
+      const { data: readMessages, error: readError } = await supabase
+        .from("read_message")
+        .select("message_id")
+        .eq("user_id", userId)
+        .in("message_id", unreadMessages.map(msg => msg.message_id));
+
+      if (readError) throw readError;
+
+      const readMessageIds = new Set(readMessages.map(msg => msg.message_id));
+      const totalUnread = unreadMessages.filter(msg => !readMessageIds.has(msg.message_id)).length;
+      setUnreadCount(totalUnread);
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    let subscription;
+
+    const setupSubscription = async () => {
+      // Clean up any existing subscription
+      if (subscription) {
+        await supabase.removeChannel(subscription);
+      }
+
+      // Create new subscription
+      subscription = supabase
+        .channel('public:messages')
+        .on('postgres_changes', 
+          { event: 'INSERT', schema: 'public', table: 'messages' },
+          () => {
+            fetchUnreadCount(); // Refresh unread count when new message arrives
+          }
+        )
+        .subscribe();
+    };
+
+    fetchUnreadCount();
+    setupSubscription();
+
+    return () => {
+      if (subscription) {
+        supabase.removeChannel(subscription);
+      }
+    };
+  }, [userId, fetchUnreadCount]);
+
   useFocusEffect(
     useCallback(() => {
       getBalance();
-    }, [getBalance])
+      fetchUnreadCount();
+    }, [getBalance, fetchUnreadCount])
   );
 
   const handleReportRepair = () => {
@@ -177,10 +261,8 @@ export default function HomeScreen() {
       letterSpacing: 1.5,
     },
     chatButton: {
-      backgroundColor: theme.colors.surface,
-      borderRadius: theme.borderRadius.round,
       padding: theme.spacing.sm,
-      ...theme.elevation.sm,
+      position: 'relative',
     },
     welcomeSection: {
       flexDirection: 'row',
@@ -257,6 +339,23 @@ export default function HomeScreen() {
       color: theme.colors.onSurface,
       marginTop: 8,
     },
+    unreadBadge: {
+      position: 'absolute',
+      top: 2,
+      right: 2,
+      backgroundColor: theme.colors.error,
+      borderRadius: 8,
+      minWidth: 16,
+      height: 16,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 3,
+    },
+    unreadCount: {
+      color: '#FFFFFF',
+      fontSize: 10,
+      fontWeight: 'bold',
+    },
   });
 
   return (
@@ -271,6 +370,13 @@ export default function HomeScreen() {
           <ThemedText type="title" style={styles.header}>dwello</ThemedText>
           <TouchableOpacity onPress={handleGoToChat} style={styles.chatButton}>
             <Ionicons name="chatbubble-ellipses-outline" size={24} color={theme.colors.primary} />
+            {unreadCount > 0 && (
+              <View style={styles.unreadBadge}>
+                {unreadCount < 10 && (
+                  <ThemedText style={styles.unreadCount}>{unreadCount}</ThemedText>
+                )}
+              </View>
+            )}
           </TouchableOpacity>
         </View>
 

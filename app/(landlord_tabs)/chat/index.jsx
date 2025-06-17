@@ -197,20 +197,34 @@ export default function ChatScreen() {
 
   // Add cleanup for any subscriptions
   React.useEffect(() => {
-    // Set up real-time subscription for new messages
-    const subscription = supabase
-      .channel('public:messages')
-      .on('postgres_changes', 
-        { event: 'INSERT', schema: 'public', table: 'messages' },
-        () => {
-          fetchChats(); // Refresh chats when new message arrives
-        }
-      )
-      .subscribe();
+    let subscription;
+
+    const setupSubscription = async () => {
+      // Clean up any existing subscription
+      if (subscription) {
+        await supabase.removeChannel(subscription);
+      }
+
+      // Create new subscription
+      subscription = supabase
+        .channel('public:messages')
+        .on('postgres_changes', 
+          { event: 'INSERT', schema: 'public', table: 'messages' },
+          () => {
+            fetchChats(); // Refresh chats when new message arrives
+          }
+        )
+        .subscribe();
+    };
+
+    fetchChats();
+    setupSubscription();
 
     // Cleanup subscription on unmount
     return () => {
-      subscription.unsubscribe();
+      if (subscription) {
+        supabase.removeChannel(subscription);
+      }
     };
   }, [fetchChats]);
 
