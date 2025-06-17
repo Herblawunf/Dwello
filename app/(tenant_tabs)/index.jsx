@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   ScrollView,
   SafeAreaView,
+  Text,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
@@ -14,6 +15,7 @@ import { Context as AuthContext } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
+import { colors } from "../theme/colors";
 
 const formatBalanceText = (balance) => {
   if (balance != 0) {
@@ -343,7 +345,7 @@ export default function HomeScreen() {
       position: 'absolute',
       top: 2,
       right: 2,
-      backgroundColor: theme.colors.error,
+      backgroundColor: colors.error,
       borderRadius: 8,
       minWidth: 16,
       height: 16,
@@ -373,7 +375,7 @@ export default function HomeScreen() {
             {unreadCount > 0 && (
               <View style={styles.unreadBadge}>
                 {unreadCount < 10 && (
-                  <ThemedText style={styles.unreadCount}>{unreadCount}</ThemedText>
+                  <Text style={styles.unreadCount}>{unreadCount}</Text>
                 )}
               </View>
             )}
