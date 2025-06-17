@@ -25,6 +25,7 @@ function LandlordDashboardContent() {
   const router = useRouter();
   const data = useData();
   const [userData, setUserData] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
   const { state: { userId } } = React.useContext(AuthContext);
   
   useEffect(() => {
@@ -48,6 +49,77 @@ function LandlordDashboardContent() {
     };
 
     fetchUserData();
+  }, [userId]);
+
+  // Add effect to fetch unread messages count
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        // Get all houses for this landlord
+        const { data: houses, error: housesError } = await supabase
+          .from("houses")
+          .select("house_id")
+          .eq("landlord_id", userId);
+
+        if (housesError) throw housesError;
+        if (!houses?.length) return;
+
+        // Get all non-tenant-only chats for these houses
+        const { data: chats, error: chatError } = await supabase
+          .from("chats")
+          .select("group_id")
+          .in("house_id", houses.map(house => house.house_id))
+          .eq("tenants_only", false);
+
+        if (chatError) throw chatError;
+        if (!chats?.length) return;
+
+        // Get all unread messages
+        const { data: unreadMessages, error: unreadError } = await supabase
+          .from("messages")
+          .select("message_id")
+          .in("group_id", chats.map(chat => chat.group_id))
+          .not("sender", "eq", userId);
+
+        if (unreadError) throw unreadError;
+        if (!unreadMessages?.length) {
+          setUnreadCount(0);
+          return;
+        }
+
+        // Get read messages for this user
+        const { data: readMessages, error: readError } = await supabase
+          .from("read_message")
+          .select("message_id")
+          .eq("user_id", userId)
+          .in("message_id", unreadMessages.map(msg => msg.message_id));
+
+        if (readError) throw readError;
+
+        const readMessageIds = new Set(readMessages.map(msg => msg.message_id));
+        const totalUnread = unreadMessages.filter(msg => !readMessageIds.has(msg.message_id)).length;
+        setUnreadCount(totalUnread);
+      } catch (error) {
+        console.error('Error fetching unread count:', error);
+      }
+    };
+
+    fetchUnreadCount();
+
+    // Set up real-time subscription for new messages
+    const subscription = supabase
+      .channel('public:messages')
+      .on('postgres_changes', 
+        { event: 'INSERT', schema: 'public', table: 'messages' },
+        () => {
+          fetchUnreadCount(); // Refresh unread count when new message arrives
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [userId]);
   
   // Add debugging and safety checks
@@ -181,6 +253,11 @@ function LandlordDashboardContent() {
               size={24}
               color={colors.primary}
             />
+            {unreadCount > 0 && (
+              <View style={styles.unreadBadge}>
+                <Text style={styles.unreadCount}>{unreadCount}</Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
         
@@ -418,6 +495,24 @@ const styles = StyleSheet.create({
   },
   chatButton: {
     padding: 8,
+    position: 'relative',
+  },
+  unreadBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    backgroundColor: colors.error,
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 3,
+  },
+  unreadCount: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   welcomeSection: {
     flexDirection: 'row',
