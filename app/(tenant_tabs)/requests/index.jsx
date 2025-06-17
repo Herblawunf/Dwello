@@ -85,9 +85,6 @@ export default class Requests extends Component {
       sortBy: "time",
       sortMenuVisible: false,
       searchQuery: "",
-      properties: [],
-      selectedProperty: null,
-      propertyMenuVisible: false,
       statusInfoVisible: false,
       selectedStatus: null,
       requests: [],
@@ -99,13 +96,11 @@ export default class Requests extends Component {
 
   componentDidMount() {
     this.getRequests();
-    this.getProperties();
   }
 
   componentDidUpdate(prevProps) {
     if (this.props !== prevProps) {
       this.getRequests();
-      this.getProperties();
     }
   }
 
@@ -179,23 +174,6 @@ export default class Requests extends Component {
     }
   };
 
-  getProperties = async () => {
-    try {
-      const { userId } = this.context.state;
-      const { data, error } = await supabase.rpc("get_landlord_houses", {
-        p_landlord_id: userId,
-      });
-      if (data) {
-        this.setState({ properties: data });
-        console.log(data);
-        return;
-      }
-      console.error(error);
-    } catch (error) {
-      console.error("Error fetching properties:", error);
-    }
-  };
-
   getPriorityText = (priority) => {
     switch (priority) {
       case 0:
@@ -238,14 +216,10 @@ export default class Requests extends Component {
   };
 
   filterRequests = (requestsToFilter) => {
-    const { searchQuery, selectedProperty } = this.state;
+    const { searchQuery } = this.state;
     const query = searchQuery.toLowerCase();
     return requestsToFilter.filter((r) => {
-      const matchesSearch = r.description.toLowerCase().includes(query);
-      const matchesProperty = selectedProperty
-        ? r.house_id === selectedProperty.house_id
-        : true;
-      return matchesSearch && matchesProperty;
+      return r.description.toLowerCase().includes(query);
     });
   };
 
@@ -431,9 +405,6 @@ export default class Requests extends Component {
       activeTab,
       sortMenuVisible,
       searchQuery,
-      properties,
-      selectedProperty,
-      propertyMenuVisible,
       statusInfoVisible,
       selectedStatus,
       requests,
@@ -552,64 +523,7 @@ export default class Requests extends Component {
                   onChangeText={(text) => this.setState({ searchQuery: text })}
                 />
               </View>
-
-              <TouchableOpacity
-                style={styles.propertyButton}
-                onPress={() => this.setState({ propertyMenuVisible: true })}
-              >
-                <MaterialIcons name="home" size={20} color="#757575" />
-                <Text style={styles.propertyButtonText}>
-                  {selectedProperty
-                    ? selectedProperty.street_address
-                    : "All Properties"}
-                </Text>
-              </TouchableOpacity>
             </View>
-
-            <Modal
-              visible={propertyMenuVisible}
-              transparent={true}
-              animationType="fade"
-              onRequestClose={() =>
-                this.setState({ propertyMenuVisible: false })
-              }
-            >
-              <TouchableOpacity
-                style={styles.modalOverlay}
-                activeOpacity={1}
-                onPress={() => this.setState({ propertyMenuVisible: false })}
-              >
-                <View style={[styles.sortMenu, styles.propertyMenu]}>
-                  <TouchableOpacity
-                    style={styles.sortMenuItem}
-                    onPress={() => {
-                      this.setState({
-                        selectedProperty: null,
-                        propertyMenuVisible: false,
-                      });
-                    }}
-                  >
-                    <Text style={styles.sortMenuText}>All Properties</Text>
-                  </TouchableOpacity>
-                  {properties.map((property) => (
-                    <TouchableOpacity
-                      key={property.house_id}
-                      style={styles.sortMenuItem}
-                      onPress={() => {
-                        this.setState({
-                          selectedProperty: property,
-                          propertyMenuVisible: false,
-                        });
-                      }}
-                    >
-                      <Text style={styles.sortMenuText}>
-                        {property.street_address}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </TouchableOpacity>
-            </Modal>
 
             <Modal
               visible={statusInfoVisible}
@@ -965,7 +879,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: defaultTheme.colors.surface,
-    marginBottom: defaultTheme.spacing.sm,
     paddingHorizontal: defaultTheme.spacing.md,
     paddingVertical: defaultTheme.spacing.sm,
     borderRadius: 20,
@@ -979,15 +892,99 @@ const styles = StyleSheet.create({
     color: defaultTheme.colors.onSurface,
     fontWeight: "400",
   },
-  propertyButton: {
-    flexDirection: "row",
-    alignItems: "center",
+  statusInfoContainer: {
     backgroundColor: defaultTheme.colors.surface,
-    padding: defaultTheme.spacing.sm,
-    borderRadius: 20,
-    marginBottom: defaultTheme.spacing.sm,
+    margin: defaultTheme.spacing.md,
+    padding: defaultTheme.spacing.lg,
+    borderRadius: 16,
+    width: "90%",
+    maxWidth: 400,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
     borderWidth: 1,
     borderColor: defaultTheme.colors.divider,
+  },
+  statusInfoTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom: defaultTheme.spacing.md,
+    color: defaultTheme.colors.onSurface,
+    textAlign: "center",
+  },
+  statusInfoItem: {
+    marginBottom: defaultTheme.spacing.md,
+    padding: defaultTheme.spacing.md,
+    borderRadius: 12,
+    backgroundColor: defaultTheme.colors.background,
+    borderWidth: 1,
+    borderColor: defaultTheme.colors.divider,
+  },
+  statusInfoItemActive: {
+    backgroundColor: defaultTheme.colors.primary + "15",
+    borderLeftWidth: 4,
+    borderLeftColor: defaultTheme.colors.primary,
+  },
+  statusInfoItemNext: {
+    backgroundColor: defaultTheme.colors.secondary + "15",
+    borderLeftWidth: 4,
+    borderLeftColor: defaultTheme.colors.secondary,
+  },
+  statusInfoHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: defaultTheme.spacing.sm,
+  },
+  statusInfoLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: defaultTheme.colors.onSurface,
+  },
+  statusInfoDescription: {
+    fontSize: 14,
+    color: defaultTheme.colors.placeholder,
+    lineHeight: 20,
+  },
+  emptyListContent: {
+    flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 100,
+  },
+  emptyState: {
+    alignItems: "center",
+    padding: defaultTheme.spacing.lg,
+  },
+  emptyStateTitle: {
+    fontSize: 24,
+    fontWeight: "600",
+    marginBottom: defaultTheme.spacing.md,
+    color: defaultTheme.colors.onSurface,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: defaultTheme.colors.placeholder,
+    textAlign: "center",
+  },
+  fab: {
+    position: "absolute",
+    right: 20,
+    bottom: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: defaultTheme.colors.primaryVariant,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    zIndex: 1000,
   },
   propertyButtonText: {
     flex: 1,
