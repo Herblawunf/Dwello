@@ -26,6 +26,7 @@ function LandlordDashboardContent() {
   const data = useData();
   const [userData, setUserData] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [propertyBreakdown, setPropertyBreakdown] = useState(null);
   const { state: { userId } } = React.useContext(AuthContext);
   
   useEffect(() => {
@@ -50,6 +51,22 @@ function LandlordDashboardContent() {
 
     fetchUserData();
   }, [userId]);
+
+  // Fetch property breakdown data
+  useEffect(() => {
+    const fetchPropertyBreakdown = async () => {
+      if (data?.getPropertyBreakdown) {
+        try {
+          const breakdown = await data.getPropertyBreakdown('Monthly');
+          setPropertyBreakdown(breakdown);
+        } catch (error) {
+          console.error('Error fetching property breakdown:', error);
+        }
+      }
+    };
+
+    fetchPropertyBreakdown();
+  }, [data?.getPropertyBreakdown]);
 
   // Add effect to fetch unread messages count
   useEffect(() => {
@@ -358,6 +375,7 @@ function LandlordDashboardContent() {
                 data={incomeExpensesTrend}
                 labels={monthLabels}
                 suffix="£"
+                propertyBreakdown={propertyBreakdown}
               />
             ) : (
               <View style={styles.loadingContainer}>
