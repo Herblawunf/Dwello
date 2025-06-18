@@ -46,6 +46,10 @@ export default function MetricDetailsScreen() {
   const [periodTotals, setPeriodTotals] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [houseNameMap, setHouseNameMap] = useState({});
+  const [currentValue, setCurrentValue] = useState(null);
+  
+  // Check if we're in a property-specific view
+  const isPropertySpecific = !!propertyId;
 
   // Get metric info based on the metric key
   const getMetricInfo = () => {
@@ -212,7 +216,7 @@ export default function MetricDetailsScreen() {
 
   const metricInfo = getMetricInfo();
 
-  // Fetch data when component mounts
+  // Fetch data when component mounts or when metricKey/timeFrame changes
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
@@ -227,7 +231,7 @@ export default function MetricDetailsScreen() {
     };
     
     fetchData();
-  }, [metricKey, timeFrame]);
+  }, [metricKey, timeFrame, propertyId]);
 
   // Fetch from house_analytics table
   const fetchAnalyticsData = async () => {
@@ -347,7 +351,11 @@ export default function MetricDetailsScreen() {
   
   // Process total metrics from analytics data
   const processTotalMetrics = (data) => {
-    if (!data || data.length === 0) return;
+    if (!data || data.length === 0) {
+      setCurrentValue(0);
+      setTotalMetrics({});
+      return;
+    }
     
     // Calculate overall totals for the chosen metric
     const fieldName = mapMetricKeyToDbField(metricKey);
@@ -367,6 +375,9 @@ export default function MetricDetailsScreen() {
     const max = Math.max(...values);
     const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
     
+    // Set the current value based on the total for the selected time frame
+    setCurrentValue(totalValue);
+    
     setTotalMetrics({
       total: totalValue,
       min,
@@ -378,7 +389,10 @@ export default function MetricDetailsScreen() {
   
   // Process period-based totals (monthly, quarterly, yearly breakdown)
   const processPeriodTotals = (data) => {
-    if (!data || data.length === 0) return;
+    if (!data || data.length === 0) {
+      setPeriodTotals([]);
+      return;
+    }
     
     const fieldName = mapMetricKeyToDbField(metricKey);
     
@@ -441,6 +455,16 @@ export default function MetricDetailsScreen() {
     });
     
     setPeriodTotals(periodData);
+    
+    // If we have period data, make sure the current value reflects the most recent period
+    if (periodData.length > 0) {
+      // Get the most recent period (last item after sorting)
+      const mostRecentPeriod = periodData[periodData.length - 1];
+      // Update current value if it's not already set
+      if (currentValue === null) {
+        setCurrentValue(mostRecentPeriod.value);
+      }
+    }
   };
   
   // Map our front-end metric keys to database field names
@@ -465,7 +489,39 @@ export default function MetricDetailsScreen() {
   const handleTimeFrameSelect = (period) => {
     setTimeFrame(period);
     setIsLoading(true);
-    // In a real app, you would fetch data for the selected time period
+    
+    // Recalculate the current value based on the new time frame
+    if (analyticsData.length > 0) {
+      const fieldName = mapMetricKeyToDbField(metricKey);
+      let totalValue = 0;
+      
+      // Filter data based on the selected time frame
+      const now = new Date();
+      const startDate = new Date();
+      const monthsToLookBack = period === 'Monthly' ? 1 : 
+                             period === 'Quarterly' ? 3 : 12;
+      startDate.setMonth(now.getMonth() - monthsToLookBack);
+      
+      // Filter data by date range
+      const filteredData = analyticsData.filter(item => 
+        new Date(item.record_date) >= startDate
+      );
+      
+      if (filteredData.length > 0) {
+        if (metricKey === 'occupancyRate' || metricKey === 'tenantSatisfaction') {
+          // For percentages, take the average
+          totalValue = filteredData.reduce((sum, r) => sum + r[fieldName], 0) / filteredData.length;
+        } else {
+          // For monetary values, sum them
+          totalValue = filteredData.reduce((sum, r) => sum + r[fieldName], 0);
+        }
+        
+        // Update the current value immediately
+        setCurrentValue(totalValue);
+      }
+    }
+    
+    // Data will be fetched again in the useEffect that depends on timeFrame
   };
 
   // Format values based on the metric type
@@ -610,9 +666,9 @@ export default function MetricDetailsScreen() {
           {/* Current Value Card */}
           <View style={styles.currentValueCard}>
             <View style={styles.currentValueContent}>
-              <Text style={styles.currentValueLabel}>Current Value</Text>
+              <Text style={styles.currentValueLabel}>Current {timeFrame} Value</Text>
               <Text style={styles.currentValue}>
-                {formatValue(overviewMetrics?.[metricKey]?.value || propertyComparison[0]?.value)}
+                {formatValue(currentValue !== null ? currentValue : totalMetrics?.total || 0)}
               </Text>
             </View>
           </View>
@@ -694,63 +750,67 @@ export default function MetricDetailsScreen() {
           )}
         </View>
 
-        {/* Property Comparison Section */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Property Summary</Text>
-          
-          {isLoading ? (
-            <ActivityIndicator size="large" color={metricInfo.color} />
-          ) : propertyComparison.length === 0 ? (
-            <Text style={styles.noDataText}>No data available for this time period.</Text>
-          ) : (
-            <View style={styles.propertyCardsContainer}>
-              <FlatList
-                data={propertyComparison}
-                renderItem={renderPropertyCard}
-                keyExtractor={(item) => item.id}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.propertyCardsList}
-              />
-            </View>
-          )}
-        </View>
-
-        {/* Property Breakdown Table */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Property Breakdown</Text>
-          
-          <View style={styles.chartContainer}>
+        {/* Property Comparison Section - Only show in overview mode */}
+        {!isPropertySpecific && (
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionTitle}>Property Summary</Text>
+            
             {isLoading ? (
               <ActivityIndicator size="large" color={metricInfo.color} />
-            ) : analyticsData.length === 0 ? (
+            ) : propertyComparison.length === 0 ? (
               <Text style={styles.noDataText}>No data available for this time period.</Text>
             ) : (
-              <View style={styles.analyticsTable}>
-                <View style={styles.tableHeader}>
-                  <Text style={styles.tableHeaderText}>Date</Text>
-                  <Text style={styles.tableHeaderText}>Property</Text>
-                  <Text style={styles.tableHeaderText}>{metricInfo.title}</Text>
-                </View>
-                {analyticsData.map((item, index) => (
-                  <View key={index} style={styles.tableRow}>
-                    <Text style={styles.tableCell}>
-                      {new Date(item.record_date).toLocaleDateString('en-GB', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric'
-                      })}
-                    </Text>
-                    <Text style={styles.tableCell}>{houseNameMap[item.house_id]}</Text>
-                    <Text style={styles.tableCellValue}>
-                      {formatValue(item[mapMetricKeyToDbField(metricKey)])}
-                    </Text>
-                  </View>
-                ))}
+              <View style={styles.propertyCardsContainer}>
+                <FlatList
+                  data={propertyComparison}
+                  renderItem={renderPropertyCard}
+                  keyExtractor={(item) => item.id}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.propertyCardsList}
+                />
               </View>
             )}
           </View>
-        </View>
+        )}
+
+        {/* Property Breakdown Table - Only show in overview mode */}
+        {!isPropertySpecific && (
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionTitle}>Property Breakdown</Text>
+            
+            <View style={styles.chartContainer}>
+              {isLoading ? (
+                <ActivityIndicator size="large" color={metricInfo.color} />
+              ) : analyticsData.length === 0 ? (
+                <Text style={styles.noDataText}>No data available for this time period.</Text>
+              ) : (
+                <View style={styles.analyticsTable}>
+                  <View style={styles.tableHeader}>
+                    <Text style={styles.tableHeaderText}>Date</Text>
+                    <Text style={styles.tableHeaderText}>Property</Text>
+                    <Text style={styles.tableHeaderText}>{metricInfo.title}</Text>
+                  </View>
+                  {analyticsData.map((item, index) => (
+                    <View key={index} style={styles.tableRow}>
+                      <Text style={styles.tableCell}>
+                        {new Date(item.record_date).toLocaleDateString('en-GB', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric'
+                        })}
+                      </Text>
+                      <Text style={styles.tableCell}>{houseNameMap[item.house_id]}</Text>
+                      <Text style={styles.tableCellValue}>
+                        {formatValue(item[mapMetricKeyToDbField(metricKey)])}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

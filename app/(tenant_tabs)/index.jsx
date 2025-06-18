@@ -17,6 +17,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { colors } from "../theme/colors";
+import { TenantSatisfaction } from "@/app/components";
 
 const { width } = Dimensions.get("window");
 const cardWidth = width * 0.42;
@@ -77,6 +78,7 @@ export default function HomeScreen() {
   const [balance, setBalance] = useState(0);
   const [userData, setUserData] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [houseId, setHouseId] = useState(null);
   const router = useRouter();
   const { state: authState } = useContext(AuthContext);
   const userId = authState.userId;
@@ -261,6 +263,34 @@ export default function HomeScreen() {
   const handleRentInfoPress = () => {
     router.push("/rent_info");
   };
+
+  // Fetch house ID for tenant satisfaction component
+  useEffect(() => {
+    const fetchHouseId = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('tenants')
+          .select('house_id')
+          .eq('tenant_id', userId)
+          .single();
+
+        if (error) {
+          console.error('Error fetching house ID:', error);
+          return;
+        }
+
+        if (data?.house_id) {
+          setHouseId(data.house_id);
+        }
+      } catch (error) {
+        console.error('Error in fetchHouseId:', error);
+      }
+    };
+
+    if (userId) {
+      fetchHouseId();
+    }
+  }, [userId]);
 
   const styles = StyleSheet.create({
     safeArea: {
@@ -495,6 +525,11 @@ export default function HomeScreen() {
             </ThemedText>
           </TouchableOpacity>
         </View>
+        
+        {/* Tenant Satisfaction Section - without title */}
+        {userId && houseId && (
+          <TenantSatisfaction tenantId={userId} propertyId={houseId} />
+        )}
       </ScrollView>
     </SafeAreaView>
   );
