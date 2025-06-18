@@ -368,6 +368,35 @@ export default function DataProvider({ children }) {
       groupedData = aggregateDataByPeriod(analyticsData, timeFrame);
     }
 
+    // For monthly data, aggregate by month across all properties
+    if (timeFrame === 'Monthly') {
+      const monthlyGroups = {};
+      
+      groupedData.forEach(record => {
+        const monthKey = `${record.month}/${record.year}`;
+        
+        if (!monthlyGroups[monthKey]) {
+          monthlyGroups[monthKey] = {
+            month: record.month,
+            year: record.year,
+            net_profit: 0,
+            total_expenses: 0,
+            record_date: record.record_date
+          };
+        }
+        
+        // Sum the values across all properties for this month
+        monthlyGroups[monthKey].net_profit += parseFloat(record.net_profit || 0);
+        monthlyGroups[monthKey].total_expenses += parseFloat(record.total_expenses || 0);
+      });
+      
+      // Convert back to array and sort by date
+      groupedData = Object.values(monthlyGroups).sort((a, b) => {
+        if (a.year !== b.year) return a.year - b.year;
+        return a.month - b.month;
+      });
+    }
+
     return groupedData.map(record => ({
       net: parseFloat(record.net_profit || 0),
       util: parseFloat(record.total_expenses || 0),
@@ -448,6 +477,68 @@ export default function DataProvider({ children }) {
     ];
   };
 
+  // Helper function to get property breakdown for pie charts
+  const getPropertyBreakdown = async (timeFrame) => {
+    try {
+      const now = new Date();
+      const startDate = new Date();
+      
+      if (timeFrame === 'Monthly') {
+        startDate.setMonth(now.getMonth() - 1);
+      } else if (timeFrame === 'Quarterly') {
+        startDate.setMonth(now.getMonth() - 3);
+      } else {
+        startDate.setFullYear(now.getFullYear() - 1);
+      }
+
+      // Get all houses for this landlord
+      const { data: houses, error: housesError } = await supabase
+        .from('houses')
+        .select('house_id, street_address, code')
+        .eq('landlord_id', userId);
+
+      if (housesError) throw housesError;
+      if (!houses || houses.length === 0) return [];
+
+      // Get analytics data for all houses
+      const { data: analyticsData, error: analyticsError } = await supabase
+        .from('house_analytics')
+        .select('*')
+        .in('house_id', houses.map(house => house.house_id))
+        .gte('record_date', startDate.toISOString().split('T')[0])
+        .order('record_date', { ascending: true });
+
+      if (analyticsError) throw analyticsError;
+      if (!analyticsData || analyticsData.length === 0) return [];
+
+      // Group data by property and calculate totals
+      const propertyTotals = {};
+      
+      houses.forEach(house => {
+        const houseData = analyticsData.filter(record => record.house_id === house.house_id);
+        if (houseData.length > 0) {
+          const totalGrossIncome = houseData.reduce((sum, record) => sum + parseFloat(record.gross_income || 0), 0);
+          const totalExpenses = houseData.reduce((sum, record) => sum + parseFloat(record.total_expenses || 0), 0);
+          const totalNetProfit = houseData.reduce((sum, record) => sum + parseFloat(record.net_profit || 0), 0);
+          
+          propertyTotals[house.house_id] = {
+            house_id: house.house_id,
+            name: house.street_address || `Property ${house.code}`,
+            gross_income: totalGrossIncome,
+            expenses: totalExpenses,
+            net_profit: totalNetProfit,
+            total_income: totalGrossIncome + totalExpenses // For monthly income calculation
+          };
+        }
+      });
+
+      return Object.values(propertyTotals);
+    } catch (error) {
+      console.error('Error getting property breakdown:', error);
+      return [];
+    }
+  };
+
   // Value to provide to consumers
   const value = {
     properties: houses, // Keep the old property name for compatibility
@@ -457,6 +548,7 @@ export default function DataProvider({ children }) {
     houseMetrics, // New name for clarity
     maintenanceCosts,
     incomeExpensesTrend,
+    getPropertyBreakdown, // Add the new function
     loading,
     error,
     dateRange,
