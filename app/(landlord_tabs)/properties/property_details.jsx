@@ -190,7 +190,7 @@ export default function PropertyDetails() {
       <ExpenseModal
         visible={showExpenseModal}
         onClose={() => setShowExpenseModal(false)}
-        properties={property ? [{ id: property.house_id, name: property.street_address }] : []}
+        properties={property ? [{ house_id: property.house_id, street_address: property.street_address }] : []}
         onExpenseAdded={handleExpenseAdded}
       />
     </SafeAreaView>

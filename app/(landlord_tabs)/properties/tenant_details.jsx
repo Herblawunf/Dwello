@@ -231,7 +231,7 @@ export default function TenantDetails() {
                 {tenant.months_per_payment > 1 ? "s" : ""}
               </Text>
               <Text style={styles.tenantDetail}>
-                Next Payment: {formatDate(tenant.next_payment)}
+                Next Payment: {formatDate(tenant.next_payment, (reverse = true))}
               </Text>
             </View>
           )}
